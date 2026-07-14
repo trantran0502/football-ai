@@ -44,6 +44,7 @@ export {
   getBetaRecommendationsByVersion,
   getLatestRollingReport,
   getRollingReports,
+  reloadBetaStorageCache,
   saveBetaRecommendations,
   saveRollingReport,
   updateBetaRecommendation,

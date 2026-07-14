@@ -74,9 +74,9 @@ export function buildRollingEvaluationReport(
   };
 }
 
-export function maybeGenerateRollingReport(
+export async function maybeGenerateRollingReport(
   modelVersion: string = CURRENT_MODEL_VERSION
-): RollingEvaluationReport | null {
+): Promise<RollingEvaluationReport | null> {
   const verifiedCount = getAllBetaRecommendations().filter(
     (item) => item.modelVersion === modelVersion && item.status === "VERIFIED"
   ).length;
@@ -87,7 +87,7 @@ export function maybeGenerateRollingReport(
 
   const report = buildRollingEvaluationReport(modelVersion);
   if (report) {
-    saveRollingReport(report);
+    await saveRollingReport(report);
   }
   return report;
 }

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-07-14T00:00:00.000Z",
+  "source": "localStorage",
+  "keys": {
+    "matchRecords": "football-ai-match-records",
+    "betaRecommendations": "football-ai-beta-recommendations",
+    "betaRollingReports": "football-ai-beta-rolling-reports"
+  },
+  "counts": {
+    "matchRecords": 0,
+    "betaRecommendations": 0,
+    "betaRollingReports": 0
+  },
+  "data": {
+    "matchRecords": [],
+    "betaRecommendations": [],
+    "betaRollingReports": []
+  }
+}

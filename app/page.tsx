@@ -16,6 +16,7 @@ import {
   persistAnalysisToHistory,
   verifyPersistedMatch,
 } from "@/lib/database/browserPersistence";
+import { downloadP0ExportBundle } from "@/lib/migration/exportLocalStorageP0";
 import type {
   HistoricalMatchRecord,
   MatchHistoryStats,
@@ -39,12 +40,15 @@ import {
   getLatestRollingReport,
   isBetaRecommendationModeEnabled,
   maybeGenerateRollingReport,
+  reloadBetaStorageCache,
   saveBetaRecommendations,
   settleBetaRecommendationsForMatch,
   type BetaCandidate,
   type BetaDashboardStats,
   type RollingEvaluationReport,
 } from "@/lib/beta";
+import { StorageStatusBanner } from "@/app/components/StorageStatusBanner";
+import type { StorageHealth } from "@/lib/storage/storageStatus";
 
 const MARKET_TYPE_LABELS: Record<MarketSelection["marketType"], string> = {
   moneyline: "獨贏",
@@ -708,7 +712,7 @@ function ScoreVerifyForm({
   const [halfTimeAwayGoals, setHalfTimeAwayGoals] = useState("");
   const [error, setError] = useState("");
 
-  function handleVerify() {
+  async function handleVerify() {
     const ftHome = Number(fullTimeHomeGoals);
     const ftAway = Number(fullTimeAwayGoals);
     const htHome = halfTimeHomeGoals === "" ? 0 : Number(halfTimeHomeGoals);
@@ -724,27 +728,27 @@ function ScoreVerifyForm({
       return;
     }
 
-    const updated = verifyPersistedMatch(matchId, {
+    const result = await verifyPersistedMatch(matchId, {
       fullTimeHomeGoals: ftHome,
       fullTimeAwayGoals: ftAway,
       halfTimeHomeGoals: htHome,
       halfTimeAwayGoals: htAway,
     });
 
-    if (!updated) {
+    if (!result.record) {
       setError("驗證失敗，請確認比賽狀態。");
       return;
     }
 
     let rollingGenerated = false;
     if (isBetaRecommendationModeEnabled()) {
-      settleBetaRecommendationsForMatch(matchId, {
+      await settleBetaRecommendationsForMatch(matchId, {
         fullTimeHomeGoals: ftHome,
         fullTimeAwayGoals: ftAway,
         halfTimeHomeGoals: htHome,
         halfTimeAwayGoals: htAway,
       });
-      rollingGenerated = maybeGenerateRollingReport() !== null;
+      rollingGenerated = (await maybeGenerateRollingReport()) !== null;
     }
 
     setError("");
@@ -815,7 +819,7 @@ function HistoryMatchesSection({
   onRefresh,
 }: {
   matches: HistoricalMatchRecord[];
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
 }) {
   if (matches.length === 0) {
     return (
@@ -865,7 +869,9 @@ function HistoryMatchesSection({
             {match.status === "PENDING" && (
               <ScoreVerifyForm
                 matchId={match.id}
-                onVerified={() => onRefresh()}
+                onVerified={() => {
+                  void onRefresh();
+                }}
               />
             )}
             {match.status === "VERIFIED" && match.result && (
@@ -1063,24 +1069,31 @@ export default function HomePage() {
   const [rollingReport, setRollingReport] = useState<RollingEvaluationReport | null>(
     null
   );
+  const [matchStorageStatus, setMatchStorageStatus] =
+    useState<StorageHealth>("supabase");
+  const [betaStorageStatus, setBetaStorageStatus] =
+    useState<StorageHealth>("supabase");
 
-  function refreshBetaDashboard() {
+  async function refreshBetaDashboard() {
     if (!isBetaRecommendationModeEnabled()) {
       return;
     }
+    const betaStorage = await reloadBetaStorageCache();
+    setBetaStorageStatus(betaStorage);
     setBetaStats(computeBetaDashboardStats(CURRENT_MODEL_VERSION));
     setRollingReport(getLatestRollingReport());
   }
 
-  function refreshHistory() {
-    const { matches, stats } = loadPersistedHistory();
+  async function refreshHistory() {
+    const { matches, stats, storage } = await loadPersistedHistory();
     setHistoryMatches(matches);
     setStats(stats);
-    refreshBetaDashboard();
+    setMatchStorageStatus(storage);
+    await refreshBetaDashboard();
   }
 
   useEffect(() => {
-    refreshHistory();
+    void refreshHistory();
     setApiUsage(getStoredApiUsage());
   }, []);
 
@@ -1121,7 +1134,7 @@ export default function HomePage() {
     }
   }
 
-  function handleAnalyze() {
+  async function handleAnalyze() {
     if (!input.trim()) {
       setReport(null);
       setNotice("");
@@ -1135,14 +1148,15 @@ export default function HomePage() {
     setTeamData(null);
     setTeamDataError("");
 
-    const outcome = persistAnalysisToHistory(rawOdds, nextReport);
+    const outcome = await persistAnalysisToHistory(rawOdds, nextReport);
+    setMatchStorageStatus(outcome.storage);
 
     if (
       outcome.status === "created" &&
       isBetaRecommendationModeEnabled() &&
       nextReport.betaRecommendation.candidates.length > 0
     ) {
-      saveBetaRecommendations({
+      const betaOutcome = await saveBetaRecommendations({
         matchRecordId: outcome.record.id,
         homeTeam: nextReport.match.homeTeam,
         awayTeam: nextReport.match.awayTeam,
@@ -1152,15 +1166,23 @@ export default function HomePage() {
         teamData,
         candidates: nextReport.betaRecommendation.candidates,
       });
+      setBetaStorageStatus(betaOutcome.storage);
     }
 
-    if (outcome.status === "duplicate") {
+    if (outcome.storage === "failed") {
+      setNotice("儲存失敗");
+    } else if (outcome.status === "duplicate") {
       setNotice("這場比賽已經儲存");
     } else {
       setNotice("儲存成功");
     }
 
-    refreshHistory();
+    await refreshHistory();
+  }
+
+  function handleExportP0() {
+    downloadP0ExportBundle();
+    setNotice("已匯出 LocalStorage P0 JSON 檔");
   }
 
   function handleClearAll() {
@@ -1176,7 +1198,7 @@ export default function HomePage() {
     clearPersistedHistory();
     clearAllBetaRecommendations();
     setNotice("已清除所有測試資料");
-    refreshHistory();
+    void refreshHistory();
   }
 
   const explain = report ? explainAnalysis(report) : null;
@@ -1192,9 +1214,23 @@ export default function HomePage() {
         </header>
 
         <section className="mb-8 space-y-4">
+          <StorageStatusBanner
+            matchStatus={matchStorageStatus}
+            betaStatus={betaStorageStatus}
+          />
+          <p className="text-center text-xs text-slate-500">
+            正式儲存模式：Supabase 優先（LocalStorage 僅作 fallback）
+          </p>
           <StatsSection stats={stats} />
           <BetaDashboardSection stats={betaStats} rollingReport={rollingReport} />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleExportP0}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              匯出 LocalStorage
+            </button>
             <button
               type="button"
               onClick={handleClearAll}

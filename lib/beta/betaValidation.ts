@@ -50,20 +50,21 @@ function settleBetaRecord(
   };
 }
 
-export function settleBetaRecommendationsForMatch(
+export async function settleBetaRecommendationsForMatch(
   matchRecordId: string,
   input: UpdateMatchResultInput
-): BetaRecommendationRecord[] {
+): Promise<BetaRecommendationRecord[]> {
   const matchResult = buildMatchResult(input);
   const pending = getBetaRecommendationsByMatch(matchRecordId).filter(
     (item) => item.status === "PENDING"
   );
 
-  const settled = pending.map((record) => {
+  const settled: BetaRecommendationRecord[] = [];
+  for (const record of pending) {
     const updated = settleBetaRecord(record, matchResult);
-    updateBetaRecommendation(updated);
-    return updated;
-  });
+    await updateBetaRecommendation(updated);
+    settled.push(updated);
+  }
 
   return settled;
 }

@@ -1,58 +1,46 @@
 import type { AnalysisReport } from "@/lib/analysis/types";
-import { getBrowserHistoryRepository } from "@/lib/database/browserHistoryRepository";
+import {
+  clearMatchHistoryLocally,
+  loadMatchHistoryComposite,
+  saveMatchFromAnalysisComposite,
+  verifyMatchComposite,
+  type MatchRecordWriteResult,
+} from "@/lib/database/compositeMatchStorage";
 import type {
   HistoricalMatchRecord,
   MatchHistoryStats,
-  SaveMatchOutcome,
   UpdateMatchResultInput,
 } from "@/lib/database/matchSchema";
+import type { StorageHealth } from "@/lib/storage/storageStatus";
 
 /**
- * 瀏覽器端持久化：分析完成後寫入 LocalStorage。
+ * 瀏覽器端持久化：Supabase 優先，失敗才寫入 LocalStorage。
  */
-export function persistAnalysisToHistory(
+export async function persistAnalysisToHistory(
   rawOdds: string,
   report: AnalysisReport
-): SaveMatchOutcome {
-  const repository = getBrowserHistoryRepository();
-  const matchDate = resolveMatchDate(report);
-  return repository.saveMatchIfNew({
-    date: matchDate,
-    matchDate,
-    league: report.match.league ?? "",
-    homeTeam: report.match.homeTeam,
-    awayTeam: report.match.awayTeam,
-    rawOdds,
-    marketSelections: report.markets,
-    analysis: report,
-    candidates: report.candidates,
-    status: "PENDING",
-  });
+): Promise<MatchRecordWriteResult> {
+  return saveMatchFromAnalysisComposite(rawOdds, report);
 }
 
-export function loadPersistedHistory(): {
+export async function loadPersistedHistory(): Promise<{
   matches: HistoricalMatchRecord[];
   stats: MatchHistoryStats;
-} {
-  const repository = getBrowserHistoryRepository();
-  return {
-    matches: repository.getAllMatches(),
-    stats: repository.getStats(),
-  };
+  storage: StorageHealth;
+}> {
+  return loadMatchHistoryComposite();
 }
 
-export function verifyPersistedMatch(
+export async function verifyPersistedMatch(
   matchId: string,
   input: UpdateMatchResultInput
-): HistoricalMatchRecord | null {
-  const repository = getBrowserHistoryRepository();
-  return repository.verifyMatch(matchId, input);
+): Promise<{
+  record: HistoricalMatchRecord | null;
+  storage: StorageHealth;
+}> {
+  return verifyMatchComposite(matchId, input);
 }
 
 export function clearPersistedHistory(): void {
-  getBrowserHistoryRepository().clearAll();
-}
-
-function resolveMatchDate(report: AnalysisReport): string {
-  return new Date().toISOString().split("T")[0];
+  clearMatchHistoryLocally();
 }

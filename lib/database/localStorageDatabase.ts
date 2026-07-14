@@ -79,3 +79,24 @@ export class LocalStorageMatchDatabase implements MatchDatabase {
 export function createLocalStorageMatchDatabase(): MatchDatabase {
   return new LocalStorageMatchDatabase();
 }
+
+export function readLocalMatchRecords(): HistoricalMatchRecord[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const raw = window.localStorage.getItem(MATCH_STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as HistoricalMatchRecord[];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.map((record) => normalizeHistoricalMatchRecord(record));
+  } catch {
+    return [];
+  }
+}

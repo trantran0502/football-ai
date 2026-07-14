@@ -12,9 +12,11 @@
     "test:beta": "tsx scripts/test-beta-recommendation.ts",
     "test:analyze": "tsx scripts/test-analyze-match.ts",
     "test:persistence": "tsx scripts/test-localstorage-persistence.ts",
-    "test:partial-markets": "tsx scripts/test-partial-markets.ts"
+    "test:partial-markets": "tsx scripts/test-partial-markets.ts",
+    "import:p0": "tsx scripts/import-p0-to-supabase.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.4",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -27,6 +29,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
+    "tsx": "^4.19.4",
     "typescript": "^5"
   }
 }
