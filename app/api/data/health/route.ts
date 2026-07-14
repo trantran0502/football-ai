@@ -1,16 +1,26 @@
-import { NextResponse } from "next/server";
+import { verifyAdminApiKey } from "@/lib/security/adminAuth";
+import { publicHealthResponse } from "@/lib/security/securityResponse";
 import { getSupabaseHealthSnapshot } from "@/lib/supabase/health";
+import { NextResponse } from "next/server";
 
-export async function GET() {
-  const health = await getSupabaseHealthSnapshot();
-  const httpStatus = health.connected ? 200 : 503;
+export async function GET(request: Request) {
+  if (!verifyAdminApiKey(request)) {
+    return publicHealthResponse();
+  }
 
-  return NextResponse.json(
-    {
-      ok: health.connected,
-      httpStatus,
-      supabase: health,
-    },
-    { status: httpStatus }
-  );
+  try {
+    const health = await getSupabaseHealthSnapshot();
+    const httpStatus = health.connected ? 200 : 503;
+
+    return NextResponse.json(
+      {
+        ok: health.connected,
+        httpStatus,
+        supabase: health,
+      },
+      { status: httpStatus }
+    );
+  } catch {
+    return NextResponse.json({ ok: false }, { status: 503 });
+  }
 }

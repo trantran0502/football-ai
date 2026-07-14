@@ -5,6 +5,12 @@
 export const FEATURE_WEIGHTS = {
   homeAdvantage: 1,
   recentForm: 1,
+  leagueStrength: 1,
+  goalsXg: 1,
+  scoringPattern: 1,
+  h2h: 0.5,
+  squadAvailability: 0.7,
+  matchContext: 0.55,
   marketOdds: 1,
   handicapSupport: 1,
   totalGoalsSupport: 1,

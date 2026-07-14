@@ -48,6 +48,7 @@ import {
   type RollingEvaluationReport,
 } from "@/lib/beta";
 import { StorageStatusBanner } from "@/app/components/StorageStatusBanner";
+import { RecommendationSectionView } from "@/app/components/RecommendationSection";
 import type { StorageHealth } from "@/lib/storage/storageStatus";
 
 const MARKET_TYPE_LABELS: Record<MarketSelection["marketType"], string> = {
@@ -321,7 +322,7 @@ function BetaCandidatesSection({
 
   if (!beta.enabled) {
     return (
-      <DataCard title="4. Beta 推薦">
+      <DataCard title="5. Beta 推薦">
         <p className="text-sm text-slate-500">
           Beta 推薦模式未啟用。請設定{" "}
           <code className="rounded bg-slate-200 px-1 text-xs">
@@ -334,7 +335,7 @@ function BetaCandidatesSection({
 
   if (beta.candidates.length === 0) {
     return (
-      <DataCard title="4. Beta 推薦">
+      <DataCard title="5. Beta 推薦">
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {beta.message || BETA_EMPTY_MESSAGE}
         </p>
@@ -343,7 +344,7 @@ function BetaCandidatesSection({
   }
 
   return (
-    <DataCard title="4. Beta 推薦">
+    <DataCard title="5. Beta 推薦">
       <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
         {BETA_DISCLAIMER}
       </p>
@@ -1040,6 +1041,10 @@ function AnalysisReportView({ report }: { report: AnalysisReport }) {
       <ParsedMarketsSection markets={report.markets} />
       <InterpretationsSection interpretations={report.interpretations} />
       <CrossMarketSection validation={report.crossMarketValidation} />
+      <RecommendationSectionView
+        recommendation={report.recommendation}
+        decision={report.decision}
+      />
       <BetaCandidatesSection report={report} />
       <UnknownMarketsSection match={report.match} />
     </div>

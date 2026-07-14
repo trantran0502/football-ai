@@ -8,9 +8,15 @@ import type {
   CombinedAnalysis,
   MarketAnalysis,
   MarketInterpretation,
+  RecommendationSection,
 } from "@/lib/analysis/types";
 import type { BacktestEngineResult } from "@/lib/backtest/types";
 import type { RuleValidationReport } from "@/lib/rules/validation/types";
+import type { RecommendationValidationResult } from "@/lib/validation/validationTypes";
+import type { ReplaySnapshot } from "@/lib/replay/replayTypes";
+import type { BettingIntelligenceResult } from "@/lib/betting/intelligenceTypes";
+import type { DecisionResult } from "@/lib/decision/decisionTypes";
+import { buildReplaySnapshotFromReport } from "@/lib/replay/replayBuilder";
 import type { MarketSelection } from "@/types/match";
 
 /** 歷史比賽唯一識別 */
@@ -32,6 +38,10 @@ export interface AnalysisSnapshot {
   marketAnalysis: MarketAnalysis;
   combinedAnalysis: CombinedAnalysis;
   candidates: AnalysisCandidate[];
+  recommendation: RecommendationSection | null;
+  replay: ReplaySnapshot | null;
+  bettingIntelligence: BettingIntelligenceResult | null;
+  decision: DecisionResult | null;
   capturedAt: string;
 }
 
@@ -54,6 +64,7 @@ export interface MatchVerificationResult {
   verifiedAt: string;
   backtest: BacktestEngineResult;
   ruleValidation: RuleValidationReport;
+  recommendationValidation: RecommendationValidationResult;
 }
 
 export interface HistoricalMatchRecord {
@@ -120,15 +131,21 @@ export function createAnalysisSnapshot(
     marketAnalysis: analysis.marketAnalysis,
     combinedAnalysis: analysis.combinedAnalysis,
     candidates: analysis.candidates,
+    recommendation: null,
+    replay: null,
+    bettingIntelligence: null,
+    decision: null,
     capturedAt,
   };
 }
 
 export function createAnalysisSnapshotFromReport(
   report: AnalysisReport,
-  capturedAt: string = new Date().toISOString()
+  capturedAt: string = new Date().toISOString(),
+  matchId?: string,
+  matchDate?: string
 ): AnalysisSnapshot {
-  return {
+  const base: AnalysisSnapshot = {
     features: buildAnalysisFeatures(report.markets),
     interpretations: report.interpretations,
     marketAnalysis: {
@@ -140,7 +157,24 @@ export function createAnalysisSnapshotFromReport(
       reason: NO_RULE_IMPLEMENTED,
     },
     candidates: report.candidates,
+    recommendation: report.recommendation,
+    replay: null,
+    bettingIntelligence: report.bettingIntelligence ?? null,
+    decision: report.decision ?? null,
     capturedAt,
+  };
+
+  if (!matchId) {
+    return base;
+  }
+
+  return {
+    ...base,
+    replay: buildReplaySnapshotFromReport(report, {
+      matchId,
+      capturedAt,
+      matchDate,
+    }),
   };
 }
 
@@ -155,6 +189,15 @@ export function normalizeHistoricalMatchRecord(
     rawOdds: record.rawOdds ?? "",
     candidates:
       record.candidates ?? record.analysisSnapshot?.candidates ?? [],
+    analysisSnapshot: record.analysisSnapshot
+      ? {
+          ...record.analysisSnapshot,
+          recommendation: record.analysisSnapshot.recommendation ?? null,
+          replay: record.analysisSnapshot.replay ?? null,
+          bettingIntelligence: record.analysisSnapshot.bettingIntelligence ?? null,
+          decision: record.analysisSnapshot.decision ?? null,
+        }
+      : null,
     status: record.status ?? (record.result ? "VERIFIED" : "PENDING"),
     verificationResult: record.verificationResult ?? null,
   };

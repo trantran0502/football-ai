@@ -1,5 +1,4 @@
 import type { AnalysisReport } from "@/lib/analysis/types";
-import { getBrowserHistoryRepository } from "@/lib/database/browserHistoryRepository";
 import type {
   HistoricalMatchRecord,
   MatchHistoryStats,
@@ -7,13 +6,9 @@ import type {
   SaveMatchOutcome,
   UpdateMatchResultInput,
 } from "@/lib/database/matchSchema";
+import { getBrowserHistoryRepository } from "@/lib/database/browserHistoryRepository";
 import type { StorageHealth } from "@/lib/storage/storageStatus";
 import { STORAGE_POLICY } from "@/lib/storage/storageStatus";
-import {
-  createMatchRecordViaApi,
-  listMatchRecordsViaApi,
-  verifyMatchRecordViaApi,
-} from "@/lib/database/supabaseMatchApi";
 
 export type MatchRecordWriteResult = SaveMatchOutcome & {
   storage: StorageHealth;
@@ -34,6 +29,10 @@ function assertSupabaseFirstPolicy(): void {
   if (STORAGE_POLICY !== "supabase-first") {
     throw new Error(`Unsupported storage policy: ${STORAGE_POLICY}`);
   }
+}
+
+function isBrowserClient(): boolean {
+  return typeof window !== "undefined";
 }
 
 function saveMatchIfNewLocally(input: SaveMatchInput): SaveMatchOutcome {
@@ -58,14 +57,21 @@ function verifyMatchLocally(
   return getBrowserHistoryRepository().verifyMatch(matchId, input);
 }
 
+/**
+ * Browser clients persist locally only (RC2).
+ * Protected Supabase writes must go through admin-authenticated API routes or server jobs.
+ */
 export async function saveMatchFromAnalysisComposite(
   rawOdds: string,
   report: AnalysisReport
 ): Promise<MatchRecordWriteResult> {
   assertSupabaseFirstPolicy();
-  const remote = await createMatchRecordViaApi({ rawOdds, report });
-  if (remote) {
-    return remote;
+
+  if (!isBrowserClient()) {
+    const { saveMatchFromAnalysisServerSide } = await import(
+      "@/lib/database/serverMatchStorage"
+    );
+    return saveMatchFromAnalysisServerSide(rawOdds, report);
   }
 
   const matchDate = new Date().toISOString().split("T")[0];
@@ -90,13 +96,10 @@ export async function saveMatchFromAnalysisComposite(
 
 export async function loadMatchHistoryComposite(): Promise<MatchHistoryLoadResult> {
   assertSupabaseFirstPolicy();
-  const remote = await listMatchRecordsViaApi();
-  if (remote) {
-    return {
-      matches: remote.matches,
-      stats: remote.stats,
-      storage: "supabase",
-    };
+
+  if (!isBrowserClient()) {
+    const { loadMatchHistoryServerSide } = await import("@/lib/database/serverMatchStorage");
+    return loadMatchHistoryServerSide();
   }
 
   const local = loadMatchHistoryLocally();
@@ -111,25 +114,16 @@ export async function verifyMatchComposite(
   input: UpdateMatchResultInput
 ): Promise<MatchRecordVerifyResult> {
   assertSupabaseFirstPolicy();
-  const remote = await verifyMatchRecordViaApi({ id: matchId, ...input });
-  if (remote?.record) {
-    return {
-      record: remote.record,
-      storage: "supabase",
-    };
+
+  if (!isBrowserClient()) {
+    const { verifyMatchServerSide } = await import("@/lib/database/serverMatchStorage");
+    return verifyMatchServerSide(matchId, input);
   }
 
   const localRecord = verifyMatchLocally(matchId, input);
-  if (localRecord) {
-    return {
-      record: localRecord,
-      storage: "local",
-    };
-  }
-
   return {
-    record: null,
-    storage: "failed",
+    record: localRecord,
+    storage: localRecord ? "local" : "failed",
   };
 }
 

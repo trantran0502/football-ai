@@ -7,13 +7,6 @@ import {
   saveRollingReportLocal,
   updateBetaRecommendationLocal,
 } from "@/lib/beta/betaLocalStorage";
-import {
-  createBetaRecommendationsViaApi,
-  createRollingReportViaApi,
-  listBetaRecommendationsViaApi,
-  listRollingReportsViaApi,
-  updateBetaRecommendationViaApi,
-} from "@/lib/beta/supabaseBetaApi";
 import type {
   BetaCandidate,
   BetaRecommendationRecord,
@@ -26,12 +19,12 @@ import type { MarketSelection } from "@/types/match";
 
 let recommendationsCache: BetaRecommendationRecord[] | null = null;
 let rollingReportsCache: RollingEvaluationReport[] | null = null;
-let lastBetaReadStatus: StorageHealth = "supabase";
+let lastBetaReadStatus: StorageHealth = "local";
 
 export function resetBetaStorageCacheForTests(): void {
   recommendationsCache = null;
   rollingReportsCache = null;
-  lastBetaReadStatus = "supabase";
+  lastBetaReadStatus = "local";
 }
 
 export function getLastBetaReadStatus(): StorageHealth {
@@ -44,22 +37,30 @@ function assertSupabaseFirstPolicy(): void {
   }
 }
 
-export async function reloadBetaStorageCache(): Promise<StorageHealth> {
-  assertSupabaseFirstPolicy();
-  const remoteRecommendations = await listBetaRecommendationsViaApi();
+function isBrowserClient(): boolean {
+  return typeof window !== "undefined";
+}
 
-  if (remoteRecommendations !== null) {
-    recommendationsCache = remoteRecommendations;
-    const remoteReports = await listRollingReportsViaApi();
-    rollingReportsCache = remoteReports ?? readLocalRollingReports();
-    lastBetaReadStatus = "supabase";
-    return lastBetaReadStatus;
-  }
-
+function reloadLocalBetaCache(): StorageHealth {
   recommendationsCache = readLocalBetaRecommendations();
   rollingReportsCache = readLocalRollingReports();
   lastBetaReadStatus = "local";
   return lastBetaReadStatus;
+}
+
+export async function reloadBetaStorageCache(): Promise<StorageHealth> {
+  assertSupabaseFirstPolicy();
+
+  if (!isBrowserClient()) {
+    const { reloadBetaStorageCacheServerSide } = await import(
+      "@/lib/beta/serverBetaStorage"
+    );
+    const status = await reloadBetaStorageCacheServerSide();
+    lastBetaReadStatus = status;
+    return status;
+  }
+
+  return reloadLocalBetaCache();
 }
 
 function getCachedRecommendations(): BetaRecommendationRecord[] {
@@ -83,13 +84,14 @@ export async function saveBetaRecommendationsComposite(input: {
   assertSupabaseFirstPolicy();
   const created = buildBetaRecommendationRecords(input);
   if (created.length === 0) {
-    return { records: [], storage: "supabase" };
+    return { records: [], storage: "local" };
   }
 
-  const remote = await createBetaRecommendationsViaApi(created);
-  if (remote) {
-    await reloadBetaStorageCache();
-    return { records: remote, storage: "supabase" };
+  if (!isBrowserClient()) {
+    const { saveBetaRecommendationsServerSide } = await import(
+      "@/lib/beta/serverBetaStorage"
+    );
+    return saveBetaRecommendationsServerSide(created);
   }
 
   saveBetaRecommendationsLocal(input);
@@ -101,11 +103,12 @@ export async function updateBetaRecommendationComposite(
   record: BetaRecommendationRecord
 ): Promise<StorageHealth> {
   assertSupabaseFirstPolicy();
-  const remote = await updateBetaRecommendationViaApi(record);
 
-  if (remote) {
-    await reloadBetaStorageCache();
-    return "supabase";
+  if (!isBrowserClient()) {
+    const { updateBetaRecommendationServerSide } = await import(
+      "@/lib/beta/serverBetaStorage"
+    );
+    return updateBetaRecommendationServerSide(record);
   }
 
   updateBetaRecommendationLocal(record);
@@ -117,11 +120,10 @@ export async function saveRollingReportComposite(
   report: RollingEvaluationReport
 ): Promise<StorageHealth> {
   assertSupabaseFirstPolicy();
-  const remote = await createRollingReportViaApi(report);
 
-  if (remote) {
-    await reloadBetaStorageCache();
-    return "supabase";
+  if (!isBrowserClient()) {
+    const { saveRollingReportServerSide } = await import("@/lib/beta/serverBetaStorage");
+    return saveRollingReportServerSide(report);
   }
 
   saveRollingReportLocal(report);

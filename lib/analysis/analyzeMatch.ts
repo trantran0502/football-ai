@@ -2,6 +2,9 @@ import {
   generateBetaRecommendation,
   generateCandidates,
 } from "@/lib/analysis/candidateGenerator";
+import { runFeatureRecommendationPipeline } from "@/lib/analysis/featureRecommendationPipeline";
+import { buildBettingIntelligence } from "@/lib/betting/intelligenceEngine";
+import { buildDecision } from "@/lib/decision/decisionEngine";
 import { isBetaRecommendationModeEnabled } from "@/lib/beta/config";
 import { interpretMarkets } from "@/lib/analysis/marketInterpreter";
 import { buildAnalysisFeatures } from "@/lib/analysis/featureBuilder";
@@ -12,7 +15,7 @@ import { normalizeMarketSelections } from "@/lib/parser/normalizeMarketSelection
 
 /**
  * 端到端分析流程：
- * 貼上盤口 → Parser → normalize → Analysis Engine → Candidate Generator → AnalysisReport
+ * 貼上盤口 → Parser → normalize → Analysis Engine → Feature Fusion → Recommendation → AnalysisReport
  */
 export function analyzeMatch(rawText: string): AnalysisReport {
   const match = parseOdds(rawText);
@@ -28,6 +31,24 @@ export function analyzeMatch(rawText: string): AnalysisReport {
     validation,
     markets
   );
+  const { section: recommendation } = runFeatureRecommendationPipeline(
+    {
+      ...match,
+      marketSelections: markets,
+    },
+    markets
+  );
+  const bettingIntelligence = buildBettingIntelligence({
+    marketSelections: markets,
+    oddsHistory: { timelines: [] },
+    fusion: recommendation.fusion,
+  });
+  const decision = buildDecision({
+    fusion: recommendation.fusion,
+    bettingIntelligence,
+    recommendationCandidates: recommendation.result?.candidates ?? [],
+    recommendationResult: recommendation.result,
+  });
 
   return {
     match: {
@@ -43,6 +64,9 @@ export function analyzeMatch(rawText: string): AnalysisReport {
       candidates: betaRecommendation.candidates,
       message: betaRecommendation.message,
     },
+    recommendation,
+    bettingIntelligence,
+    decision,
   };
 }
 

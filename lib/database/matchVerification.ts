@@ -1,10 +1,15 @@
 import { runBacktest } from "@/lib/backtest/backtestEngine";
+import { validateDecisionOnRecord } from "@/lib/decision/decisionValidation";
 import type { BacktestMatch } from "@/lib/backtest/types";
 import type {
   HistoricalMatchRecord,
   MatchVerificationResult,
 } from "@/lib/database/matchSchema";
 import { runRuleValidation } from "@/lib/rules/validation/ruleValidator";
+import {
+  validateVerifiedMatch,
+  validateVerifiedMatchFromPipeline,
+} from "@/lib/validation/validationEngine";
 
 export function runMatchVerification(
   record: HistoricalMatchRecord,
@@ -28,10 +33,29 @@ export function runMatchVerification(
   const ruleValidation = runRuleValidation(allVerifiedMatches, {
     mode: "evaluate",
   });
+  const recommendationValidation = resolveRecommendationValidation({
+    ...record,
+    status: "VERIFIED",
+  });
 
   return {
     verifiedAt: new Date().toISOString(),
     backtest,
     ruleValidation,
+    recommendationValidation: {
+      ...recommendationValidation,
+      decisionEntry: validateDecisionOnRecord(record),
+    },
   };
+}
+
+function resolveRecommendationValidation(
+  record: HistoricalMatchRecord
+): MatchVerificationResult["recommendationValidation"] {
+  const storedRecommendation =
+    record.analysisSnapshot?.recommendation?.result ?? null;
+  if (storedRecommendation) {
+    return validateVerifiedMatch(record, storedRecommendation);
+  }
+  return validateVerifiedMatchFromPipeline(record);
 }

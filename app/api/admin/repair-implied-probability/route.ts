@@ -1,58 +1,40 @@
 import {
-  getAdminRepairKey,
-  verifyAdminRepairKey,
-} from "@/lib/admin/adminRepairAuth";
-import {
   runImpliedProbabilityRepairApply,
   runImpliedProbabilityRepairDryRun,
 } from "@/lib/admin/repairImpliedProbability";
-import { resolveErrorMessage } from "@/lib/supabase/apiResponse";
+import {
+  genericErrorResponse,
+  parseJsonBody,
+  requireAdminApiKeyAndRateLimit,
+  RATE_LIMIT_PRESETS,
+} from "@/lib/security";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-interface RepairRequestBody {
-  dryRun?: boolean;
-}
-
-function unauthorizedResponse() {
-  return NextResponse.json(
-    { ok: false, message: "Unauthorized." },
-    { status: 401 }
-  );
-}
-
-function missingConfigResponse(message: string, status = 503) {
-  return NextResponse.json({ ok: false, message }, { status });
-}
-
 export async function POST(request: Request) {
-  if (!getAdminRepairKey()) {
-    return missingConfigResponse("Missing ADMIN_REPAIR_KEY environment variable.");
-  }
-
-  if (!verifyAdminRepairKey(request)) {
-    return unauthorizedResponse();
+  const guardFailure = await requireAdminApiKeyAndRateLimit(
+    request,
+    RATE_LIMIT_PRESETS.adminRepair
+  );
+  if (guardFailure) {
+    return guardFailure;
   }
 
   if (!hasSupabaseEnv()) {
-    return missingConfigResponse(
-      "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY."
-    );
+    return genericErrorResponse(503);
   }
 
-  let body: RepairRequestBody;
-  try {
-    body = (await request.json()) as RepairRequestBody;
-  } catch {
-    return NextResponse.json(
-      { ok: false, message: "Invalid request body." },
-      { status: 400 }
-    );
+  const parsed = await parseJsonBody<Record<string, unknown>>(request, {
+    maxBytes: 4_096,
+    allowedKeys: ["dryRun"],
+  });
+  if (!parsed.ok) {
+    return parsed.response;
   }
 
-  const dryRun = body.dryRun !== false;
+  const dryRun = parsed.body.dryRun !== false;
 
   try {
     if (dryRun) {
@@ -76,10 +58,7 @@ export async function POST(request: Request) {
       pollutedRecordCountBefore: result.pollutedRecordCountBefore,
       pollutedRecordCountAfter: result.pollutedRecordCountAfter,
     });
-  } catch (error) {
-    return NextResponse.json(
-      { ok: false, message: resolveErrorMessage(error) },
-      { status: 500 }
-    );
+  } catch {
+    return genericErrorResponse();
   }
 }

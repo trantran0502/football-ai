@@ -1,54 +1,47 @@
-import { NextResponse } from "next/server";
+import {
+  genericErrorResponse,
+  isNonEmptyString,
+  parseJsonBody,
+  requireAdminApiKey,
+  requireAdminApiKeyAndRateLimit,
+  RATE_LIMIT_PRESETS,
+} from "@/lib/security";
 import { isFreeMode } from "@/lib/providers/free/config";
 import { fetchFreeTeamData } from "@/lib/providers/free/server/freeFootballService";
-import type { TeamDataRequest } from "@/lib/providers/free/types";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  const guardFailure = await requireAdminApiKeyAndRateLimit(
+    request,
+    RATE_LIMIT_PRESETS.teamData
+  );
+  if (guardFailure) {
+    return guardFailure;
+  }
+
   if (!isFreeMode()) {
-    return NextResponse.json(
-      {
-        ok: false,
-        data: null,
-        fromCache: false,
-        message: "目前僅支援 FOOTBALL_DATA_MODE=free。",
-      },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, message: "Bad request." }, { status: 400 });
   }
 
-  let body: TeamDataRequest;
-  try {
-    body = (await request.json()) as TeamDataRequest;
-  } catch {
-    return NextResponse.json(
-      {
-        ok: false,
-        data: null,
-        fromCache: false,
-        message: "Invalid request body.",
-      },
-      { status: 400 }
-    );
+  const parsed = await parseJsonBody<Record<string, unknown>>(request, {
+    maxBytes: 8_192,
+    allowedKeys: ["homeTeam", "awayTeam", "matchDate", "league"],
+  });
+  if (!parsed.ok) {
+    return parsed.response;
   }
 
-  if (!body.homeTeam?.trim() || !body.awayTeam?.trim()) {
-    return NextResponse.json(
-      {
-        ok: false,
-        data: null,
-        fromCache: false,
-        message: "homeTeam and awayTeam are required.",
-      },
-      { status: 400 }
-    );
+  const { homeTeam, awayTeam, matchDate, league } = parsed.body;
+  if (!isNonEmptyString(homeTeam) || !isNonEmptyString(awayTeam)) {
+    return NextResponse.json({ ok: false, message: "Bad request." }, { status: 400 });
   }
 
   try {
     const data = await fetchFreeTeamData({
-      homeTeam: body.homeTeam.trim(),
-      awayTeam: body.awayTeam.trim(),
-      matchDate: body.matchDate,
-      league: body.league,
+      homeTeam: homeTeam.trim(),
+      awayTeam: awayTeam.trim(),
+      matchDate: isNonEmptyString(matchDate) ? matchDate : undefined,
+      league: isNonEmptyString(league) ? league : undefined,
     });
 
     return NextResponse.json({
@@ -56,16 +49,7 @@ export async function POST(request: Request) {
       data,
       fromCache: false,
     });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        data: null,
-        fromCache: false,
-        message:
-          error instanceof Error ? error.message : "Failed to fetch team data.",
-      },
-      { status: 500 }
-    );
+  } catch {
+    return genericErrorResponse();
   }
 }

@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/cron/daily-analysis",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/admin/cron/result-update",
+      "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/admin/cron/daily-summary",
+      "schedule": "0 16 * * *"
+    }
+  ]
+}

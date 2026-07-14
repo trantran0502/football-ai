@@ -1,9 +1,6 @@
 import {
   buildFixtureCacheKey,
   getCachedTeamData,
-  saveApiUsage,
-  saveFinalScorePermanently,
-  setCachedTeamData,
 } from "@/lib/providers/free/providerCache";
 import type {
   TeamDataPackage,
@@ -11,6 +8,14 @@ import type {
   TeamDataResponse,
 } from "@/lib/providers/free/types";
 
+function isBrowserClient(): boolean {
+  return typeof window !== "undefined";
+}
+
+/**
+ * RC2: browser clients may only read local cache.
+ * Live team-data fetch requires admin-authenticated server route.
+ */
 export async function fetchTeamDataClient(
   request: TeamDataRequest
 ): Promise<TeamDataResponse> {
@@ -29,29 +34,17 @@ export async function fetchTeamDataClient(
     };
   }
 
-  const response = await fetch("/api/football/team-data", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(request),
-  });
-
-  const payload = (await response.json()) as TeamDataResponse;
-
-  if (payload.ok && payload.data) {
-    setCachedTeamData(cacheKey, payload.data);
-    saveApiUsage(payload.data.usage);
-
-    if (payload.data.finalScore && payload.data.fixture.fixtureId) {
-      saveFinalScorePermanently(
-        payload.data.fixture.fixtureId,
-        payload.data.finalScore
-      );
-    }
+  if (isBrowserClient()) {
+    return {
+      ok: false,
+      data: null,
+      fromCache: false,
+      message: "Team data API requires server-side access. Using local cache only.",
+    };
   }
 
-  return payload;
+  const { fetchTeamDataServerSide } = await import("@/lib/providers/free/server/fetchTeamDataServer");
+  return fetchTeamDataServerSide(request);
 }
 
 export function formatUnavailableField(field: string): string {

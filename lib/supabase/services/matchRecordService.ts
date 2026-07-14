@@ -12,6 +12,7 @@ import {
   type SaveMatchOutcome,
   type UpdateMatchResultInput,
 } from "@/lib/database/matchSchema";
+import { enrichRecordWithReplayValidation } from "@/lib/replay/replayBuilder";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import {
   assertSupabaseData,
@@ -101,12 +102,18 @@ export async function saveMatchIfNewInSupabase(
   }
 
   const now = new Date().toISOString();
-  const analysisSnapshot = resolveAnalysisSnapshot(input.analysis, now);
+  const matchId = input.id ?? generateHistoricalMatchId();
+  const analysisSnapshot = resolveAnalysisSnapshot(
+    input.analysis,
+    now,
+    matchId,
+    matchDate
+  );
   const candidates =
     input.candidates ?? analysisSnapshot?.candidates ?? [];
 
   const record = normalizeHistoricalMatchRecord({
-    id: input.id ?? generateHistoricalMatchId(),
+    id: matchId,
     date: matchDate,
     matchDate,
     league: input.league,
@@ -134,9 +141,12 @@ export async function saveMatchFromAnalysisInSupabase(
   report: AnalysisReport,
   matchDate: string = new Date().toISOString().split("T")[0]
 ): Promise<SaveMatchOutcome> {
-  const snapshot = createAnalysisSnapshotFromReport(report);
+  const id = generateHistoricalMatchId();
+  const capturedAt = new Date().toISOString();
+  const snapshot = createAnalysisSnapshotFromReport(report, capturedAt, id, matchDate);
 
   return saveMatchIfNewInSupabase({
+    id,
     date: matchDate,
     matchDate,
     league: report.match.league ?? "",
@@ -197,12 +207,14 @@ export async function verifyMatchInSupabase(
       withResult,
     ]);
 
-    const verified = normalizeHistoricalMatchRecord({
-      ...withResult,
-      status: "VERIFIED",
-      verificationResult,
-      updatedAt: new Date().toISOString(),
-    });
+    const verified = normalizeHistoricalMatchRecord(
+      enrichRecordWithReplayValidation({
+        ...withResult,
+        status: "VERIFIED",
+        verificationResult,
+        updatedAt: new Date().toISOString(),
+      })
+    );
 
     return updateMatchRecordInSupabase(verified);
   } catch {
@@ -218,7 +230,9 @@ export async function verifyMatchInSupabase(
 
 function resolveAnalysisSnapshot(
   analysis: SaveMatchInput["analysis"],
-  capturedAt: string
+  capturedAt: string,
+  matchId?: string,
+  matchDate?: string
 ) {
   if (analysis === undefined || analysis === null) {
     return null;
@@ -228,7 +242,7 @@ function resolveAnalysisSnapshot(
     "markets" in analysis &&
     "crossMarketValidation" in analysis
   ) {
-    return createAnalysisSnapshotFromReport(analysis, capturedAt);
+    return createAnalysisSnapshotFromReport(analysis, capturedAt, matchId, matchDate);
   }
   if (isAnalysisSnapshot(analysis)) {
     return analysis;

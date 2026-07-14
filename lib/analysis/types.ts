@@ -1,4 +1,8 @@
 import type { BetaCandidate } from "@/lib/beta/types";
+import type { BettingIntelligenceResult } from "@/lib/betting/intelligenceTypes";
+import type { DecisionResult } from "@/lib/decision/decisionTypes";
+import type { FeatureFusionResult } from "@/lib/analysis/featureScore/fusion/fusionTypes";
+import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import type {
   AsianModifier,
   MarketFamily,
@@ -141,6 +145,13 @@ export interface BetaRecommendationSection {
   message: string;
 }
 
+export interface RecommendationSection {
+  enabled: boolean;
+  fusion: FeatureFusionResult | null;
+  result: RecommendationEngineResult | null;
+  message: string;
+}
+
 /** 端到端分析報告 */
 export interface AnalysisReport {
   match: MatchData;
@@ -149,6 +160,9 @@ export interface AnalysisReport {
   crossMarketValidation: CrossMarketValidation;
   candidates: AnalysisCandidate[];
   betaRecommendation: BetaRecommendationSection;
+  recommendation: RecommendationSection;
+  bettingIntelligence: BettingIntelligenceResult | null;
+  decision: DecisionResult | null;
 }
 
 export type MarketSelectionInput = MarketSelection[];

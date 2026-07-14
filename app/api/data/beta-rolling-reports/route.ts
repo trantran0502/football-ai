@@ -1,23 +1,26 @@
 import {
-  dataApiError,
-  dataApiSuccess,
-  resolveErrorMessage,
-} from "@/lib/supabase/apiResponse";
+  genericErrorResponse,
+  isNonEmptyString,
+  isPlainObject,
+  parseJsonBody,
+  requireAdminApiKey,
+} from "@/lib/security";
+import type { RollingEvaluationReport } from "@/lib/beta/types";
+import { dataApiError, dataApiSuccess } from "@/lib/supabase/apiResponse";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { listBetaRollingReportsFromSupabase } from "@/lib/supabase/queries/betaRollingReports";
 import { insertRollingReportToSupabase } from "@/lib/supabase/services/betaRollingReportService";
-import type { RollingEvaluationReport } from "@/lib/beta/types";
 
-interface CreateRollingReportBody {
-  report?: RollingEvaluationReport;
-}
+const MAX_BODY_BYTES = 256_000;
 
 export async function GET(request: Request) {
+  const authFailure = requireAdminApiKey(request);
+  if (authFailure) {
+    return authFailure;
+  }
+
   if (!hasSupabaseEnv()) {
-    return dataApiError(
-      "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.",
-      503
-    );
+    return genericErrorResponse(503);
   }
 
   const { searchParams } = new URL(request.url);
@@ -29,34 +32,44 @@ export async function GET(request: Request) {
     });
 
     return dataApiSuccess(reports, { count: reports.length });
-  } catch (error) {
-    return dataApiError(resolveErrorMessage(error), 500);
+  } catch {
+    return genericErrorResponse();
   }
 }
 
 export async function POST(request: Request) {
-  if (!hasSupabaseEnv()) {
-    return dataApiError(
-      "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.",
-      503
-    );
+  const authFailure = requireAdminApiKey(request);
+  if (authFailure) {
+    return authFailure;
   }
 
-  let body: CreateRollingReportBody;
-  try {
-    body = (await request.json()) as CreateRollingReportBody;
-  } catch {
+  if (!hasSupabaseEnv()) {
+    return genericErrorResponse(503);
+  }
+
+  const parsed = await parseJsonBody<Record<string, unknown>>(request, {
+    maxBytes: MAX_BODY_BYTES,
+    allowedKeys: ["report"],
+  });
+  if (!parsed.ok) {
+    return parsed.response;
+  }
+
+  const report = parsed.body.report;
+  if (
+    !isPlainObject(report) ||
+    !isNonEmptyString(report.modelVersion) ||
+    !isNonEmptyString(report.evaluatedAt)
+  ) {
     return dataApiError("Invalid request body.", 400);
   }
 
-  if (!body.report?.modelVersion || !body.report.evaluatedAt) {
-    return dataApiError("report is required.", 400);
-  }
-
   try {
-    const saved = await insertRollingReportToSupabase(body.report);
+    const saved = await insertRollingReportToSupabase(
+      report as unknown as RollingEvaluationReport
+    );
     return dataApiSuccess(saved);
-  } catch (error) {
-    return dataApiError(resolveErrorMessage(error), 500);
+  } catch {
+    return genericErrorResponse();
   }
 }

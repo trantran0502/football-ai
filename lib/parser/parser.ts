@@ -271,7 +271,7 @@ function parseBttsBlock(lines: string[], start: number, title: string) {
 }
 
 function parseOddEvenBlock(lines: string[], start: number, title: string) {
-  let i = skipLabels(lines, start, ["單", "单", "雙", "双"]);
+  const i = skipLabels(lines, start, ["單", "单", "雙", "双"]);
   const odds = takeOddsValues(lines, i, 2);
   if (odds.values.length === 2) {
     return {
