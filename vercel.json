@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/admin/cron/result-update",
-      "schedule": "0 */2 * * *"
+      "schedule": "0 15 * * *"
     },
     {
       "path": "/api/admin/cron/daily-summary",
