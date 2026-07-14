@@ -1,0 +1,563 @@
+{
+  "id": "3389a0ed-1dd4-4b9c-b836-3d87d5d8efdd",
+  "date": "2026-07-14",
+  "matchDate": "2026-07-14",
+  "league": "",
+  "homeTeam": "M5測試-1784038752607 法國",
+  "awayTeam": "西班牙",
+  "rawOdds": "M5測試-1784038752607 法國 vs 西班牙\n獨贏\n主 2.1\n和 3.2\n客 3.5\n全場讓分\n主0 0.9\n客0 0.95\n全場大小\n大(2.5) 0.88\n小 0.98\n雙方進球\n是 0.75\n否 1.05",
+  "marketSelections": [
+    {
+      "line": null,
+      "odds": 2.1,
+      "side": "home",
+      "title": "獨贏",
+      "period": "full",
+      "rawLine": null,
+      "modifier": null,
+      "marketType": "moneyline",
+      "marketFamily": "moneyline",
+      "impliedProbability": 0.47619047619047616
+    },
+    {
+      "line": null,
+      "odds": 3.2,
+      "side": "draw",
+      "title": "獨贏",
+      "period": "full",
+      "rawLine": null,
+      "modifier": null,
+      "marketType": "moneyline",
+      "marketFamily": "moneyline",
+      "impliedProbability": 0.3125
+    },
+    {
+      "line": null,
+      "odds": 3.5,
+      "side": "away",
+      "title": "獨贏",
+      "period": "full",
+      "rawLine": null,
+      "modifier": null,
+      "marketType": "moneyline",
+      "marketFamily": "moneyline",
+      "impliedProbability": 0.2857142857142857
+    },
+    {
+      "line": 0,
+      "odds": 0.9,
+      "side": "home",
+      "title": "全場讓分",
+      "period": "full",
+      "rawLine": "0",
+      "handicap": 0,
+      "modifier": "plain",
+      "marketType": "handicap",
+      "marketFamily": "asianHandicap",
+      "boundarySettlement": "push",
+      "impliedProbability": 1.1111111111111112
+    },
+    {
+      "line": 0,
+      "odds": 0.95,
+      "side": "away",
+      "title": "全場讓分",
+      "period": "full",
+      "rawLine": "0",
+      "handicap": 0,
+      "modifier": "plain",
+      "marketType": "handicap",
+      "marketFamily": "asianHandicap",
+      "boundarySettlement": "push",
+      "impliedProbability": 1.0526315789473684
+    },
+    {
+      "line": 2.5,
+      "odds": 0.88,
+      "side": "over",
+      "title": "全場大小",
+      "period": "full",
+      "rawLine": "2.5",
+      "modifier": "half",
+      "marketType": "totalGoals",
+      "marketFamily": "asianOverUnder",
+      "boundarySettlement": "fullResult",
+      "impliedProbability": 1.1363636363636365
+    },
+    {
+      "line": 2.5,
+      "odds": 0.98,
+      "side": "under",
+      "title": "全場大小",
+      "period": "full",
+      "rawLine": "2.5",
+      "modifier": "half",
+      "marketType": "totalGoals",
+      "marketFamily": "asianOverUnder",
+      "boundarySettlement": "fullResult",
+      "impliedProbability": 1.0204081632653061
+    },
+    {
+      "line": null,
+      "odds": 0.75,
+      "side": "yes",
+      "title": "雙方進球",
+      "period": "full",
+      "rawLine": null,
+      "modifier": null,
+      "marketType": "btts",
+      "marketFamily": "btts",
+      "impliedProbability": 1.3333333333333333
+    },
+    {
+      "line": null,
+      "odds": 1.05,
+      "side": "no",
+      "title": "雙方進球",
+      "period": "full",
+      "rawLine": null,
+      "modifier": null,
+      "marketType": "btts",
+      "marketFamily": "btts",
+      "impliedProbability": 0.9523809523809523
+    }
+  ],
+  "result": {
+    "winner": "home",
+    "totalGoals": 3,
+    "bothTeamsScored": true,
+    "fullTimeAwayGoals": 1,
+    "fullTimeHomeGoals": 2,
+    "halfTimeAwayGoals": 0,
+    "halfTimeHomeGoals": 1
+  },
+  "analysisSnapshot": {
+    "features": [
+      {
+        "line": null,
+        "side": "home",
+        "title": "獨贏",
+        "period": "full",
+        "rawLine": null,
+        "handicap": null,
+        "marketId": "moneyline::獨贏::full",
+        "modifier": null,
+        "marketType": "moneyline",
+        "settlement": null,
+        "decimalOdds": 2.1,
+        "marketFamily": "moneyline",
+        "impliedProbability": 0.47619047619047616
+      },
+      {
+        "line": null,
+        "side": "draw",
+        "title": "獨贏",
+        "period": "full",
+        "rawLine": null,
+        "handicap": null,
+        "marketId": "moneyline::獨贏::full",
+        "modifier": null,
+        "marketType": "moneyline",
+        "settlement": null,
+        "decimalOdds": 3.2,
+        "marketFamily": "moneyline",
+        "impliedProbability": 0.3125
+      },
+      {
+        "line": null,
+        "side": "away",
+        "title": "獨贏",
+        "period": "full",
+        "rawLine": null,
+        "handicap": null,
+        "marketId": "moneyline::獨贏::full",
+        "modifier": null,
+        "marketType": "moneyline",
+        "settlement": null,
+        "decimalOdds": 3.5,
+        "marketFamily": "moneyline",
+        "impliedProbability": 0.2857142857142857
+      },
+      {
+        "line": 0,
+        "side": "home",
+        "title": "全場讓分",
+        "period": "full",
+        "rawLine": "0",
+        "handicap": 0,
+        "marketId": "handicap::全場讓分::full",
+        "modifier": "plain",
+        "marketType": "handicap",
+        "settlement": "push",
+        "decimalOdds": 0.9,
+        "marketFamily": "asianHandicap",
+        "impliedProbability": 1.1111111111111112
+      },
+      {
+        "line": 0,
+        "side": "away",
+        "title": "全場讓分",
+        "period": "full",
+        "rawLine": "0",
+        "handicap": 0,
+        "marketId": "handicap::全場讓分::full",
+        "modifier": "plain",
+        "marketType": "handicap",
+        "settlement": "push",
+        "decimalOdds": 0.95,
+        "marketFamily": "asianHandicap",
+        "impliedProbability": 1.0526315789473684
+      },
+      {
+        "line": 2.5,
+        "side": "over",
+        "title": "全場大小",
+        "period": "full",
+        "rawLine": "2.5",
+        "handicap": null,
+        "marketId": "totalGoals::全場大小::full",
+        "modifier": "half",
+        "marketType": "totalGoals",
+        "settlement": "fullResult",
+        "decimalOdds": 0.88,
+        "marketFamily": "asianOverUnder",
+        "impliedProbability": 1.1363636363636365
+      },
+      {
+        "line": 2.5,
+        "side": "under",
+        "title": "全場大小",
+        "period": "full",
+        "rawLine": "2.5",
+        "handicap": null,
+        "marketId": "totalGoals::全場大小::full",
+        "modifier": "half",
+        "marketType": "totalGoals",
+        "settlement": "fullResult",
+        "decimalOdds": 0.98,
+        "marketFamily": "asianOverUnder",
+        "impliedProbability": 1.0204081632653061
+      },
+      {
+        "line": null,
+        "side": "yes",
+        "title": "雙方進球",
+        "period": "full",
+        "rawLine": null,
+        "handicap": null,
+        "marketId": "btts::雙方進球::full",
+        "modifier": null,
+        "marketType": "btts",
+        "settlement": null,
+        "decimalOdds": 0.75,
+        "marketFamily": "btts",
+        "impliedProbability": 1.3333333333333333
+      },
+      {
+        "line": null,
+        "side": "no",
+        "title": "雙方進球",
+        "period": "full",
+        "rawLine": null,
+        "handicap": null,
+        "marketId": "btts::雙方進球::full",
+        "modifier": null,
+        "marketType": "btts",
+        "settlement": null,
+        "decimalOdds": 1.05,
+        "marketFamily": "btts",
+        "impliedProbability": 0.9523809523809523
+      }
+    ],
+    "candidates": [],
+    "capturedAt": "2026-07-14T14:19:13.253Z",
+    "marketAnalysis": {
+      "reason": "No rule implemented.",
+      "status": "notImplemented"
+    },
+    "interpretations": [
+      {
+        "kind": "moneyline",
+        "title": "獨贏",
+        "period": "full",
+        "marketId": "moneyline::獨贏::full",
+        "strength": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "marketType": "moneyline",
+        "probabilities": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "expectedWinner": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        }
+      },
+      {
+        "kind": "handicap",
+        "line": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "title": "全場讓分",
+        "period": "full",
+        "marketId": "handicap::全場讓分::full",
+        "strength": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "marketType": "handicap",
+        "favoredSide": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "expectedMargin": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        }
+      },
+      {
+        "kind": "totalGoals",
+        "lean": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "line": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "title": "全場大小",
+        "period": "full",
+        "marketId": "totalGoals::全場大小::full",
+        "marketType": "totalGoals",
+        "expectedGoals": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        }
+      },
+      {
+        "kind": "btts",
+        "title": "雙方進球",
+        "period": "full",
+        "marketId": "btts::雙方進球::full",
+        "marketType": "btts",
+        "noProbability": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "yesProbability": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "bothTeamsLikely": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        }
+      }
+    ],
+    "combinedAnalysis": {
+      "reason": "No rule implemented.",
+      "status": "notImplemented"
+    }
+  },
+  "candidates": [],
+  "status": "VERIFIED",
+  "verificationResult": {
+    "backtest": {
+      "entries": [],
+      "statistics": {
+        "roi": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "winRate": 0,
+        "halfWins": 0,
+        "halfLoses": 0,
+        "totalBets": 0,
+        "averageOdds": 0,
+        "totalProfit": 0,
+        "totalMatches": 1,
+        "averageConfidence": 0
+      }
+    },
+    "verifiedAt": "2026-07-14T14:19:14.345Z",
+    "ruleValidation": {
+      "mode": "evaluate",
+      "rules": [
+        {
+          "examples": [
+            {
+              "passed": false,
+              "reason": "Rule outcome evaluator not implemented.",
+              "evidence": {
+                "date": "2026-07-14",
+                "matchId": "94471c38-fab8-41a2-973c-57ff767dbf1a",
+                "awayTeam": "西班牙",
+                "homeTeam": "M5測試-1784038723399 法國",
+                "ruleOutput": {
+                  "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。",
+                  "strength": "weak",
+                  "consistent": true
+                },
+                "matchResult": {
+                  "winner": "home",
+                  "totalGoals": 3,
+                  "bothTeamsScored": true,
+                  "fullTimeAwayGoals": 1,
+                  "fullTimeHomeGoals": 2,
+                  "halfTimeAwayGoals": 0,
+                  "halfTimeHomeGoals": 1
+                }
+              },
+              "ruleName": "MoneylineHandicapRule"
+            },
+            {
+              "passed": false,
+              "reason": "Rule outcome evaluator not implemented.",
+              "evidence": {
+                "date": "2026-07-14",
+                "matchId": "317a7251-d972-49d2-8055-d47d8d0adae8",
+                "awayTeam": "西班牙",
+                "homeTeam": "M5測試-1784038734593 法國",
+                "ruleOutput": {
+                  "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。",
+                  "strength": "weak",
+                  "consistent": true
+                },
+                "matchResult": {
+                  "winner": "home",
+                  "totalGoals": 3,
+                  "bothTeamsScored": true,
+                  "fullTimeAwayGoals": 1,
+                  "fullTimeHomeGoals": 2,
+                  "halfTimeAwayGoals": 0,
+                  "halfTimeHomeGoals": 1
+                }
+              },
+              "ruleName": "MoneylineHandicapRule"
+            },
+            {
+              "passed": false,
+              "reason": "Rule outcome evaluator not implemented.",
+              "evidence": {
+                "date": "2026-07-14",
+                "matchId": "3389a0ed-1dd4-4b9c-b836-3d87d5d8efdd",
+                "awayTeam": "西班牙",
+                "homeTeam": "M5測試-1784038752607 法國",
+                "ruleOutput": {
+                  "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。",
+                  "strength": "weak",
+                  "consistent": true
+                },
+                "matchResult": {
+                  "winner": "home",
+                  "totalGoals": 3,
+                  "bothTeamsScored": true,
+                  "fullTimeAwayGoals": 1,
+                  "fullTimeHomeGoals": 2,
+                  "halfTimeAwayGoals": 0,
+                  "halfTimeHomeGoals": 1
+                }
+              },
+              "ruleName": "MoneylineHandicapRule"
+            }
+          ],
+          "passRate": 0,
+          "ruleName": "MoneylineHandicapRule",
+          "failCount": 3,
+          "passCount": 0,
+          "sampleSize": 3
+        },
+        {
+          "examples": [
+            {
+              "passed": false,
+              "reason": "Rule outcome evaluator not implemented.",
+              "evidence": {
+                "date": "2026-07-14",
+                "matchId": "94471c38-fab8-41a2-973c-57ff767dbf1a",
+                "awayTeam": "西班牙",
+                "homeTeam": "M5測試-1784038723399 法國",
+                "ruleOutput": {
+                  "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。",
+                  "strength": "weak",
+                  "consistent": true
+                },
+                "matchResult": {
+                  "winner": "home",
+                  "totalGoals": 3,
+                  "bothTeamsScored": true,
+                  "fullTimeAwayGoals": 1,
+                  "fullTimeHomeGoals": 2,
+                  "halfTimeAwayGoals": 0,
+                  "halfTimeHomeGoals": 1
+                }
+              },
+              "ruleName": "HandicapTotalGoalsRule"
+            },
+            {
+              "passed": false,
+              "reason": "Rule outcome evaluator not implemented.",
+              "evidence": {
+                "date": "2026-07-14",
+                "matchId": "317a7251-d972-49d2-8055-d47d8d0adae8",
+                "awayTeam": "西班牙",
+                "homeTeam": "M5測試-1784038734593 法國",
+                "ruleOutput": {
+                  "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。",
+                  "strength": "weak",
+                  "consistent": true
+                },
+                "matchResult": {
+                  "winner": "home",
+                  "totalGoals": 3,
+                  "bothTeamsScored": true,
+                  "fullTimeAwayGoals": 1,
+                  "fullTimeHomeGoals": 2,
+                  "halfTimeAwayGoals": 0,
+                  "halfTimeHomeGoals": 1
+                }
+              },
+              "ruleName": "HandicapTotalGoalsRule"
+            },
+            {
+              "passed": false,
+              "reason": "Rule outcome evaluator not implemented.",
+              "evidence": {
+                "date": "2026-07-14",
+                "matchId": "3389a0ed-1dd4-4b9c-b836-3d87d5d8efdd",
+                "awayTeam": "西班牙",
+                "homeTeam": "M5測試-1784038752607 法國",
+                "ruleOutput": {
+                  "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。",
+                  "strength": "weak",
+                  "consistent": true
+                },
+                "matchResult": {
+                  "winner": "home",
+                  "totalGoals": 3,
+                  "bothTeamsScored": true,
+                  "fullTimeAwayGoals": 1,
+                  "fullTimeHomeGoals": 2,
+                  "halfTimeAwayGoals": 0,
+                  "halfTimeHomeGoals": 1
+                }
+              },
+              "ruleName": "HandicapTotalGoalsRule"
+            }
+          ],
+          "passRate": 0,
+          "ruleName": "HandicapTotalGoalsRule",
+          "failCount": 3,
+          "passCount": 0,
+          "sampleSize": 3
+        }
+      ],
+      "validatedAt": "2026-07-14T14:19:14.345Z"
+    }
+  },
+  "createdAt": "2026-07-14T14:19:13.511+00:00",
+  "updatedAt": "2026-07-14T14:19:14.345+00:00"
+}

@@ -35,7 +35,7 @@
             "odds": 0.75,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.333333
+            "impliedProbability": 0.571429
           },
           {
             "marketType": "handicap",
@@ -49,7 +49,7 @@
             "odds": 0.95,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.052632
+            "impliedProbability": 0.512821
           },
           {
             "marketType": "handicap",
@@ -63,7 +63,7 @@
             "odds": 0.9,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "moneyline",
@@ -119,7 +119,7 @@
             "odds": 0.88,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.136364
+            "impliedProbability": 0.531915
           },
           {
             "marketType": "totalGoals",
@@ -133,7 +133,7 @@
             "odds": 0.98,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.020408
+            "impliedProbability": 0.505051
           }
         ]
       },
@@ -170,6 +170,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 4,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
@@ -177,6 +182,10 @@
           "handicapTotalGoals": {
             "status": "PASS",
             "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "Total Goals × BTTS 交叉規則尚未實作，僅標記為跳過。"
           }
         }
       },
@@ -216,7 +225,7 @@
             "odds": 0.75,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.333333
+            "impliedProbability": 0.571429
           },
           {
             "marketType": "handicap",
@@ -230,7 +239,7 @@
             "odds": 0.95,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.052632
+            "impliedProbability": 0.512821
           },
           {
             "marketType": "handicap",
@@ -244,7 +253,7 @@
             "odds": 0.9,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "moneyline",
@@ -300,7 +309,7 @@
             "odds": 0.88,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.136364
+            "impliedProbability": 0.531915
           },
           {
             "marketType": "totalGoals",
@@ -314,7 +323,7 @@
             "odds": 0.98,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.020408
+            "impliedProbability": 0.505051
           }
         ]
       },
@@ -351,6 +360,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 4,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "FAIL",
             "reason": "Moneyline 顯示主隊明顯熱門，但亞洲讓分未反映相同強度。"
@@ -358,6 +372,10 @@
           "handicapTotalGoals": {
             "status": "PASS",
             "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "Total Goals × BTTS 交叉規則尚未實作，僅標記為跳過。"
           }
         }
       },
@@ -425,7 +443,7 @@
             "odds": 0.82,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.219512
+            "impliedProbability": 0.549451
           },
           {
             "marketType": "moneyline",
@@ -481,7 +499,7 @@
             "odds": 0.9,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "totalGoals",
@@ -495,7 +513,7 @@
             "odds": 0.9,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           }
         ]
       },
@@ -532,6 +550,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 4,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
@@ -539,6 +562,10 @@
           "handicapTotalGoals": {
             "status": "PASS",
             "reason": "讓分平手，大小球 2 球，敘事大致一致。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "Total Goals × BTTS 交叉規則尚未實作，僅標記為跳過。"
           }
         }
       },
@@ -592,7 +619,7 @@
             "odds": 0.96,
             "handicap": -0.5,
             "label": null,
-            "impliedProbability": 1.041667
+            "impliedProbability": 0.510204
           },
           {
             "marketType": "handicap",
@@ -606,7 +633,7 @@
             "odds": 0.88,
             "handicap": -0.5,
             "label": null,
-            "impliedProbability": 1.136364
+            "impliedProbability": 0.531915
           },
           {
             "marketType": "moneyline",
@@ -662,7 +689,7 @@
             "odds": 0.92,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.086957
+            "impliedProbability": 0.520833
           },
           {
             "marketType": "totalGoals",
@@ -676,7 +703,7 @@
             "odds": 0.92,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.086957
+            "impliedProbability": 0.520833
           }
         ]
       },
@@ -713,6 +740,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 4,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Moneyline 顯示主隊熱門，亞洲讓分讓 0.5 球，強度大致一致。"
@@ -720,6 +752,10 @@
           "handicapTotalGoals": {
             "status": "PASS",
             "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "Total Goals × BTTS 交叉規則尚未實作，僅標記為跳過。"
           }
         }
       },
@@ -773,7 +809,7 @@
             "odds": 1,
             "handicap": -1.5,
             "label": null,
-            "impliedProbability": 1
+            "impliedProbability": 0.5
           },
           {
             "marketType": "handicap",
@@ -787,7 +823,7 @@
             "odds": 0.85,
             "handicap": -1.5,
             "label": null,
-            "impliedProbability": 1.176471
+            "impliedProbability": 0.540541
           },
           {
             "marketType": "moneyline",
@@ -843,7 +879,7 @@
             "odds": 0.9,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "totalGoals",
@@ -857,7 +893,7 @@
             "odds": 0.95,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.052632
+            "impliedProbability": 0.512821
           }
         ]
       },
@@ -894,6 +930,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 4,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
@@ -901,6 +942,10 @@
           "handicapTotalGoals": {
             "status": "FAIL",
             "reason": "讓分深，但總進球預期偏低。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "Total Goals × BTTS 交叉規則尚未實作，僅標記為跳過。"
           }
         }
       },
@@ -954,7 +999,7 @@
             "odds": 0.98,
             "handicap": -1,
             "label": null,
-            "impliedProbability": 1.020408
+            "impliedProbability": 0.505051
           },
           {
             "marketType": "handicap",
@@ -968,7 +1013,7 @@
             "odds": 0.88,
             "handicap": -1,
             "label": null,
-            "impliedProbability": 1.136364
+            "impliedProbability": 0.531915
           },
           {
             "marketType": "moneyline",
@@ -1024,7 +1069,7 @@
             "odds": 0.86,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.162791
+            "impliedProbability": 0.537634
           },
           {
             "marketType": "totalGoals",
@@ -1038,7 +1083,7 @@
             "odds": 0.96,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.041667
+            "impliedProbability": 0.510204
           }
         ]
       },
@@ -1075,6 +1120,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 4,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
@@ -1082,6 +1132,10 @@
           "handicapTotalGoals": {
             "status": "PASS",
             "reason": "主讓 1 球，大小球 3 球，讓分與進球敘事一致。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "Total Goals × BTTS 交叉規則尚未實作，僅標記為跳過。"
           }
         }
       },
@@ -1135,7 +1189,7 @@
             "odds": 0.94,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.06383
+            "impliedProbability": 0.515464
           },
           {
             "marketType": "handicap",
@@ -1149,7 +1203,7 @@
             "odds": 0.92,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.086957
+            "impliedProbability": 0.520833
           },
           {
             "marketType": "moneyline",
@@ -1205,7 +1259,7 @@
             "odds": 0.87,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.149425
+            "impliedProbability": 0.534759
           },
           {
             "marketType": "totalGoals",
@@ -1219,7 +1273,7 @@
             "odds": 0.97,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.030928
+            "impliedProbability": 0.507614
           }
         ]
       },
@@ -1256,6 +1310,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 4,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
@@ -1263,6 +1322,10 @@
           "handicapTotalGoals": {
             "status": "PASS",
             "reason": "讓分平手，大小球 2 球，敘事大致一致。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "Total Goals × BTTS 交叉規則尚未實作，僅標記為跳過。"
           }
         }
       },
@@ -1316,7 +1379,7 @@
             "odds": 0.95,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.052632
+            "impliedProbability": 0.512821
           },
           {
             "marketType": "handicap",
@@ -1330,7 +1393,7 @@
             "odds": 0.9,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "moneyline",
@@ -1386,7 +1449,7 @@
             "odds": 0.95,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.052632
+            "impliedProbability": 0.512821
           },
           {
             "marketType": "totalGoals",
@@ -1400,7 +1463,7 @@
             "odds": 0.85,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.176471
+            "impliedProbability": 0.540541
           }
         ]
       },
@@ -1437,6 +1500,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 4,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
@@ -1444,6 +1512,10 @@
           "handicapTotalGoals": {
             "status": "FAIL",
             "reason": "讓分平手，但大小球盤口偏高，敘事不一致。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "Total Goals × BTTS 交叉規則尚未實作，僅標記為跳過。"
           }
         }
       },
@@ -1483,7 +1555,7 @@
             "odds": 0.81,
             "handicap": null,
             "label": "主",
-            "impliedProbability": 1.234568
+            "impliedProbability": 0.552486
           },
           {
             "marketType": "firstGoal",
@@ -1525,7 +1597,7 @@
             "odds": 0.62,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.612903
+            "impliedProbability": 0.617284
           },
           {
             "marketType": "handicap",
@@ -1553,7 +1625,7 @@
             "odds": 0.39,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 2.564103
+            "impliedProbability": 0.719424
           },
           {
             "marketType": "handicap",
@@ -1581,7 +1653,7 @@
             "odds": 0.72,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.388889
+            "impliedProbability": 0.581395
           },
           {
             "marketType": "lastGoal",
@@ -1595,7 +1667,7 @@
             "odds": 0.9,
             "handicap": null,
             "label": "客",
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "lastGoal",
@@ -1721,7 +1793,7 @@
             "odds": 0.77,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.298701
+            "impliedProbability": 0.564972
           },
           {
             "marketType": "teamGoals",
@@ -1763,7 +1835,7 @@
             "odds": 0.7,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.428571
+            "impliedProbability": 0.588235
           },
           {
             "marketType": "totalGoals",
@@ -1777,7 +1849,7 @@
             "odds": 0.9,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "totalGoals",
@@ -1791,7 +1863,7 @@
             "odds": 0.95,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.052632
+            "impliedProbability": 0.512821
           }
         ]
       },
@@ -1863,13 +1935,22 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 0,
+          "skippedRules": 3,
+          "status": "INSUFFICIENT",
+          "availableMarkets": 2,
+          "coverageLabel": "不足",
           "moneylineHandicap": {
             "status": "SKIPPED",
-            "reason": "缺少 Moneyline 或 Handicap 市場，無法執行 Rule 1。"
+            "reason": "缺少 Handicap 市場，無法執行 Rule 1（Moneyline × Handicap）。"
           },
           "handicapTotalGoals": {
             "status": "SKIPPED",
-            "reason": "缺少 Handicap 或 Total Goals 市場，無法執行 Rule 2。"
+            "reason": "缺少 Handicap、Total Goals 市場，無法執行 Rule 2（Handicap × Total Goals）。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "缺少 Total Goals、BTTS 市場，無法執行 Rule 3（Total Goals × BTTS）。"
           }
         }
       },
@@ -1895,7 +1976,7 @@
             "odds": 0.6,
             "handicap": null,
             "label": "和或客",
-            "impliedProbability": 1.666667
+            "impliedProbability": 0.625
           },
           {
             "marketType": "doubleChance",
@@ -1909,7 +1990,7 @@
             "odds": 0.35,
             "handicap": null,
             "label": "主或客",
-            "impliedProbability": 2.857143
+            "impliedProbability": 0.740741
           },
           {
             "marketType": "doubleChance",
@@ -1923,7 +2004,7 @@
             "odds": 0.35,
             "handicap": null,
             "label": "主或和",
-            "impliedProbability": 2.857143
+            "impliedProbability": 0.740741
           },
           {
             "marketType": "halfTimeFullTime",
@@ -2072,13 +2153,22 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 0,
+          "skippedRules": 3,
+          "status": "INSUFFICIENT",
+          "availableMarkets": 0,
+          "coverageLabel": "不足",
           "moneylineHandicap": {
             "status": "SKIPPED",
-            "reason": "缺少 Moneyline 或 Handicap 市場，無法執行 Rule 1。"
+            "reason": "缺少 Moneyline、Handicap 市場，無法執行 Rule 1（Moneyline × Handicap）。"
           },
           "handicapTotalGoals": {
             "status": "SKIPPED",
-            "reason": "缺少 Handicap 或 Total Goals 市場，無法執行 Rule 2。"
+            "reason": "缺少 Handicap、Total Goals 市場，無法執行 Rule 2（Handicap × Total Goals）。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "缺少 Total Goals、BTTS 市場，無法執行 Rule 3（Total Goals × BTTS）。"
           }
         }
       },
@@ -2104,7 +2194,7 @@
             "odds": 0.98,
             "handicap": -0.5,
             "label": null,
-            "impliedProbability": 1.020408
+            "impliedProbability": 0.505051
           },
           {
             "marketType": "handicap",
@@ -2118,7 +2208,7 @@
             "odds": 0.9,
             "handicap": -0.5,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "moneyline",
@@ -2174,7 +2264,7 @@
             "odds": 0.9,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.111111
+            "impliedProbability": 0.526316
           },
           {
             "marketType": "totalGoals",
@@ -2188,7 +2278,7 @@
             "odds": 0.94,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.06383
+            "impliedProbability": 0.515464
           }
         ]
       },
@@ -2218,6 +2308,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 3,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Moneyline 顯示主隊熱門，亞洲讓分讓 0.5 球，強度大致一致。"
@@ -2225,6 +2320,10 @@
           "handicapTotalGoals": {
             "status": "PASS",
             "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "缺少 BTTS 市場，無法執行 Rule 3（Total Goals × BTTS）。"
           }
         }
       },
@@ -2264,7 +2363,7 @@
             "odds": 0.84,
             "handicap": 0,
             "label": null,
-            "impliedProbability": 1.190476
+            "impliedProbability": 0.543478
           },
           {
             "marketType": "moneyline",
@@ -2320,7 +2419,7 @@
             "odds": 0.91,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.098901
+            "impliedProbability": 0.52356
           },
           {
             "marketType": "oddEven",
@@ -2334,7 +2433,7 @@
             "odds": 0.95,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.052632
+            "impliedProbability": 0.512821
           },
           {
             "marketType": "totalGoals",
@@ -2348,7 +2447,7 @@
             "odds": 0.91,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.098901
+            "impliedProbability": 0.52356
           },
           {
             "marketType": "totalGoals",
@@ -2362,7 +2461,7 @@
             "odds": 0.93,
             "handicap": null,
             "label": null,
-            "impliedProbability": 1.075269
+            "impliedProbability": 0.518135
           }
         ]
       },
@@ -2399,6 +2498,11 @@
           }
         ],
         "crossMarketValidation": {
+          "executedRules": 2,
+          "skippedRules": 1,
+          "status": "COMPLETE",
+          "availableMarkets": 3,
+          "coverageLabel": "完整",
           "moneylineHandicap": {
             "status": "PASS",
             "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
@@ -2406,6 +2510,10 @@
           "handicapTotalGoals": {
             "status": "PASS",
             "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          },
+          "totalGoalsBtts": {
+            "status": "SKIPPED",
+            "reason": "缺少 BTTS 市場，無法執行 Rule 3（Total Goals × BTTS）。"
           }
         }
       },

@@ -13,6 +13,12 @@
     "test:analyze": "tsx scripts/test-analyze-match.ts",
     "test:persistence": "tsx scripts/test-localstorage-persistence.ts",
     "test:partial-markets": "tsx scripts/test-partial-markets.ts",
+    "test:feature-score": "tsx scripts/test-feature-score-engine.ts",
+    "test:market-odds": "tsx scripts/test-market-odds-feature.ts",
+    "test:odds-knowledge": "tsx scripts/test-odds-knowledge.ts",
+    "check:supabase-odds": "tsx scripts/check-supabase-implied-probability.ts",
+    "repair:supabase-odds": "tsx scripts/repair-supabase-implied-probability.ts",
+    "test:repair-api": "tsx scripts/test-repair-api.ts",
     "import:p0": "tsx scripts/import-p0-to-supabase.ts"
   },
   "dependencies": {

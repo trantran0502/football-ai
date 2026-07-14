@@ -7,7 +7,7 @@ import {
   parseAsianMarketLine,
   type HandicapAnchorSide,
 } from "@/lib/parser/asianRules";
-import { europeanOddsToProbability } from "@/lib/analysis/oddsCalculator";
+import { convertRawOddsToImpliedProbability } from "@/lib/analysis/featureScore/oddsConversion";
 import {
   inferMarketPeriod,
   isFormalNonAsianMarket,
@@ -90,7 +90,8 @@ function enrichSelection(selection: MarketSelection): MarketSelection {
   return {
     ...base,
     boundarySettlement: resolveBoundarySettlement(base),
-    impliedProbability: europeanOddsToProbability(base.odds) ?? undefined,
+    impliedProbability:
+      convertRawOddsToImpliedProbability(base.odds) ?? undefined,
   };
 }
 
@@ -162,7 +163,8 @@ function rebuildAsianSelection(
   return {
     ...next,
     boundarySettlement: resolveBoundarySettlement(next),
-    impliedProbability: europeanOddsToProbability(next.odds) ?? undefined,
+    impliedProbability:
+      convertRawOddsToImpliedProbability(next.odds) ?? undefined,
   };
 }
 

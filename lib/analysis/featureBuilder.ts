@@ -1,4 +1,4 @@
-import { europeanOddsToProbability } from "@/lib/analysis/oddsCalculator";
+import { convertRawOddsToImpliedProbability } from "@/lib/analysis/featureScore/oddsConversion";
 import type {
   AnalysisFeature,
   MarketId,
@@ -11,13 +11,21 @@ export function buildMarketId(selection: MarketSelection): MarketId {
 }
 
 function resolveImpliedProbability(selection: MarketSelection): number {
+  const fromOdds = convertRawOddsToImpliedProbability(selection.odds);
+  if (fromOdds !== null) {
+    return fromOdds;
+  }
+
   if (
     selection.impliedProbability !== undefined &&
-    Number.isFinite(selection.impliedProbability)
+    Number.isFinite(selection.impliedProbability) &&
+    selection.impliedProbability >= 0 &&
+    selection.impliedProbability <= 1
   ) {
     return selection.impliedProbability;
   }
-  return europeanOddsToProbability(selection.odds) ?? 0;
+
+  return 0;
 }
 
 function resolveSettlement(

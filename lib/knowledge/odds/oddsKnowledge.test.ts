@@ -1,9 +1,10 @@
 import { calculateImpliedProbability } from "@/lib/knowledge/odds/impliedProbability";
-import {
-  convertOdds,
-  registerPlatformConverter,
-} from "@/lib/knowledge/odds/oddsConverter";
+import { convertOdds } from "@/lib/knowledge/odds/oddsConverter";
 import { normalizeMarket } from "@/lib/knowledge/odds/marketNormalizer";
+import {
+  convertRawOdds,
+  convertRawOddsToImpliedProbability,
+} from "@/lib/analysis/featureScore/oddsConversion";
 
 const EPSILON = 1e-9;
 
@@ -25,6 +26,15 @@ function assertLength(actual: number, expected: number, message: string): void {
   }
 }
 
+function assertProbabilityWithinRange(
+  probability: number,
+  message: string
+): void {
+  if (probability < 0 || probability > 1) {
+    throw new Error(`${message}: probability ${probability} out of range`);
+  }
+}
+
 function testConvertOdds(): void {
   const decimal = convertOdds({ platform: "decimal", value: 2.1 });
   assertTruthy(decimal, "decimal conversion should succeed");
@@ -34,50 +44,39 @@ function testConvertOdds(): void {
   assertTruthy(hongkong, "hongkong conversion should succeed");
   assertEqual(hongkong.decimal, 1.9, "hongkong odds");
 
-  const malayPositive = convertOdds({ platform: "malay", value: 0.85 });
-  assertTruthy(malayPositive, "malay positive conversion should succeed");
-  assertEqual(malayPositive.decimal, 1.85, "malay positive odds");
+  const hk070 = convertOdds({ platform: "hongkong", value: 0.7 });
+  assertTruthy(hk070, "0.7 conversion should succeed");
+  assertEqual(hk070.decimal, 1.7, "0.7 hongkong odds");
 
-  const malayNegative = convertOdds({ platform: "malay", value: -0.9 });
-  assertTruthy(malayNegative, "malay negative conversion should succeed");
-  assertEqual(malayNegative.decimal, 1 + 1 / 0.9, "malay negative odds");
+  const unifiedFromNegative = convertOdds({ platform: "malay", value: -0.9 });
+  if (unifiedFromNegative !== null) {
+    throw new Error("negative raw odds should return null under unified conversion");
+  }
 
-  const indonesianPositive = convertOdds({ platform: "indonesian", value: 0.75 });
-  assertTruthy(indonesianPositive, "indonesian positive conversion should succeed");
-  assertEqual(indonesianPositive.decimal, 1.75, "indonesian positive odds");
+  const unifiedAmerican = convertOdds({ platform: "american", value: 150 });
+  assertTruthy(unifiedAmerican, "large decimal-like value should convert");
+  assertEqual(unifiedAmerican.decimal, 150, "150 treated as decimal odds");
 
-  const indonesianNegative = convertOdds({ platform: "indonesian", value: -1.25 });
-  assertTruthy(indonesianNegative, "indonesian negative conversion should succeed");
-  assertEqual(indonesianNegative.decimal, 1 - 1 / -1.25, "indonesian negative odds");
-
-  const americanPositive = convertOdds({ platform: "american", value: 150 });
-  assertTruthy(americanPositive, "american positive conversion should succeed");
-  assertEqual(americanPositive.decimal, 2.5, "american positive odds");
-
-  const americanNegative = convertOdds({ platform: "american", value: -200 });
-  assertTruthy(americanNegative, "american negative conversion should succeed");
-  assertEqual(americanNegative.decimal, 1.5, "american negative odds");
-
-  const invalid = convertOdds({ platform: "decimal", value: 0.5 });
+  const invalid = convertOdds({ platform: "decimal", value: 0 });
   if (invalid !== null) {
-    throw new Error("invalid decimal odds should return null");
+    throw new Error("zero odds should return null");
   }
 
-  registerPlatformConverter("custom", (value) => value * 2);
-  const custom = convertOdds({ platform: "custom", value: 1.05 });
-  assertTruthy(custom, "custom platform conversion should succeed");
-  assertEqual(custom.decimal, 2.1, "custom platform odds");
-
-  const unknown = convertOdds({ platform: "unknown-platform", value: 2 });
-  if (unknown !== null) {
-    throw new Error("unknown platform should return null");
-  }
+  const unknown = convertOdds({ platform: "unknown-platform", value: 2.1 });
+  assertTruthy(unknown, "platform label is ignored; numeric rules still apply");
+  assertEqual(unknown.decimal, 2.1, "unknown platform uses unified numeric conversion");
 }
 
 function testCalculateImpliedProbability(): void {
   const probability = calculateImpliedProbability(2);
   assertTruthy(probability, "probability should be calculated");
   assertEqual(probability, 0.5, "implied probability for odds 2");
+  assertProbabilityWithinRange(probability, "decimal implied probability");
+
+  const hkProbability = convertRawOddsToImpliedProbability(0.88);
+  assertTruthy(hkProbability, "HK probability should be calculated");
+  assertEqual(hkProbability, 1 / 1.88, "0.88 HK implied probability");
+  assertProbabilityWithinRange(hkProbability, "HK implied probability");
 
   const invalid = calculateImpliedProbability(0);
   if (invalid !== null) {
@@ -88,6 +87,13 @@ function testCalculateImpliedProbability(): void {
   if (negative !== null) {
     throw new Error("negative odds should return null probability");
   }
+
+  const rawConverted = convertRawOdds(0.95);
+  assertTruthy(rawConverted, "0.95 should convert");
+  assertProbabilityWithinRange(
+    rawConverted.impliedProbability,
+    "convertRawOdds implied probability"
+  );
 }
 
 function testNormalizeMoneyline(): void {
@@ -113,7 +119,8 @@ function testNormalizeMoneyline(): void {
   assertTruthy(draw, "draw selection");
   assertEqual(draw.decimalOdds, 3.2, "draw decimal odds");
   assertTruthy(away, "away selection");
-  assertEqual(away.decimalOdds, 2.5, "away decimal odds from hongkong");
+  assertEqual(away.decimalOdds, 1.5, "away decimal odds (>= 1.01 stays decimal)");
+  assertEqual(away.impliedProbability, 1 / 1.5, "away implied probability");
 }
 
 function testNormalizeHandicap(): void {
@@ -135,6 +142,7 @@ function testNormalizeHandicap(): void {
   if (home.line !== null) {
     throw new Error("non-numeric handicap line should keep numeric null");
   }
+  assertProbabilityWithinRange(home.impliedProbability, "handicap home probability");
 }
 
 function testNormalizeOverUnder(): void {
@@ -186,11 +194,11 @@ function testNormalizeBtts(): void {
 function testNormalizeBttsSkipsInvalidOdds(): void {
   const market = normalizeMarket({
     kind: "btts",
-    yes: { platform: "decimal", value: 0.75 },
+    yes: { platform: "decimal", value: 0 },
     no: { platform: "decimal", value: 1.05 },
   });
 
-  assertLength(market.selections.length, 1, "invalid decimal odds should be skipped");
+  assertLength(market.selections.length, 1, "invalid zero odds should be skipped");
   if (market.selections[0]?.side !== "no") {
     throw new Error("only valid no selection should remain");
   }

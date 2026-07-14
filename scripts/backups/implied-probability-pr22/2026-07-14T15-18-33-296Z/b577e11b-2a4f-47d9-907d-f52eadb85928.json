@@ -1,0 +1,214 @@
+{
+  "id": "b577e11b-2a4f-47d9-907d-f52eadb85928",
+  "date": "2026-07-14",
+  "matchDate": "2026-07-14",
+  "league": "",
+  "homeTeam": "奧魯羅",
+  "awayTeam": "拉巴斯準備",
+  "rawOdds": "奧魯羅[主]\n拉巴斯準備\ngrade\n2.350\n0.700\n2.500\n  \n0.5\n1.010\n0.790\n3-50\n大\n小\n0.870\n0.910\n單\n雙\n0.920\n0.940",
+  "marketSelections": [
+    {
+      "line": null,
+      "odds": 2.35,
+      "side": "home",
+      "title": "獨贏",
+      "period": "full",
+      "rawLine": null,
+      "modifier": null,
+      "marketType": "moneyline",
+      "marketFamily": "moneyline",
+      "impliedProbability": 0.425531914893617
+    },
+    {
+      "line": null,
+      "odds": 0.7,
+      "side": "draw",
+      "title": "獨贏",
+      "period": "full",
+      "rawLine": null,
+      "modifier": null,
+      "marketType": "moneyline",
+      "marketFamily": "moneyline",
+      "impliedProbability": 1.4285714285714286
+    },
+    {
+      "line": null,
+      "odds": 2.5,
+      "side": "away",
+      "title": "獨贏",
+      "period": "full",
+      "rawLine": null,
+      "modifier": null,
+      "marketType": "moneyline",
+      "marketFamily": "moneyline",
+      "impliedProbability": 0.4
+    },
+    {
+      "line": 0.5,
+      "odds": 1.01,
+      "side": "home",
+      "title": "亞洲讓分",
+      "period": "full",
+      "rawLine": "0.5",
+      "handicap": -0.5,
+      "modifier": "half",
+      "marketType": "handicap",
+      "marketFamily": "asianHandicap",
+      "boundarySettlement": "fullResult",
+      "impliedProbability": 0.9900990099009901
+    },
+    {
+      "line": 0.5,
+      "odds": 0.79,
+      "side": "away",
+      "title": "亞洲讓分",
+      "period": "full",
+      "rawLine": "0.5",
+      "handicap": -0.5,
+      "modifier": "half",
+      "marketType": "handicap",
+      "marketFamily": "asianHandicap",
+      "boundarySettlement": "fullResult",
+      "impliedProbability": 1.2658227848101264
+    }
+  ],
+  "result": null,
+  "analysisSnapshot": {
+    "features": [
+      {
+        "line": null,
+        "side": "home",
+        "title": "獨贏",
+        "period": "full",
+        "rawLine": null,
+        "handicap": null,
+        "marketId": "moneyline::獨贏::full",
+        "modifier": null,
+        "marketType": "moneyline",
+        "settlement": null,
+        "decimalOdds": 2.35,
+        "marketFamily": "moneyline",
+        "impliedProbability": 0.425531914893617
+      },
+      {
+        "line": null,
+        "side": "draw",
+        "title": "獨贏",
+        "period": "full",
+        "rawLine": null,
+        "handicap": null,
+        "marketId": "moneyline::獨贏::full",
+        "modifier": null,
+        "marketType": "moneyline",
+        "settlement": null,
+        "decimalOdds": 0.7,
+        "marketFamily": "moneyline",
+        "impliedProbability": 1.4285714285714286
+      },
+      {
+        "line": null,
+        "side": "away",
+        "title": "獨贏",
+        "period": "full",
+        "rawLine": null,
+        "handicap": null,
+        "marketId": "moneyline::獨贏::full",
+        "modifier": null,
+        "marketType": "moneyline",
+        "settlement": null,
+        "decimalOdds": 2.5,
+        "marketFamily": "moneyline",
+        "impliedProbability": 0.4
+      },
+      {
+        "line": 0.5,
+        "side": "home",
+        "title": "亞洲讓分",
+        "period": "full",
+        "rawLine": "0.5",
+        "handicap": -0.5,
+        "marketId": "handicap::亞洲讓分::full",
+        "modifier": "half",
+        "marketType": "handicap",
+        "settlement": "fullResult",
+        "decimalOdds": 1.01,
+        "marketFamily": "asianHandicap",
+        "impliedProbability": 0.9900990099009901
+      },
+      {
+        "line": 0.5,
+        "side": "away",
+        "title": "亞洲讓分",
+        "period": "full",
+        "rawLine": "0.5",
+        "handicap": -0.5,
+        "marketId": "handicap::亞洲讓分::full",
+        "modifier": "half",
+        "marketType": "handicap",
+        "settlement": "fullResult",
+        "decimalOdds": 0.79,
+        "marketFamily": "asianHandicap",
+        "impliedProbability": 1.2658227848101264
+      }
+    ],
+    "candidates": [],
+    "capturedAt": "2026-07-14T13:54:55.097Z",
+    "marketAnalysis": {
+      "reason": "No rule implemented.",
+      "status": "notImplemented"
+    },
+    "interpretations": [
+      {
+        "kind": "moneyline",
+        "title": "獨贏",
+        "period": "full",
+        "marketId": "moneyline::獨贏::full",
+        "strength": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "marketType": "moneyline",
+        "probabilities": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "expectedWinner": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        }
+      },
+      {
+        "kind": "handicap",
+        "line": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "title": "亞洲讓分",
+        "period": "full",
+        "marketId": "handicap::亞洲讓分::full",
+        "strength": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "marketType": "handicap",
+        "favoredSide": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        },
+        "expectedMargin": {
+          "reason": "No rule implemented.",
+          "status": "unknown"
+        }
+      }
+    ],
+    "combinedAnalysis": {
+      "reason": "No rule implemented.",
+      "status": "notImplemented"
+    }
+  },
+  "candidates": [],
+  "status": "PENDING",
+  "verificationResult": null,
+  "createdAt": "2026-07-14T13:54:56.065+00:00",
+  "updatedAt": "2026-07-14T13:54:56.065+00:00"
+}

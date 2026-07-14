@@ -1,16 +1,18 @@
+import {
+  convertRawOddsToImpliedProbability,
+} from "@/lib/analysis/featureScore/oddsConversion";
+
 /**
- * 將歐洲賠率轉換為隱含勝率。
- * 公式：probability = 1 / odds
+ * 將原始賠率轉換為隱含勝率（0～1）。
+ * 香港盤 (< 1.01)：decimalOdds = rawOdds + 1
+ * 十進位 (>= 1.01)：decimalOdds = rawOdds
  */
 export function europeanOddsToProbability(odds: number): number | null {
-  if (!Number.isFinite(odds) || odds <= 0) {
-    return null;
-  }
-  return 1 / odds;
+  return convertRawOddsToImpliedProbability(odds);
 }
 
 /**
- * 從文字中提取歐洲賠率（>= 1.01）。
+ * 從文字中提取十進位賠率（>= 1.01）。
  */
 export function extractEuropeanOdds(text: string): number[] {
   const matches = text.match(/\d+\.\d+/g);
