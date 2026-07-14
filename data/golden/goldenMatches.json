@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "matches": [
+    {
+      "id": "golden-001",
+      "league": "International",
+      "homeTeam": "法國",
+      "awayTeam": "西班牙",
+      "rawOdds": "法國 vs 西班牙\n獨贏\n主 2.1\n和 3.2\n客 3.5\n全場讓分\n主0 0.9\n客0 0.95\n全場大小\n大(2.5) 0.88\n小 0.98\n雙方進球\n是 0.75\n否 1.05",
+      "actualResult": {
+        "fullTimeHomeGoals": 2,
+        "fullTimeAwayGoals": 1,
+        "halfTimeHomeGoals": 1,
+        "halfTimeAwayGoals": 0,
+        "winner": "home",
+        "totalGoals": 3,
+        "bothTeamsScored": true
+      }
+    },
+    {
+      "id": "golden-002",
+      "league": "International",
+      "homeTeam": "法國",
+      "awayTeam": "西班牙",
+      "rawOdds": "法國 vs 西班牙\n獨贏\n主 1.55\n和 3.2\n客 3.5\n全場讓分\n主0 0.9\n客0 0.95\n全場大小\n大(2.5) 0.88\n小 0.98\n雙方進球\n是 0.75\n否 1.05",
+      "actualResult": {
+        "fullTimeHomeGoals": 1,
+        "fullTimeAwayGoals": 0,
+        "halfTimeHomeGoals": 1,
+        "halfTimeAwayGoals": 0,
+        "winner": "home",
+        "totalGoals": 1,
+        "bothTeamsScored": false
+      }
+    },
+    {
+      "id": "golden-003",
+      "league": "International",
+      "homeTeam": "德國",
+      "awayTeam": "意大利",
+      "rawOdds": "德國 vs 意大利\n獨贏\n主 1.95\n和 3.4\n客 4.2\n全場讓分\n主0-50 0.82\n客0+50 1.02\n全場大小\n大(2) 0.9\n小 0.9\n雙方進球\n是 1.8\n否 2.0",
+      "actualResult": {
+        "fullTimeHomeGoals": 1,
+        "fullTimeAwayGoals": 1,
+        "halfTimeHomeGoals": 0,
+        "halfTimeAwayGoals": 1,
+        "winner": "draw",
+        "totalGoals": 2,
+        "bothTeamsScored": true
+      }
+    },
+    {
+      "id": "golden-004",
+      "league": "International",
+      "homeTeam": "巴西",
+      "awayTeam": "阿根廷",
+      "rawOdds": "巴西 vs 阿根廷\n獨贏\n主 2.4\n和 3.1\n客 2.9\n全場讓分\n主0.5 0.88\n客0.5 0.96\n全場大小\n大(2.5) 0.92\n小 0.92\n雙方進球\n是 1.7\n否 2.1",
+      "actualResult": {
+        "fullTimeHomeGoals": 0,
+        "fullTimeAwayGoals": 2,
+        "halfTimeHomeGoals": 0,
+        "halfTimeAwayGoals": 1,
+        "winner": "away",
+        "totalGoals": 2,
+        "bothTeamsScored": false
+      }
+    },
+    {
+      "id": "golden-005",
+      "league": "International",
+      "homeTeam": "英格蘭",
+      "awayTeam": "葡萄牙",
+      "rawOdds": "英格蘭 vs 葡萄牙\n獨贏\n主 1.8\n和 3.5\n客 4.0\n全場讓分\n主1.5 0.85\n客1.5 1.0\n全場大小\n大(2) 0.9\n小 0.95\n雙方進球\n是 1.6\n否 2.2",
+      "actualResult": {
+        "fullTimeHomeGoals": 3,
+        "fullTimeAwayGoals": 0,
+        "halfTimeHomeGoals": 2,
+        "halfTimeAwayGoals": 0,
+        "winner": "home",
+        "totalGoals": 3,
+        "bothTeamsScored": false
+      }
+    },
+    {
+      "id": "golden-006",
+      "league": "International",
+      "homeTeam": "荷蘭",
+      "awayTeam": "比利時",
+      "rawOdds": "荷蘭 vs 比利時\n獨贏\n主 1.7\n和 3.6\n客 4.5\n全場讓分\n主1 0.88\n客1 0.98\n全場大小\n大(3) 0.86\n小 0.96\n雙方進球\n是 1.55\n否 2.35",
+      "actualResult": {
+        "fullTimeHomeGoals": 2,
+        "fullTimeAwayGoals": 1,
+        "halfTimeHomeGoals": 1,
+        "halfTimeAwayGoals": 1,
+        "winner": "home",
+        "totalGoals": 3,
+        "bothTeamsScored": true
+      }
+    },
+    {
+      "id": "golden-007",
+      "league": "International",
+      "homeTeam": "日本",
+      "awayTeam": "韓國",
+      "rawOdds": "日本 vs 韓國\n獨贏\n主 2.3\n和 3.0\n客 3.2\n全場讓分\n主0 0.92\n客0 0.94\n全場大小\n大(2) 0.87\n小 0.97\n雙方進球\n是 1.9\n否 1.85",
+      "actualResult": {
+        "fullTimeHomeGoals": 1,
+        "fullTimeAwayGoals": 1,
+        "halfTimeHomeGoals": 0,
+        "halfTimeAwayGoals": 1,
+        "winner": "draw",
+        "totalGoals": 2,
+        "bothTeamsScored": true
+      }
+    },
+    {
+      "id": "golden-008",
+      "league": "International",
+      "homeTeam": "西班牙",
+      "awayTeam": "意大利",
+      "rawOdds": "西班牙 vs 意大利\n獨贏\n主 2.0\n和 3.3\n客 3.8\n全場讓分\n主0 0.9\n客0 0.95\n全場大小\n大(4) 0.95\n小 0.85\n雙方進球\n是 1.75\n否 2.0",
+      "actualResult": {
+        "fullTimeHomeGoals": 2,
+        "fullTimeAwayGoals": 2,
+        "halfTimeHomeGoals": 1,
+        "halfTimeAwayGoals": 0,
+        "winner": "draw",
+        "totalGoals": 4,
+        "bothTeamsScored": true
+      }
+    },
+    {
+      "id": "golden-009",
+      "league": "International",
+      "homeTeam": "法國",
+      "awayTeam": "西班牙",
+      "rawOdds": "法國 vs 西班牙\n獨贏\n主 2.1\n和 3.2\n客 3.5\n上半場獨贏與讓分\n主 2\n客 2.85\n和 1.04\n主0 0.72\n客0 1.18\n主 0.39\n客(0-50) 1.51\n主(0-50) 1.28\n客 0.62\n主隊進球數\n大(1-50) 0.77\n小 1.07\n客隊進球數\n大(0.5) 1.2\n小 0.7\n上半場罰牌大小\n大(2.5) 0.9\n小 0.95\n最先入球\n主 0.81\n客 1.11\n否 8.8\n最後入球\n主 1.2\n客 0.9\n否 7.5",
+      "actualResult": {
+        "fullTimeHomeGoals": 2,
+        "fullTimeAwayGoals": 1,
+        "halfTimeHomeGoals": 1,
+        "halfTimeAwayGoals": 0,
+        "winner": "home",
+        "totalGoals": 3,
+        "bothTeamsScored": true
+      }
+    },
+    {
+      "id": "golden-010",
+      "league": "International",
+      "homeTeam": "德國",
+      "awayTeam": "法國",
+      "rawOdds": "德國 vs 法國\n半全場\n主/主 2.95\n主/和 14\n主/客 25\n和/主 4.5\n和/和 4.2\n和/客 6\n客/主 22\n客/和 14\n客/客 4.7\n雙勝彩\n主或和 0.35\n和或客 0.6\n主或客 0.35",
+      "actualResult": {
+        "fullTimeHomeGoals": 1,
+        "fullTimeAwayGoals": 2,
+        "halfTimeHomeGoals": 0,
+        "halfTimeAwayGoals": 1,
+        "winner": "away",
+        "totalGoals": 3,
+        "bothTeamsScored": true
+      }
+    },
+    {
+      "id": "golden-011",
+      "league": "International",
+      "homeTeam": "阿根廷",
+      "awayTeam": "烏拉圭",
+      "rawOdds": "阿根廷 vs 烏拉圭\n獨贏\n主 1.65\n和 3.5\n客 5.0\n全場讓分\n主0.5 0.9\n客0.5 0.98\n全場大小\n大(2.5) 0.9\n小 0.94\n波膽\n1-0 7.5\n2-0 9.0\n2-1 8.5\n0-0 11\n1-1 6.5",
+      "actualResult": {
+        "fullTimeHomeGoals": 2,
+        "fullTimeAwayGoals": 0,
+        "halfTimeHomeGoals": 1,
+        "halfTimeAwayGoals": 0,
+        "winner": "home",
+        "totalGoals": 2,
+        "bothTeamsScored": false
+      }
+    },
+    {
+      "id": "golden-012",
+      "league": "International",
+      "homeTeam": "葡萄牙",
+      "awayTeam": "克羅地亞",
+      "rawOdds": "葡萄牙 vs 克羅地亞\n獨贏\n主 2.05\n和 3.25\n客 3.6\n全場讓分\n主0-50 0.84\n客0+50 1.04\n全場大小\n大(2.5) 0.91\n小 0.93\n單雙\n單 0.95\n雙 0.91",
+      "actualResult": {
+        "fullTimeHomeGoals": 1,
+        "fullTimeAwayGoals": 0,
+        "halfTimeHomeGoals": 0,
+        "halfTimeAwayGoals": 0,
+        "winner": "home",
+        "totalGoals": 1,
+        "bothTeamsScored": false
+      }
+    }
+  ]
+}

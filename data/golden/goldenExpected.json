@@ -1,0 +1,2415 @@
+{
+  "version": 1,
+  "expectations": {
+    "golden-001": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "法國",
+        "awayTeam": "西班牙",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "no",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.05,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.952381
+          },
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "yes",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 0.75,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.333333
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.95,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.052632
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.9,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.5,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.285714
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.3125
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.1,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.47619
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.88,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.136364
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.98,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.020408
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "btts",
+            "marketId": "btts::雙方進球::full",
+            "marketType": "btts",
+            "title": "雙方進球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
+          },
+          "handicapTotalGoals": {
+            "status": "PASS",
+            "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-002": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "法國",
+        "awayTeam": "西班牙",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "no",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.05,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.952381
+          },
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "yes",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 0.75,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.333333
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.95,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.052632
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.9,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.5,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.285714
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.3125
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.55,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.645161
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.88,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.136364
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.98,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.020408
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "btts",
+            "marketId": "btts::雙方進球::full",
+            "marketType": "btts",
+            "title": "雙方進球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "FAIL",
+            "reason": "Moneyline 顯示主隊明顯熱門，但亞洲讓分未反映相同強度。"
+          },
+          "handicapTotalGoals": {
+            "status": "PASS",
+            "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-003": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "德國",
+        "awayTeam": "意大利",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "no",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.5
+          },
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "yes",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.8,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.555556
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "0+50",
+            "line": 0,
+            "modifier": "plus50",
+            "odds": 1.02,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 0.980392
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "0-50",
+            "line": 0,
+            "modifier": "minus50",
+            "odds": 0.82,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.219512
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 4.2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.238095
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.4,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.294118
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.95,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.512821
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "2",
+            "line": 2,
+            "modifier": "plain",
+            "odds": 0.9,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "2",
+            "line": 2,
+            "modifier": "plain",
+            "odds": 0.9,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.111111
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "btts",
+            "marketId": "btts::雙方進球::full",
+            "marketType": "btts",
+            "title": "雙方進球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
+          },
+          "handicapTotalGoals": {
+            "status": "PASS",
+            "reason": "讓分平手，大小球 2 球，敘事大致一致。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-004": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "巴西",
+        "awayTeam": "阿根廷",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "no",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.1,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.47619
+          },
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "yes",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.7,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.588235
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "0.5",
+            "line": 0.5,
+            "modifier": "half",
+            "odds": 0.96,
+            "handicap": -0.5,
+            "label": null,
+            "impliedProbability": 1.041667
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "0.5",
+            "line": 0.5,
+            "modifier": "half",
+            "odds": 0.88,
+            "handicap": -0.5,
+            "label": null,
+            "impliedProbability": 1.136364
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.9,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.344828
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.1,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.322581
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.4,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.416667
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.92,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.086957
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.92,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.086957
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "btts",
+            "marketId": "btts::雙方進球::full",
+            "marketType": "btts",
+            "title": "雙方進球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Moneyline 顯示主隊熱門，亞洲讓分讓 0.5 球，強度大致一致。"
+          },
+          "handicapTotalGoals": {
+            "status": "PASS",
+            "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-005": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "英格蘭",
+        "awayTeam": "葡萄牙",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "no",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.454545
+          },
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "yes",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.6,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.625
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "1.5",
+            "line": 1.5,
+            "modifier": "half",
+            "odds": 1,
+            "handicap": -1.5,
+            "label": null,
+            "impliedProbability": 1
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "1.5",
+            "line": 1.5,
+            "modifier": "half",
+            "odds": 0.85,
+            "handicap": -1.5,
+            "label": null,
+            "impliedProbability": 1.176471
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 4,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.25
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.5,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.285714
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.8,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.555556
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "2",
+            "line": 2,
+            "modifier": "plain",
+            "odds": 0.9,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "2",
+            "line": 2,
+            "modifier": "plain",
+            "odds": 0.95,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.052632
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "btts",
+            "marketId": "btts::雙方進球::full",
+            "marketType": "btts",
+            "title": "雙方進球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
+          },
+          "handicapTotalGoals": {
+            "status": "FAIL",
+            "reason": "讓分深，但總進球預期偏低。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-006": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "荷蘭",
+        "awayTeam": "比利時",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "no",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.35,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.425532
+          },
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "yes",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.55,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.645161
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "1",
+            "line": 1,
+            "modifier": "plain",
+            "odds": 0.98,
+            "handicap": -1,
+            "label": null,
+            "impliedProbability": 1.020408
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "1",
+            "line": 1,
+            "modifier": "plain",
+            "odds": 0.88,
+            "handicap": -1,
+            "label": null,
+            "impliedProbability": 1.136364
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 4.5,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.222222
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.6,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.277778
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.7,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.588235
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "3",
+            "line": 3,
+            "modifier": "plain",
+            "odds": 0.86,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.162791
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "3",
+            "line": 3,
+            "modifier": "plain",
+            "odds": 0.96,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.041667
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "btts",
+            "marketId": "btts::雙方進球::full",
+            "marketType": "btts",
+            "title": "雙方進球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
+          },
+          "handicapTotalGoals": {
+            "status": "PASS",
+            "reason": "主讓 1 球，大小球 3 球，讓分與進球敘事一致。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-007": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "日本",
+        "awayTeam": "韓國",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "no",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.85,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.540541
+          },
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "yes",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.9,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.526316
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.94,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.06383
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.92,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.086957
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.3125
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.333333
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.3,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.434783
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "2",
+            "line": 2,
+            "modifier": "plain",
+            "odds": 0.87,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.149425
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "2",
+            "line": 2,
+            "modifier": "plain",
+            "odds": 0.97,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.030928
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "btts",
+            "marketId": "btts::雙方進球::full",
+            "marketType": "btts",
+            "title": "雙方進球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
+          },
+          "handicapTotalGoals": {
+            "status": "PASS",
+            "reason": "讓分平手，大小球 2 球，敘事大致一致。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-008": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "西班牙",
+        "awayTeam": "意大利",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "no",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.5
+          },
+          {
+            "marketType": "btts",
+            "marketFamily": "btts",
+            "title": "雙方進球",
+            "period": "full",
+            "side": "yes",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.75,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.571429
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.95,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.052632
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.9,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.8,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.263158
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.3,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.30303
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.5
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "4",
+            "line": 4,
+            "modifier": "plain",
+            "odds": 0.95,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.052632
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "4",
+            "line": 4,
+            "modifier": "plain",
+            "odds": 0.85,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.176471
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "btts",
+            "marketId": "btts::雙方進球::full",
+            "marketType": "btts",
+            "title": "雙方進球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
+          },
+          "handicapTotalGoals": {
+            "status": "FAIL",
+            "reason": "讓分平手，但大小球盤口偏高，敘事不一致。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-009": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "法國",
+        "awayTeam": "西班牙",
+        "marketCount": 24,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "firstGoal",
+            "marketFamily": "special",
+            "title": "最先入球",
+            "period": "full",
+            "side": "away",
+            "rawLine": "客",
+            "line": null,
+            "modifier": null,
+            "odds": 1.11,
+            "handicap": null,
+            "label": "客",
+            "impliedProbability": 0.900901
+          },
+          {
+            "marketType": "firstGoal",
+            "marketFamily": "special",
+            "title": "最先入球",
+            "period": "full",
+            "side": "home",
+            "rawLine": "主",
+            "line": null,
+            "modifier": null,
+            "odds": 0.81,
+            "handicap": null,
+            "label": "主",
+            "impliedProbability": 1.234568
+          },
+          {
+            "marketType": "firstGoal",
+            "marketFamily": "special",
+            "title": "最先入球",
+            "period": "full",
+            "side": "none",
+            "rawLine": "否",
+            "line": null,
+            "modifier": null,
+            "odds": 8.8,
+            "handicap": null,
+            "label": "否",
+            "impliedProbability": 0.113636
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "上半場讓分（0-50）",
+            "period": "half",
+            "side": "away",
+            "rawLine": "0-50",
+            "line": 0,
+            "modifier": "minus50",
+            "odds": 1.51,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 0.662252
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "上半場讓分（0-50）",
+            "period": "half",
+            "side": "away",
+            "rawLine": "0+50",
+            "line": 0,
+            "modifier": "plus50",
+            "odds": 0.62,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.612903
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "上半場讓分（0-50）",
+            "period": "half",
+            "side": "home",
+            "rawLine": "0-50",
+            "line": 0,
+            "modifier": "minus50",
+            "odds": 1.28,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 0.78125
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "上半場讓分（0-50）",
+            "period": "half",
+            "side": "home",
+            "rawLine": "0+50",
+            "line": 0,
+            "modifier": "plus50",
+            "odds": 0.39,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 2.564103
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "上半場讓分（0）",
+            "period": "half",
+            "side": "away",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 1.18,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 0.847458
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "上半場讓分（0）",
+            "period": "half",
+            "side": "home",
+            "rawLine": "0",
+            "line": 0,
+            "modifier": "plain",
+            "odds": 0.72,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.388889
+          },
+          {
+            "marketType": "lastGoal",
+            "marketFamily": "special",
+            "title": "最後入球",
+            "period": "full",
+            "side": "away",
+            "rawLine": "客",
+            "line": null,
+            "modifier": null,
+            "odds": 0.9,
+            "handicap": null,
+            "label": "客",
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "lastGoal",
+            "marketFamily": "special",
+            "title": "最後入球",
+            "period": "full",
+            "side": "home",
+            "rawLine": "主",
+            "line": null,
+            "modifier": null,
+            "odds": 1.2,
+            "handicap": null,
+            "label": "主",
+            "impliedProbability": 0.833333
+          },
+          {
+            "marketType": "lastGoal",
+            "marketFamily": "special",
+            "title": "最後入球",
+            "period": "full",
+            "side": "none",
+            "rawLine": "否",
+            "line": null,
+            "modifier": null,
+            "odds": 7.5,
+            "handicap": null,
+            "label": "否",
+            "impliedProbability": 0.133333
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "上半場獨贏",
+            "period": "half",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.85,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.350877
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "上半場獨贏",
+            "period": "half",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.04,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.961538
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "上半場獨贏",
+            "period": "half",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.5
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.5,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.285714
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.3125
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.1,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.47619
+          },
+          {
+            "marketType": "teamGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "主隊進球數",
+            "period": "full",
+            "side": "over",
+            "rawLine": "1-50",
+            "line": 1,
+            "modifier": "minus50",
+            "odds": 0.77,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.298701
+          },
+          {
+            "marketType": "teamGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "主隊進球數",
+            "period": "full",
+            "side": "under",
+            "rawLine": "1+50",
+            "line": 1,
+            "modifier": "plus50",
+            "odds": 1.07,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.934579
+          },
+          {
+            "marketType": "teamGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "客隊進球數",
+            "period": "full",
+            "side": "over",
+            "rawLine": "0.5",
+            "line": 0.5,
+            "modifier": "half",
+            "odds": 1.2,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.833333
+          },
+          {
+            "marketType": "teamGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "客隊進球數",
+            "period": "full",
+            "side": "under",
+            "rawLine": "0.5",
+            "line": 0.5,
+            "modifier": "half",
+            "odds": 0.7,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.428571
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "上半場罰牌大小",
+            "period": "half",
+            "side": "over",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.9,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "上半場罰牌大小",
+            "period": "half",
+            "side": "under",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.95,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.052632
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 9,
+        "interpretations": [
+          {
+            "kind": "generic",
+            "marketId": "firstGoal::最先入球::full",
+            "marketType": "firstGoal",
+            "title": "最先入球",
+            "period": "full"
+          },
+          {
+            "kind": "generic",
+            "marketId": "lastGoal::最後入球::full",
+            "marketType": "lastGoal",
+            "title": "最後入球",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::上半場讓分（0-50）::half",
+            "marketType": "handicap",
+            "title": "上半場讓分（0-50）",
+            "period": "half"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::上半場讓分（0）::half",
+            "marketType": "handicap",
+            "title": "上半場讓分（0）",
+            "period": "half"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::上半場獨贏::half",
+            "marketType": "moneyline",
+            "title": "上半場獨贏",
+            "period": "half"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "teamGoals::主隊進球數::full",
+            "marketType": "teamGoals",
+            "title": "主隊進球數",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "teamGoals::客隊進球數::full",
+            "marketType": "teamGoals",
+            "title": "客隊進球數",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::上半場罰牌大小::half",
+            "marketType": "totalGoals",
+            "title": "上半場罰牌大小",
+            "period": "half"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "SKIPPED",
+            "reason": "缺少 Moneyline 或 Handicap 市場，無法執行 Rule 1。"
+          },
+          "handicapTotalGoals": {
+            "status": "SKIPPED",
+            "reason": "缺少 Handicap 或 Total Goals 市場，無法執行 Rule 2。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-010": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "德國",
+        "awayTeam": "法國",
+        "marketCount": 12,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "doubleChance",
+            "marketFamily": "doubleChance",
+            "title": "雙勝彩",
+            "period": "full",
+            "side": "drawOrAway",
+            "rawLine": "和或客",
+            "line": null,
+            "modifier": null,
+            "odds": 0.6,
+            "handicap": null,
+            "label": "和或客",
+            "impliedProbability": 1.666667
+          },
+          {
+            "marketType": "doubleChance",
+            "marketFamily": "doubleChance",
+            "title": "雙勝彩",
+            "period": "full",
+            "side": "homeOrAway",
+            "rawLine": "主或客",
+            "line": null,
+            "modifier": null,
+            "odds": 0.35,
+            "handicap": null,
+            "label": "主或客",
+            "impliedProbability": 2.857143
+          },
+          {
+            "marketType": "doubleChance",
+            "marketFamily": "doubleChance",
+            "title": "雙勝彩",
+            "period": "full",
+            "side": "homeOrDraw",
+            "rawLine": "主或和",
+            "line": null,
+            "modifier": null,
+            "odds": 0.35,
+            "handicap": null,
+            "label": "主或和",
+            "impliedProbability": 2.857143
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "主/主",
+            "line": null,
+            "modifier": null,
+            "odds": 2.95,
+            "handicap": null,
+            "label": "主/主",
+            "impliedProbability": 0.338983
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "主/和",
+            "line": null,
+            "modifier": null,
+            "odds": 14,
+            "handicap": null,
+            "label": "主/和",
+            "impliedProbability": 0.071429
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "主/客",
+            "line": null,
+            "modifier": null,
+            "odds": 25,
+            "handicap": null,
+            "label": "主/客",
+            "impliedProbability": 0.04
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "和/主",
+            "line": null,
+            "modifier": null,
+            "odds": 4.5,
+            "handicap": null,
+            "label": "和/主",
+            "impliedProbability": 0.222222
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "和/和",
+            "line": null,
+            "modifier": null,
+            "odds": 4.2,
+            "handicap": null,
+            "label": "和/和",
+            "impliedProbability": 0.238095
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "和/客",
+            "line": null,
+            "modifier": null,
+            "odds": 6,
+            "handicap": null,
+            "label": "和/客",
+            "impliedProbability": 0.166667
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "客/主",
+            "line": null,
+            "modifier": null,
+            "odds": 22,
+            "handicap": null,
+            "label": "客/主",
+            "impliedProbability": 0.045455
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "客/和",
+            "line": null,
+            "modifier": null,
+            "odds": 14,
+            "handicap": null,
+            "label": "客/和",
+            "impliedProbability": 0.071429
+          },
+          {
+            "marketType": "halfTimeFullTime",
+            "marketFamily": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full",
+            "side": "none",
+            "rawLine": "客/客",
+            "line": null,
+            "modifier": null,
+            "odds": 4.7,
+            "handicap": null,
+            "label": "客/客",
+            "impliedProbability": 0.212766
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 2,
+        "interpretations": [
+          {
+            "kind": "generic",
+            "marketId": "doubleChance::雙勝彩::full",
+            "marketType": "doubleChance",
+            "title": "雙勝彩",
+            "period": "full"
+          },
+          {
+            "kind": "generic",
+            "marketId": "halfTimeFullTime::半全場::full",
+            "marketType": "halfTimeFullTime",
+            "title": "半全場",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "SKIPPED",
+            "reason": "缺少 Moneyline 或 Handicap 市場，無法執行 Rule 1。"
+          },
+          "handicapTotalGoals": {
+            "status": "SKIPPED",
+            "reason": "缺少 Handicap 或 Total Goals 市場，無法執行 Rule 2。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-011": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "阿根廷",
+        "awayTeam": "烏拉圭",
+        "marketCount": 7,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "0.5",
+            "line": 0.5,
+            "modifier": "half",
+            "odds": 0.98,
+            "handicap": -0.5,
+            "label": null,
+            "impliedProbability": 1.020408
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "0.5",
+            "line": 0.5,
+            "modifier": "half",
+            "odds": 0.9,
+            "handicap": -0.5,
+            "label": null,
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 5,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.2
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.5,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.285714
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 1.65,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.606061
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.9,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.111111
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.94,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.06383
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 3,
+        "interpretations": [
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Moneyline 顯示主隊熱門，亞洲讓分讓 0.5 球，強度大致一致。"
+          },
+          "handicapTotalGoals": {
+            "status": "PASS",
+            "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    },
+    "golden-012": {
+      "expectedParser": {
+        "league": "",
+        "homeTeam": "葡萄牙",
+        "awayTeam": "克羅地亞",
+        "marketCount": 9,
+        "unknownMarketCount": 0,
+        "markets": [
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "away",
+            "rawLine": "0+50",
+            "line": 0,
+            "modifier": "plus50",
+            "odds": 1.04,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 0.961538
+          },
+          {
+            "marketType": "handicap",
+            "marketFamily": "asianHandicap",
+            "title": "全場讓分",
+            "period": "full",
+            "side": "home",
+            "rawLine": "0-50",
+            "line": 0,
+            "modifier": "minus50",
+            "odds": 0.84,
+            "handicap": 0,
+            "label": null,
+            "impliedProbability": 1.190476
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "away",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.6,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.277778
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "draw",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 3.25,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.307692
+          },
+          {
+            "marketType": "moneyline",
+            "marketFamily": "moneyline",
+            "title": "獨贏",
+            "period": "full",
+            "side": "home",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 2.05,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 0.487805
+          },
+          {
+            "marketType": "oddEven",
+            "marketFamily": "oddEven",
+            "title": "單雙",
+            "period": "full",
+            "side": "even",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 0.91,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.098901
+          },
+          {
+            "marketType": "oddEven",
+            "marketFamily": "oddEven",
+            "title": "單雙",
+            "period": "full",
+            "side": "odd",
+            "rawLine": null,
+            "line": null,
+            "modifier": null,
+            "odds": 0.95,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.052632
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "over",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.91,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.098901
+          },
+          {
+            "marketType": "totalGoals",
+            "marketFamily": "asianOverUnder",
+            "title": "全場大小",
+            "period": "full",
+            "side": "under",
+            "rawLine": "2.5",
+            "line": 2.5,
+            "modifier": "half",
+            "odds": 0.93,
+            "handicap": null,
+            "label": null,
+            "impliedProbability": 1.075269
+          }
+        ]
+      },
+      "expectedAnalysis": {
+        "interpretationCount": 4,
+        "interpretations": [
+          {
+            "kind": "generic",
+            "marketId": "oddEven::單雙::full",
+            "marketType": "oddEven",
+            "title": "單雙",
+            "period": "full"
+          },
+          {
+            "kind": "handicap",
+            "marketId": "handicap::全場讓分::full",
+            "marketType": "handicap",
+            "title": "全場讓分",
+            "period": "full"
+          },
+          {
+            "kind": "moneyline",
+            "marketId": "moneyline::獨贏::full",
+            "marketType": "moneyline",
+            "title": "獨贏",
+            "period": "full"
+          },
+          {
+            "kind": "totalGoals",
+            "marketId": "totalGoals::全場大小::full",
+            "marketType": "totalGoals",
+            "title": "全場大小",
+            "period": "full"
+          }
+        ],
+        "crossMarketValidation": {
+          "moneylineHandicap": {
+            "status": "PASS",
+            "reason": "Rule 1 未涵蓋此 Moneyline × Handicap 組合。"
+          },
+          "handicapTotalGoals": {
+            "status": "PASS",
+            "reason": "Rule 2 未涵蓋此 Handicap × Total Goals 組合。"
+          }
+        }
+      },
+      "expectedCandidates": []
+    }
+  }
+}
