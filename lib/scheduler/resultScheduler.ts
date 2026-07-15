@@ -5,9 +5,11 @@ import { runResultUpdatePipeline } from "@/lib/production/resultUpdatePipeline";
 import type { ResultUpdatePipelineDependencies } from "@/lib/production/resultUpdatePipeline";
 import type { ProductionResultUpdate, ResultPipelineResult } from "@/lib/production/productionTypes";
 import {
-  finishExecutionLog,
+  buildExecutionLogContext,
+  completeExecutionLog,
   startExecutionLog,
 } from "@/lib/scheduler/executionLogStore";
+import { getApiFootballQuotaSnapshot } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { buildSchedulerDailySummary } from "@/lib/scheduler/dailySummary";
 import { withRetry, withTimeout } from "@/lib/scheduler/retry";
 import {
@@ -71,16 +73,47 @@ export async function runResultScheduler(
   });
 
   if (!lock.acquired) {
+    const skippedExecution = startExecutionLog({
+      jobName: "result_update",
+      runDate,
+      context: buildExecutionLogContext({
+        jobType: "result_update",
+        status: "skipped",
+        fixturesFetched: 0,
+        analyzedCount: 0,
+        skippedCount: 0,
+        errorCount: 0,
+        apiFootballRequestCount: 0,
+        reason: "lock_held",
+        ownerId,
+      }),
+    });
+    const persistResult = await completeExecutionLog({
+      id: skippedExecution.id,
+      success: false,
+      errorMessage: "Skipped due to active scheduler lock.",
+      context: buildExecutionLogContext({
+        jobType: "result_update",
+        status: "skipped",
+        apiFootballRequestCount: 0,
+      }),
+    });
+
     return {
       runDate,
       pendingCount: 0,
       updatesBuilt: 0,
       pipeline: emptyResultPipeline(),
       summarySynced: false,
-      executionLogId: "",
+      executionLogId: skippedExecution.id,
       skippedDueToLock: true,
+      observabilityWarning: persistResult.persisted
+        ? undefined
+        : persistResult.persistError,
     };
   }
+
+  const apiQuotaStart = getApiFootballQuotaSnapshot().dailyCount;
 
   const execution = startExecutionLog({
     jobName: "result_update",
@@ -147,15 +180,27 @@ export async function runResultScheduler(
         const records = await listRecords();
         buildSchedulerDailySummary(runDate, records);
 
-        finishExecutionLog({
+        const apiFootballRequestCount = Math.max(
+          0,
+          getApiFootballQuotaSnapshot().dailyCount - apiQuotaStart
+        );
+
+        const persistResult = await completeExecutionLog({
           id: execution.id,
           success: true,
-          context: {
+          context: buildExecutionLogContext({
+            jobType: "result_update",
+            status: "success",
+            fixturesFetched: apiFixtures.length,
+            analyzedCount: pipeline.verified,
+            skippedCount: pipeline.skipped,
+            errorCount: pipeline.failed,
+            apiFootballRequestCount,
             pendingCount: pending.length,
             updatesBuilt: updates.length,
             verified: pipeline.verified,
             failed: pipeline.failed,
-          },
+          }),
         });
 
         return {
@@ -163,6 +208,9 @@ export async function runResultScheduler(
           updatesBuilt: updates.length,
           pipeline,
           summarySynced: true,
+          observabilityWarning: persistResult.persisted
+            ? undefined
+            : persistResult.persistError,
         };
       })(),
       config.jobTimeoutMs,
@@ -177,13 +225,23 @@ export async function runResultScheduler(
       summarySynced: outcome.summarySynced,
       executionLogId: execution.id,
       skippedDueToLock: false,
+      observabilityWarning: outcome.observabilityWarning,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    finishExecutionLog({
+    const apiFootballRequestCount = Math.max(
+      0,
+      getApiFootballQuotaSnapshot().dailyCount - apiQuotaStart
+    );
+    await completeExecutionLog({
       id: execution.id,
       success: false,
       errorMessage: message,
+      context: buildExecutionLogContext({
+        jobType: "result_update",
+        status: "failed",
+        apiFootballRequestCount,
+      }),
     });
     logAdminError({
       category: "scheduler",

@@ -6,18 +6,27 @@ import {
   saveMatchInMemory,
   verifyMatchInMemory,
 } from "@/lib/production";
+import { seedSystemSnapshotForTests, resetAdminDashboardStoreForTests } from "@/lib/admin/adminDashboardStore";
+import {
+  recordApiFootballRequest,
+  resetApiFootballQuotaForTests,
+} from "@/lib/providers/apiFootball/apiFootballQuota";
 import {
   buildSchedulerPlaceholderOdds,
+  disableExecutionLogPersistStoreForTests,
+  enableExecutionLogPersistStoreForTests,
   enrichAnalysisReportWithFixture,
   filterFixturesByLeagueIdWhitelist,
   filterFixturesBySchedulerLeaguePolicy,
   intakeApiFixtures,
   mapApiFixtureToSchedulerSource,
   resetExecutionLogsForTests,
+  resetPersistedExecutionLogsForTests,
   resetSchedulerLocksForTests,
   runDailyScheduler,
   runResultScheduler,
   getSchedulerStatus,
+  setExecutionLogPersistFailureForTests,
   toProductionFixture,
   validateApiFixtureRecord,
   withRetry,
@@ -428,6 +437,148 @@ async function testSchedulerStatus(): Promise<void> {
   assert(status.dailySummary !== null, "status should include daily summary");
   assert(typeof status.nextRun.daily === "string", "status should include next daily run");
   assert(status.apiUsage.minuteLimit > 0, "status should include api usage");
+  assert(status.lastRun.daily !== null, "status should expose last daily run");
+  assert(status.recentExecutions.length > 0, "status should expose recent executions");
+  assert(
+    status.recentExecutions.some((entry) => entry.jobName === "daily_analysis"),
+    "recent executions should include daily_analysis"
+  );
+}
+
+async function testSchedulerObservabilityColdStart(): Promise<void> {
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetPersistedExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  resetApiFootballQuotaForTests();
+
+  const apiFixtures = [
+    buildApiFixture({
+      id: 10,
+      home: "Team A",
+      away: "Team B",
+      league: "Premier League",
+      leagueId: 39,
+      status: "NS",
+    }),
+  ];
+
+  recordApiFootballRequest();
+  recordApiFootballRequest();
+  recordApiFootballRequest();
+
+  await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "test-cold-start",
+    fetchFixtures: async () => {
+      recordApiFootballRequest();
+      recordApiFootballRequest();
+      recordApiFootballRequest();
+      return intakeFixtures(apiFixtures);
+    },
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  resetExecutionLogsForTests();
+  resetApiFootballQuotaForTests();
+
+  const status = await getSchedulerStatus({
+    runDate: MATCH_DATE,
+    listRecords: async () => listInMemoryProductionRecords(),
+  });
+
+  assert(status.lastRun.daily !== null, "cold start should restore lastRun.daily from persisted logs");
+  assert(status.recentExecutions.length > 0, "cold start should restore recentExecutions");
+  assert(
+    status.recentExecutions.some((entry) => entry.jobName === "daily_analysis"),
+    "cold start recentExecutions should include daily_analysis"
+  );
+  assert(status.apiUsage.usedToday >= 3, "cold start should preserve apiUsage from persisted logs");
+}
+
+async function testSchedulerApiUsageFromSnapshot(): Promise<void> {
+  resetExecutionLogsForTests();
+  resetPersistedExecutionLogsForTests();
+  resetApiFootballQuotaForTests();
+  resetAdminDashboardStoreForTests();
+
+  seedSystemSnapshotForTests({
+    system: {
+      apiFootball: {
+        usedToday: 17,
+        remainingToday: 83,
+        minuteUsed: 2,
+        minuteLimit: 10,
+      },
+      googleGemini: {
+        searchesToday: 0,
+        remainingToday: null,
+        dailyLimit: null,
+      },
+      supabase: {
+        configured: true,
+        connected: true,
+        tables: {
+          match_records: 0,
+          beta_recommendations: 0,
+          beta_rolling_reports: 0,
+          admin_daily_summaries: 0,
+        },
+      },
+      cache: {
+        hits: 0,
+        misses: 0,
+        hitRate: 0,
+      },
+      lastSyncAt: `${MATCH_DATE}T12:00:00.000Z`,
+    },
+    analysis: {
+      pendingCount: 0,
+      verifiedCount: 0,
+    },
+  });
+
+  const status = await getSchedulerStatus({ runDate: MATCH_DATE });
+  assert(status.apiUsage.usedToday === 17, "status should read apiUsage from persisted snapshot");
+  assert(status.apiUsage.remainingToday === 83, "status should read remaining api quota from snapshot");
+}
+
+async function testExecutionLogPersistFailureWarning(): Promise<void> {
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetPersistedExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  setExecutionLogPersistFailureForTests(true);
+
+  const apiFixtures = [
+    buildApiFixture({
+      id: 11,
+      home: "Alpha",
+      away: "Beta",
+      league: "Premier League",
+      leagueId: 39,
+      status: "NS",
+    }),
+  ];
+
+  const result = await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "test-persist-failure",
+    fetchFixtures: async () => intakeFixtures(apiFixtures),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  assert(result.pipeline.created === 1, "persist failure must not re-run analysis");
+  assert(
+    typeof result.observabilityWarning === "string" && result.observabilityWarning.length > 0,
+    "persist failure should surface observabilityWarning"
+  );
+
+  setExecutionLogPersistFailureForTests(false);
 }
 
 async function testLeagueIdWhitelistHelper(): Promise<void> {
@@ -463,6 +614,7 @@ async function testAnalyzePipelineIntegrity(): Promise<void> {
 }
 
 async function runTests(): Promise<void> {
+  enableExecutionLogPersistStoreForTests();
   try {
     await testFixtureValidationFailClosed();
     await testFixtureMappingFields();
@@ -474,16 +626,21 @@ async function runTests(): Promise<void> {
     await testTimeout();
     await testResultScheduler();
     await testSchedulerStatus();
+    await testSchedulerObservabilityColdStart();
+    await testSchedulerApiUsageFromSnapshot();
+    await testExecutionLogPersistFailureWarning();
     await testLeagueIdWhitelistHelper();
     await testAnalyzePipelineIntegrity();
     console.log("All scheduler tests passed.");
   } finally {
+    disableExecutionLogPersistStoreForTests();
     restoreSchedulerEnv();
   }
 }
 
 runTests().catch((error) => {
   console.error(error);
+  disableExecutionLogPersistStoreForTests();
   restoreSchedulerEnv();
   process.exit(1);
 });

@@ -1,4 +1,5 @@
 import { runDailyScheduler } from "@/lib/scheduler/dailyScheduler";
+import { logAdminError } from "@/lib/admin/adminErrorLog";
 import { getApiFootballClient } from "@/lib/providers/apiFootball/apiFootballClient";
 import { listMatchRecordsFromSupabase } from "@/lib/supabase/queries/matchRecords";
 import { saveMatchFromAnalysisInSupabase } from "@/lib/supabase/services/matchRecordService";
@@ -63,7 +64,22 @@ async function handleDailyAnalysis(request: Request) {
       listRecords,
     });
 
-    return NextResponse.json({ ok: true, ...result });
+    if (result.observabilityWarning) {
+      logAdminError({
+        category: "scheduler",
+        message: "Daily analysis execution log persist failed",
+        context: {
+          runDate: result.runDate,
+          error: result.observabilityWarning,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      observabilityWarning: result.observabilityWarning,
+      ...result,
+    });
   } catch {
     return genericErrorResponse();
   }

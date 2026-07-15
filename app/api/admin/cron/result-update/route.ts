@@ -1,3 +1,4 @@
+import { logAdminError } from "@/lib/admin/adminErrorLog";
 import {
   listPendingFromSupabase,
   verifyMatchInSupabase,
@@ -60,7 +61,22 @@ async function handleResultUpdate(request: Request) {
       verifyMatch: verifyMatchInSupabase,
     });
 
-    return NextResponse.json({ ok: true, ...result });
+    if (result.observabilityWarning) {
+      logAdminError({
+        category: "scheduler",
+        message: "Result update execution log persist failed",
+        context: {
+          runDate: result.runDate,
+          error: result.observabilityWarning,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      observabilityWarning: result.observabilityWarning,
+      ...result,
+    });
   } catch {
     return genericErrorResponse();
   }

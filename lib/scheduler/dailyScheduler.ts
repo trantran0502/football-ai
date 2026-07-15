@@ -8,9 +8,11 @@ import type {
   ProductionFixture,
 } from "@/lib/production/productionTypes";
 import {
-  finishExecutionLog,
+  buildExecutionLogContext,
+  completeExecutionLog,
   startExecutionLog,
 } from "@/lib/scheduler/executionLogStore";
+import { getApiFootballQuotaSnapshot } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { enrichAnalysisReportWithFixture } from "@/lib/scheduler/fixtureMapping";
 import {
   fetchFixturesByDate,
@@ -149,6 +151,36 @@ export async function runDailyScheduler(
   });
 
   if (!lock.acquired) {
+    const skippedExecution = startExecutionLog({
+      jobName: "daily_analysis",
+      runDate,
+      context: buildExecutionLogContext({
+        jobType: "daily_analysis",
+        status: "skipped",
+        fixturesFetched: 0,
+        analyzedCount: 0,
+        skippedCount: 0,
+        errorCount: 0,
+        apiFootballRequestCount: 0,
+        reason: "lock_held",
+        ownerId,
+      }),
+    });
+    const persistResult = await completeExecutionLog({
+      id: skippedExecution.id,
+      success: false,
+      errorMessage: "Skipped due to active scheduler lock.",
+      context: buildExecutionLogContext({
+        jobType: "daily_analysis",
+        status: "skipped",
+        fixturesFetched: 0,
+        analyzedCount: 0,
+        skippedCount: 0,
+        errorCount: 0,
+        apiFootballRequestCount: 0,
+      }),
+    });
+
     return {
       runDate,
       fixturesFetched: 0,
@@ -163,11 +195,16 @@ export async function runDailyScheduler(
         items: [],
       },
       summary: buildSchedulerDailySummary(runDate, await listRecords()),
-      executionLogId: "",
+      executionLogId: skippedExecution.id,
       skippedDueToLock: true,
       intakeWarnings: [],
+      observabilityWarning: persistResult.persisted
+        ? undefined
+        : persistResult.persistError,
     };
   }
+
+  const apiQuotaStart = getApiFootballQuotaSnapshot().dailyCount;
 
   const execution = startExecutionLog({
     jobName: "daily_analysis",
@@ -220,29 +257,56 @@ export async function runDailyScheduler(
           delayMs: config.retryDelayMs,
         });
 
-        finishExecutionLog({
+        const apiFootballRequestCount = Math.max(
+          0,
+          getApiFootballQuotaSnapshot().dailyCount - apiQuotaStart
+        );
+
+        const persistResult = await completeExecutionLog({
           id: execution.id,
           success: true,
-          context: {
+          context: buildExecutionLogContext({
+            jobType: "daily_analysis",
+            status: "success",
             fixturesFetched: intake.fixtures.length + intake.skipped.length,
-            fixturesSkipped: intake.skipped.length,
+            analyzedCount: pipeline.created + pipeline.duplicates,
+            skippedCount: intake.skipped.length,
+            errorCount: pipeline.failed,
+            apiFootballRequestCount,
             fixturesAfterWhitelist: whitelisted.length,
             created: pipeline.created,
             duplicates: pipeline.duplicates,
             failed: pipeline.failed,
             intakeWarnings,
-          },
+          }),
         });
 
         const summaryExecution = startExecutionLog({
           jobName: "daily_summary",
           runDate,
-          context: { triggeredBy: "daily_analysis" },
+          context: buildExecutionLogContext({
+            jobType: "daily_summary",
+            status: "success",
+            triggeredBy: "daily_analysis",
+            apiFootballRequestCount: 0,
+          }),
         });
-        finishExecutionLog({
+        const summaryPersist = await completeExecutionLog({
           id: summaryExecution.id,
           success: true,
+          context: buildExecutionLogContext({
+            jobType: "daily_summary",
+            status: "success",
+            triggeredBy: "daily_analysis",
+            apiFootballRequestCount: 0,
+          }),
         });
+
+        const observabilityWarning = !persistResult.persisted
+          ? persistResult.persistError
+          : !summaryPersist.persisted
+            ? summaryPersist.persistError
+            : undefined;
 
         return {
           fixturesFetched: intake.fixtures.length + intake.skipped.length,
@@ -251,6 +315,7 @@ export async function runDailyScheduler(
           pipeline,
           summary,
           intakeWarnings,
+          observabilityWarning,
         };
       })(),
       config.jobTimeoutMs,
@@ -267,20 +332,36 @@ export async function runDailyScheduler(
       executionLogId: execution.id,
       skippedDueToLock: false,
       intakeWarnings: pipelineResult.intakeWarnings,
+      observabilityWarning: pipelineResult.observabilityWarning,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    finishExecutionLog({
+    const apiFootballRequestCount = Math.max(
+      0,
+      getApiFootballQuotaSnapshot().dailyCount - apiQuotaStart
+    );
+    const persistResult = await completeExecutionLog({
       id: execution.id,
       success: false,
       errorMessage: message,
+      context: buildExecutionLogContext({
+        jobType: "daily_analysis",
+        status: "failed",
+        apiFootballRequestCount,
+      }),
     });
     logAdminError({
       category: "scheduler",
       message: "Daily scheduler failed",
       context: { runDate, error: message },
     });
-    throw error;
+    const observabilityError = new Error(message) as Error & {
+      observabilityWarning?: string;
+    };
+    if (!persistResult.persisted) {
+      observabilityError.observabilityWarning = persistResult.persistError;
+    }
+    throw observabilityError;
   } finally {
     releaseSchedulerLock("daily_analysis", ownerId);
   }

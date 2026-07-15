@@ -20,10 +20,19 @@ export {
 } from "@/lib/scheduler/schedulerLock";
 export { withRetry, withTimeout } from "@/lib/scheduler/retry";
 export {
+  aggregateApiFootballUsageForDate,
+  buildExecutionLogContext,
+  completeExecutionLog,
+  disableExecutionLogPersistStoreForTests,
+  enableExecutionLogPersistStoreForTests,
   finishExecutionLog,
   getSchedulerRuntimeState,
   listExecutionLogs,
+  loadRecentExecutionLogs,
+  loadSchedulerRuntimeState,
   resetExecutionLogsForTests,
+  resetPersistedExecutionLogsForTests,
+  setExecutionLogPersistFailureForTests,
   startExecutionLog,
 } from "@/lib/scheduler/executionLogStore";
 export {

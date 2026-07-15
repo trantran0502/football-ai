@@ -87,6 +87,7 @@ export interface DailySchedulerResult {
   executionLogId: string;
   skippedDueToLock: boolean;
   intakeWarnings: string[];
+  observabilityWarning?: string;
 }
 
 export interface ResultSchedulerResult {
@@ -97,6 +98,7 @@ export interface ResultSchedulerResult {
   summarySynced: boolean;
   executionLogId: string;
   skippedDueToLock: boolean;
+  observabilityWarning?: string;
 }
 
 export interface SchedulerConfig {

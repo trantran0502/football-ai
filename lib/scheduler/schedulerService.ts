@@ -1,9 +1,11 @@
+import { getSystemSnapshotFromStore } from "@/lib/admin/adminDashboardStore";
 import { loadRecentAdminErrorsFromSupabase } from "@/lib/admin/adminErrorLog";
 import { getGoogleQuotaSnapshot } from "@/lib/admin/adminGoogleQuota";
 import { getApiFootballQuotaSnapshot } from "@/lib/providers/apiFootball/apiFootballQuota";
 import {
-  getSchedulerRuntimeState,
-  listExecutionLogs,
+  aggregateApiFootballUsageForDate,
+  loadRecentExecutionLogs,
+  loadSchedulerRuntimeState,
 } from "@/lib/scheduler/executionLogStore";
 import { buildSchedulerDailySummary } from "@/lib/scheduler/dailySummary";
 import { getSchedulerConfig } from "@/lib/scheduler/schedulerConfig";
@@ -24,6 +26,40 @@ function computeNextRun(hourUtc: number, from = new Date()): string {
   return next.toISOString();
 }
 
+async function resolveApiUsage(runDate: string): Promise<SchedulerStatusResponse["apiUsage"]> {
+  const memory = getApiFootballQuotaSnapshot();
+  const dailyLimit = memory.dailyLimit;
+  const minuteLimit = memory.minuteLimit;
+
+  const aggregated = await aggregateApiFootballUsageForDate(runDate);
+  if (aggregated !== null && aggregated > 0) {
+    return {
+      usedToday: aggregated,
+      remainingToday: Math.max(0, dailyLimit - aggregated),
+      minuteUsed: memory.minuteCount,
+      minuteLimit,
+    };
+  }
+
+  const snapshot = await getSystemSnapshotFromStore();
+  const snapshotDay = snapshot?.system.lastSyncAt?.slice(0, 10);
+  if (snapshot && snapshotDay === runDate) {
+    return {
+      usedToday: snapshot.system.apiFootball.usedToday,
+      remainingToday: snapshot.system.apiFootball.remainingToday,
+      minuteUsed: snapshot.system.apiFootball.minuteUsed,
+      minuteLimit: snapshot.system.apiFootball.minuteLimit,
+    };
+  }
+
+  return {
+    usedToday: memory.dailyCount,
+    remainingToday: Math.max(0, dailyLimit - memory.dailyCount),
+    minuteUsed: memory.minuteCount,
+    minuteLimit,
+  };
+}
+
 export interface SchedulerStatusDependencies {
   runDate?: string;
   listRecords?: () => Promise<HistoricalMatchRecord[]>;
@@ -39,11 +75,11 @@ export async function getSchedulerStatus(
   const records = await listRecords();
   const dayRecords = records.filter((record) => record.matchDate === runDate);
 
-  const runtime = getSchedulerRuntimeState();
-  const apiQuota = getApiFootballQuotaSnapshot();
+  const runtime = await loadSchedulerRuntimeState();
+  const apiUsage = await resolveApiUsage(runDate);
   const googleQuota = getGoogleQuotaSnapshot();
   const errors = await loadRecentAdminErrorsFromSupabase(20);
-  const recentExecutions = listExecutionLogs(10);
+  const recentExecutions = await loadRecentExecutionLogs(10);
   const locks = listActiveSchedulerLocks();
   const dailySummary = buildSchedulerDailySummary(runDate, records);
 
@@ -68,12 +104,7 @@ export async function getSchedulerStatus(
     validatedMatches: dayRecords.filter((record) => record.status === "VERIFIED").length,
     pendingMatches: dayRecords.filter((record) => record.status === "PENDING").length,
     errors: errors.filter((entry) => entry.category === "scheduler").slice(0, 10),
-    apiUsage: {
-      usedToday: apiQuota.dailyCount,
-      remainingToday: Math.max(0, apiQuota.dailyLimit - apiQuota.dailyCount),
-      minuteUsed: apiQuota.minuteCount,
-      minuteLimit: apiQuota.minuteLimit,
-    },
+    apiUsage,
     googleUsage: {
       searchesToday: googleQuota.searchesToday,
       remainingToday: googleQuota.remainingToday,
