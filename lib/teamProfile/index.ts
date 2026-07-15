@@ -44,6 +44,7 @@ export {
 } from "@/lib/teamProfile/teamProfileDiagnostics";
 
 export {
+  buildTeamProfilePersistencePlan,
   disableTeamProfileMemoryStoreForTests,
   enableTeamProfileMemoryStoreForTests,
   getProfilesForMatch,
@@ -52,9 +53,13 @@ export {
   listStaleTeamProfiles,
   markProfileRefreshFailure,
   resetTeamProfileMemoryStoreForTests,
+  TEAM_PROFILE_UPSERT_CONFLICT_KEY,
   upsertTeamProfile,
 } from "@/lib/teamProfile/teamProfileRepository";
-export type { UpsertTeamProfileResult } from "@/lib/teamProfile/teamProfileRepository";
+export type {
+  TeamProfilePersistencePlan,
+  UpsertTeamProfileResult,
+} from "@/lib/teamProfile/teamProfileRepository";
 
 export {
   attachTeamProfilesToReport,

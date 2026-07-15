@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAdminError } from "@/lib/admin/adminErrorLog";
 import type {
   TeamProfile,
@@ -8,6 +9,13 @@ const TABLE = "team_profiles";
 const NULL_LEAGUE_ID = -1;
 const NULL_SEASON = -1;
 
+/** Logical upsert conflict target (migration 006 partial unique index). */
+export const TEAM_PROFILE_UPSERT_CONFLICT_KEY = [
+  "team_id",
+  "league_id",
+  "requested_season",
+] as const;
+
 let memoryProfiles = new Map<string, TeamProfile>();
 let useMemoryStoreForTests = false;
 
@@ -15,6 +23,16 @@ export interface UpsertTeamProfileResult {
   profile: TeamProfile;
   persisted: boolean;
   error?: string;
+}
+
+export interface TeamProfilePersistencePlan {
+  conflictKey: {
+    team_id: number;
+    league_id: number;
+    requested_season: number;
+  };
+  insertPayload: Record<string, unknown>;
+  updatePayload: Record<string, unknown>;
 }
 
 export function enableTeamProfileMemoryStoreForTests(): void {
@@ -59,6 +77,101 @@ function fromStorageSeason(season: number): number | null {
   return season === NULL_SEASON ? null : season;
 }
 
+function normalizeRequestedSeason(profile: TeamProfile): number | null {
+  return profile.requestedSeason ?? profile.season;
+}
+
+function normalizeProfileForPersistence(profile: TeamProfile): TeamProfile {
+  const requestedSeason = normalizeRequestedSeason(profile);
+  return {
+    ...profile,
+    requestedSeason,
+    isHistoricalBaseline: profile.isHistoricalBaseline ?? false,
+    stalenessYears: profile.stalenessYears ?? null,
+  };
+}
+
+function teamProfilesTable(supabase: SupabaseClient<unknown>): ReturnType<
+  SupabaseClient<unknown>["from"]
+> {
+  return supabase.from(TABLE);
+}
+
+export function buildTeamProfilePersistencePlan(
+  profile: TeamProfile,
+  options?: { existingId?: string; now?: string }
+): TeamProfilePersistencePlan {
+  const normalized = normalizeProfileForPersistence(profile);
+  const now = options?.now ?? new Date().toISOString();
+  const requestedSeason = normalizeRequestedSeason(normalized);
+  const updatePayload = buildTeamProfileUpdatePayload(normalized, now);
+  const insertPayload = {
+    id: options?.existingId ?? normalized.id ?? crypto.randomUUID(),
+    ...updatePayload,
+    created_at: normalized.createdAt ?? now,
+  };
+
+  return {
+    conflictKey: {
+      team_id: normalized.teamId,
+      league_id: storageLeagueId(normalized.leagueId),
+      requested_season: storageSeason(requestedSeason),
+    },
+    insertPayload,
+    updatePayload,
+  };
+}
+
+function buildTeamProfileUpdatePayload(
+  profile: TeamProfile,
+  updatedAt: string
+): Record<string, unknown> {
+  const requestedSeason = normalizeRequestedSeason(profile);
+
+  return {
+    team_id: profile.teamId,
+    team_name: profile.teamName,
+    league_id: storageLeagueId(profile.leagueId),
+    league_name: profile.leagueName,
+    season: storageSeason(profile.season),
+    requested_season: storageSeason(requestedSeason),
+    is_historical_baseline: profile.isHistoricalBaseline ?? false,
+    staleness_years: profile.stalenessYears ?? null,
+    sample_size: profile.sampleSize,
+    recent10_wins: profile.recent10Wins,
+    recent10_draws: profile.recent10Draws,
+    recent10_losses: profile.recent10Losses,
+    recent10_points_per_game: profile.recent10PointsPerGame,
+    recent10_avg_goals: profile.recent10AvgGoals,
+    recent10_avg_conceded: profile.recent10AvgConceded,
+    home5_matches: profile.home5Matches,
+    home5_win_rate: profile.home5WinRate,
+    home5_avg_goals: profile.home5AvgGoals,
+    home5_avg_conceded: profile.home5AvgConceded,
+    away5_matches: profile.away5Matches,
+    away5_win_rate: profile.away5WinRate,
+    away5_avg_goals: profile.away5AvgGoals,
+    away5_avg_conceded: profile.away5AvgConceded,
+    btts_rate: profile.bttsRate,
+    over25_rate: profile.over25Rate,
+    over35_rate: profile.over35Rate,
+    under25_rate: profile.under25Rate,
+    clean_sheet_rate: profile.cleanSheetRate,
+    failed_to_score_rate: profile.failedToScoreRate,
+    avg_shots: profile.avgShots,
+    avg_shots_on_target: profile.avgShotsOnTarget,
+    avg_possession: profile.avgPossession,
+    avg_xg: profile.avgXg,
+    avg_xga: profile.avgXga,
+    form_score: profile.formScore,
+    momentum_score: profile.momentumScore,
+    source: profile.source,
+    data_completeness: profile.dataCompleteness,
+    calculated_at: profile.calculatedAt,
+    updated_at: updatedAt,
+  };
+}
+
 export async function getTeamProfile(
   teamId: number,
   leagueId: number | null,
@@ -74,9 +187,8 @@ export async function getTeamProfile(
     }
 
     const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
-    const supabase = getSupabaseAdmin();
-    const requestedResult = await supabase
-      .from(TABLE as "match_records")
+    const supabase = getSupabaseAdmin() as SupabaseClient<unknown>;
+    const requestedResult = await teamProfilesTable(supabase)
       .select("*")
       .eq("team_id", teamId)
       .eq("league_id", storageLeagueId(leagueId))
@@ -87,8 +199,7 @@ export async function getTeamProfile(
       return mapRowToProfile(requestedResult.data as Record<string, unknown>);
     }
 
-    const legacyResult = await supabase
-      .from(TABLE as "match_records")
+    const legacyResult = await teamProfilesTable(supabase)
       .select("*")
       .eq("team_id", teamId)
       .eq("league_id", storageLeagueId(leagueId))
@@ -106,20 +217,106 @@ export async function getTeamProfile(
   }
 }
 
+async function listTeamLeagueProfileRows(
+  supabase: SupabaseClient<unknown>,
+  profile: TeamProfile
+): Promise<Record<string, unknown>[]> {
+  const result = await teamProfilesTable(supabase)
+    .select("*")
+    .eq("team_id", profile.teamId)
+    .eq("league_id", storageLeagueId(profile.leagueId));
+
+  if (result.error || !result.data) {
+    return [];
+  }
+
+  return result.data as Record<string, unknown>[];
+}
+
+function pickCanonicalProfileRow(
+  rows: Record<string, unknown>[],
+  profile: TeamProfile
+): Record<string, unknown> | null {
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const requestedSeason = storageSeason(normalizeRequestedSeason(profile));
+  const dataSeason = storageSeason(profile.season);
+
+  const byRequested = rows.find(
+    (row) => Number(row.requested_season) === requestedSeason
+  );
+  if (byRequested) {
+    return byRequested;
+  }
+
+  const byLegacyRequested = rows.find(
+    (row) =>
+      row.requested_season === null &&
+      Number(row.season) === requestedSeason
+  );
+  if (byLegacyRequested) {
+    return byLegacyRequested;
+  }
+
+  const byDataSeason = rows.find((row) => Number(row.season) === dataSeason);
+  if (byDataSeason) {
+    return byDataSeason;
+  }
+
+  return null;
+}
+
+async function removeDuplicateProfileRows(
+  supabase: SupabaseClient<unknown>,
+  rows: Record<string, unknown>[],
+  keepId: string
+): Promise<void> {
+  const duplicateIds = rows
+    .map((row) => String(row.id))
+    .filter((id) => id !== keepId);
+
+  if (duplicateIds.length === 0) {
+    return;
+  }
+
+  await teamProfilesTable(supabase).delete().in("id", duplicateIds);
+}
+
+async function removeSeasonKeyConflicts(
+  supabase: SupabaseClient<unknown>,
+  profile: TeamProfile,
+  keepId?: string
+): Promise<void> {
+  let query = teamProfilesTable(supabase)
+    .delete()
+    .eq("team_id", profile.teamId)
+    .eq("league_id", storageLeagueId(profile.leagueId))
+    .eq("season", storageSeason(profile.season));
+
+  if (keepId) {
+    query = query.neq("id", keepId);
+  }
+
+  await query;
+}
+
 export async function upsertTeamProfile(
   profile: TeamProfile
 ): Promise<UpsertTeamProfileResult> {
+  const normalized = normalizeProfileForPersistence(profile);
   const now = new Date().toISOString();
 
   if (useMemoryStoreForTests) {
     const stored: TeamProfile = {
-      ...profile,
-      id: profile.id ?? crypto.randomUUID(),
-      createdAt: profile.createdAt ?? now,
+      ...normalized,
+      id: normalized.id ?? crypto.randomUUID(),
+      createdAt: normalized.createdAt ?? now,
       updatedAt: now,
     };
     memoryProfiles.set(
-      profileKey(profile.teamId, profile.leagueId, profile.requestedSeason),
+      profileKey(normalized.teamId, normalized.leagueId, normalized.requestedSeason),
       structuredClone(stored)
     );
     return { profile: stored, persisted: true };
@@ -128,54 +325,57 @@ export async function upsertTeamProfile(
   try {
     if (typeof window !== "undefined") {
       return {
-        profile,
+        profile: normalized,
         persisted: false,
         error: "Browser runtime cannot persist team profiles.",
       };
     }
 
     const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
-    const supabase = getSupabaseAdmin();
-    const existing = await getTeamProfile(
-      profile.teamId,
-      profile.leagueId,
-      profile.requestedSeason
-    );
-    const row = mapProfileToRow({
-      ...profile,
-      id: existing?.id ?? profile.id ?? crypto.randomUUID(),
-      createdAt: profile.createdAt ?? now,
-      updatedAt: now,
+    const supabase = getSupabaseAdmin() as SupabaseClient<unknown>;
+    const rows = await listTeamLeagueProfileRows(supabase, normalized);
+    const existing = pickCanonicalProfileRow(rows, normalized);
+    const plan = buildTeamProfilePersistencePlan(normalized, {
+      existingId: existing?.id ? String(existing.id) : undefined,
+      now,
     });
 
     if (existing?.id) {
-      const result = await supabase
-        .from(TABLE as "match_records")
-        .update(row as never)
-        .eq("id", existing.id)
+      const keepId = String(existing.id);
+      await removeDuplicateProfileRows(supabase, rows, keepId);
+      await removeSeasonKeyConflicts(supabase, normalized, keepId);
+
+      const result = await teamProfilesTable(supabase)
+        .update(plan.updatePayload)
+        .eq("id", keepId)
         .select("*")
         .maybeSingle();
+
       if (result.error || !result.data) {
-        const error = result.error?.message ?? "Team profile update returned no row.";
-        logTeamProfilePersistError(profile, error, "update");
-        return { profile, persisted: false, error };
+        const error =
+          result.error?.message ?? "Team profile update returned no row.";
+        logTeamProfilePersistError(normalized, error, "update", plan);
+        return { profile: normalized, persisted: false, error };
       }
+
       return {
         profile: mapRowToProfile(result.data as Record<string, unknown>),
         persisted: true,
       };
     }
 
-    const result = await supabase
-      .from(TABLE as "match_records")
-      .insert(row as never)
+    await removeSeasonKeyConflicts(supabase, normalized);
+
+    const result = await teamProfilesTable(supabase)
+      .insert(plan.insertPayload)
       .select("*")
       .maybeSingle();
 
     if (result.error || !result.data) {
-      const error = result.error?.message ?? "Team profile insert returned no row.";
-      logTeamProfilePersistError(profile, error, "insert");
-      return { profile, persisted: false, error };
+      const error =
+        result.error?.message ?? "Team profile insert returned no row.";
+      logTeamProfilePersistError(normalized, error, "insert", plan);
+      return { profile: normalized, persisted: false, error };
     }
 
     return {
@@ -184,8 +384,9 @@ export async function upsertTeamProfile(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    logTeamProfilePersistError(profile, message, "upsert");
-    return { profile, persisted: false, error: message };
+    const plan = buildTeamProfilePersistencePlan(normalized, { now });
+    logTeamProfilePersistError(normalized, message, "upsert", plan);
+    return { profile: normalized, persisted: false, error: message };
   }
 }
 
@@ -204,9 +405,8 @@ export async function listStaleTeamProfiles(
     }
 
     const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
-    const supabase = getSupabaseAdmin();
-    const result = await supabase
-      .from(TABLE as "match_records")
+    const supabase = getSupabaseAdmin() as SupabaseClient<unknown>;
+    const result = await teamProfilesTable(supabase)
       .select("*")
       .lt("calculated_at", staleBeforeIso)
       .order("calculated_at", { ascending: true })
@@ -301,7 +501,8 @@ export async function getProfilesForMatch(input: {
 function logTeamProfilePersistError(
   profile: TeamProfile,
   error: string,
-  operation: "insert" | "update" | "upsert"
+  operation: "insert" | "update" | "upsert",
+  plan?: TeamProfilePersistencePlan
 ): void {
   logAdminError({
     category: "scheduler",
@@ -311,57 +512,22 @@ function logTeamProfilePersistError(
       teamName: profile.teamName,
       leagueId: profile.leagueId,
       season: profile.season,
+      requestedSeason: profile.requestedSeason,
+      isHistoricalBaseline: profile.isHistoricalBaseline,
+      stalenessYears: profile.stalenessYears,
       source: profile.source,
       error,
+      conflictKey: plan?.conflictKey,
+      updatePayloadSeasonFields: plan
+        ? {
+            season: plan.updatePayload.season,
+            requested_season: plan.updatePayload.requested_season,
+            is_historical_baseline: plan.updatePayload.is_historical_baseline,
+            staleness_years: plan.updatePayload.staleness_years,
+          }
+        : undefined,
     },
   });
-}
-
-function mapProfileToRow(profile: TeamProfile): Record<string, unknown> {
-  return {
-    id: profile.id,
-    team_id: profile.teamId,
-    team_name: profile.teamName,
-    league_id: storageLeagueId(profile.leagueId),
-    league_name: profile.leagueName,
-    season: storageSeason(profile.season),
-    requested_season: storageSeason(profile.requestedSeason),
-    is_historical_baseline: profile.isHistoricalBaseline,
-    staleness_years: profile.stalenessYears,
-    sample_size: profile.sampleSize,
-    recent10_wins: profile.recent10Wins,
-    recent10_draws: profile.recent10Draws,
-    recent10_losses: profile.recent10Losses,
-    recent10_points_per_game: profile.recent10PointsPerGame,
-    recent10_avg_goals: profile.recent10AvgGoals,
-    recent10_avg_conceded: profile.recent10AvgConceded,
-    home5_matches: profile.home5Matches,
-    home5_win_rate: profile.home5WinRate,
-    home5_avg_goals: profile.home5AvgGoals,
-    home5_avg_conceded: profile.home5AvgConceded,
-    away5_matches: profile.away5Matches,
-    away5_win_rate: profile.away5WinRate,
-    away5_avg_goals: profile.away5AvgGoals,
-    away5_avg_conceded: profile.away5AvgConceded,
-    btts_rate: profile.bttsRate,
-    over25_rate: profile.over25Rate,
-    over35_rate: profile.over35Rate,
-    under25_rate: profile.under25Rate,
-    clean_sheet_rate: profile.cleanSheetRate,
-    failed_to_score_rate: profile.failedToScoreRate,
-    avg_shots: profile.avgShots,
-    avg_shots_on_target: profile.avgShotsOnTarget,
-    avg_possession: profile.avgPossession,
-    avg_xg: profile.avgXg,
-    avg_xga: profile.avgXga,
-    form_score: profile.formScore,
-    momentum_score: profile.momentumScore,
-    source: profile.source,
-    data_completeness: profile.dataCompleteness,
-    calculated_at: profile.calculatedAt,
-    created_at: profile.createdAt,
-    updated_at: profile.updatedAt,
-  };
 }
 
 function mapRowToProfile(row: Record<string, unknown>): TeamProfile {

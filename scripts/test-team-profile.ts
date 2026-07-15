@@ -10,6 +10,7 @@ import {
   recordApiFootballRequest,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
 import {
+  buildTeamProfilePersistencePlan,
   calculateFormScore,
   calculateMomentumScore,
   calculateTeamProfile,
@@ -20,6 +21,7 @@ import {
   fetchTeamProfileData,
   filterAwayMatches,
   filterHomeMatches,
+  getTeamProfile,
   isFriendlyLeague,
   isTeamProfileStale,
   listMemoryTeamProfilesForTests,
@@ -28,6 +30,7 @@ import {
   resetTeamProfileMemoryStoreForTests,
   resetTeamProfileRefreshDedupeForTests,
   shouldExcludeMatch,
+  TEAM_PROFILE_UPSERT_CONFLICT_KEY,
   upsertTeamProfile,
   type TeamProfileMatchInput,
 } from "@/lib/teamProfile";
@@ -1021,6 +1024,92 @@ function testAnalysisSnapshotTeamProfiles(): void {
   assert(snapshot.teamProfiles?.away?.teamName === "Chelsea", "snapshot should include away profile");
 }
 
+async function testHistoricalBaselineRepositoryPersistence(): Promise<void> {
+  enableTeamProfileMemoryStoreForTests();
+  resetTeamProfileMemoryStoreForTests();
+
+  const historical = calculateTeamProfile({
+    identity: IDENTITY,
+    matches: buildRecent10(),
+    source: "api-football",
+    seasonMetadata: {
+      requestedSeason: 2026,
+      dataSeason: 2024,
+      isHistoricalBaseline: true,
+      stalenessYears: 2,
+      fallbackReason: "plan_season_restricted",
+    },
+  });
+
+  const plan = buildTeamProfilePersistencePlan(historical);
+  assert(
+    TEAM_PROFILE_UPSERT_CONFLICT_KEY.join(",") === "team_id,league_id,requested_season",
+    "conflict key should target requested season"
+  );
+  assert(plan.conflictKey.requested_season === 2026, "conflict key requested_season should be 2026");
+  assert(plan.updatePayload.season === 2024, "update payload season should be dataSeason 2024");
+  assert(plan.updatePayload.requested_season === 2026, "update payload requested_season should be 2026");
+  assert(plan.updatePayload.is_historical_baseline === true, "update payload should set historical baseline");
+  assert(plan.updatePayload.staleness_years === 2, "update payload should set staleness years");
+  assert(plan.insertPayload.season === 2024, "insert payload season should be dataSeason 2024");
+  assert(
+    plan.insertPayload.requested_season === 2026,
+    "insert payload requested_season should be 2026"
+  );
+
+  await upsertTeamProfile({
+    ...IDENTITY,
+    season: 2026,
+    requestedSeason: 2026,
+    isHistoricalBaseline: false,
+    stalenessYears: null,
+    sampleSize: 0,
+    source: "refresh_failed",
+    dataCompleteness: 0,
+    calculatedAt: new Date().toISOString(),
+    recent10Wins: null,
+    recent10Draws: null,
+    recent10Losses: null,
+    recent10PointsPerGame: null,
+    recent10AvgGoals: null,
+    recent10AvgConceded: null,
+    home5Matches: null,
+    home5WinRate: null,
+    home5AvgGoals: null,
+    home5AvgConceded: null,
+    away5Matches: null,
+    away5WinRate: null,
+    away5AvgGoals: null,
+    away5AvgConceded: null,
+    bttsRate: null,
+    over25Rate: null,
+    over35Rate: null,
+    under25Rate: null,
+    cleanSheetRate: null,
+    failedToScoreRate: null,
+    avgShots: null,
+    avgShotsOnTarget: null,
+    avgPossession: null,
+    avgXg: null,
+    avgXga: null,
+    formScore: null,
+    momentumScore: null,
+  });
+
+  const saved = await upsertTeamProfile(historical);
+  assert(saved.persisted, "historical upsert should persist in memory store");
+  assert(saved.profile.season === 2024, "stored season should become dataSeason 2024");
+  assert(saved.profile.requestedSeason === 2026, "requestedSeason should remain 2026");
+  assert(saved.profile.isHistoricalBaseline, "isHistoricalBaseline should be true after upsert");
+  assert(saved.profile.stalenessYears === 2, "stalenessYears should be 2 after upsert");
+  assert(saved.profile.sampleSize > 0, "historical profile should retain sample size");
+
+  const loaded = await getTeamProfile(IDENTITY.teamId, IDENTITY.leagueId, 2026);
+  assert(loaded?.season === 2024, "reload by requested season should return dataSeason 2024");
+  assert(loaded?.isHistoricalBaseline === true, "reload should preserve historical baseline flag");
+  assert(listMemoryTeamProfilesForTests().length === 1, "upsert should consolidate to one profile row");
+}
+
 async function runTests(): Promise<void> {
   enableTeamProfileMemoryStoreForTests();
   try {
@@ -1040,6 +1129,7 @@ async function runTests(): Promise<void> {
     await testSeasonFallbackFetch();
     await testFreePlanHistoricalFallback();
     testHistoricalCompletenessPenalty();
+    await testHistoricalBaselineRepositoryPersistence();
     await testVerifiedRecordsFusion();
     await testEmptyProfileDedupeRetry();
     testAnalysisSnapshotTeamProfiles();
