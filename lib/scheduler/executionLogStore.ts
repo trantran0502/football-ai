@@ -17,6 +17,9 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   skippedCount?: number;
   errorCount?: number;
   apiFootballRequestCount?: number;
+  teamProfileApiRequestCount?: number;
+  teamProfileWarnings?: string[];
+  teamProfileDiagnostics?: unknown[];
 }
 
 export interface CompleteExecutionLogResult {
@@ -36,7 +39,14 @@ let persistShouldFailForTests = false;
 export function buildExecutionLogContext(
   input: ExecutionLogContext
 ): Record<string, unknown> {
-  return { ...input };
+  const context: Record<string, unknown> = { ...input };
+  if (Array.isArray(input.teamProfileDiagnostics)) {
+    context.teamProfileDiagnostics = input.teamProfileDiagnostics;
+  }
+  if (Array.isArray(input.teamProfileWarnings)) {
+    context.teamProfileWarnings = input.teamProfileWarnings;
+  }
+  return context;
 }
 
 export function startExecutionLog(input: {

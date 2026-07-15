@@ -387,9 +387,167 @@ async function testQuotaFallback(): Promise<void> {
     ...IDENTITY,
     runDate: "2026-07-17",
     allowApiFetch: true,
+    waitForQuota: false,
   });
 
   assert(!result.refreshed || result.profile.source !== "api-football" || result.warnings.length > 0, "quota fallback should warn or use fallback");
+  assert(result.diagnostics.quotaExhausted, "quota fallback should mark quota exhausted");
+  assert(
+    result.warnings.some((warning) => warning.includes("quota")),
+    "quota fallback should include quota diagnostic warning"
+  );
+}
+
+async function testQuotaSkipDiagnostics(): Promise<void> {
+  resetTeamProfileRefreshDedupeForTests();
+  resetTeamProfileMemoryStoreForTests();
+  enableTeamProfileMemoryStoreForTests();
+  resetApiFootballQuotaForTests();
+
+  for (let index = 0; index < 10; index += 1) {
+    recordApiFootballRequest();
+  }
+
+  class QuotaBlockedClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(): Promise<{ teamId: number; fixtures: ApiFootballFixtureRecord[]; meta: { requestPath: string; rawResponseCount: number } }> {
+      recordApiFootballRequest();
+      return {
+        teamId: 42,
+        fixtures: [],
+        meta: { requestPath: "/fixtures?team=42&last=15", rawResponseCount: 0 },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new QuotaBlockedClient() as never);
+
+  const result = await refreshTeamProfile({
+    ...IDENTITY,
+    runDate: "2026-07-19",
+    allowApiFetch: true,
+    waitForQuota: false,
+    side: "home",
+    matchLabel: "Arsenal vs Chelsea",
+  });
+
+  assert(result.diagnostics.quotaExhausted, "minute quota skip should expose quotaExhausted");
+  assert(
+    result.skippedReason === "quota_exhausted" || result.warnings.some((warning) => warning.includes("quota")),
+    "minute quota skip should expose skipped reason or quota warning"
+  );
+
+  setApiFootballClientForTests(null);
+}
+
+async function testApiRawEmptyDiagnostics(): Promise<void> {
+  resetTeamProfileRefreshDedupeForTests();
+  resetTeamProfileMemoryStoreForTests();
+  enableTeamProfileMemoryStoreForTests();
+  resetApiFootballQuotaForTests();
+
+  class RawEmptyClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(): Promise<{ teamId: number; fixtures: ApiFootballFixtureRecord[]; meta: { requestPath: string; rawResponseCount: number } }> {
+      recordApiFootballRequest();
+      return {
+        teamId: 42,
+        fixtures: [],
+        meta: { requestPath: "/fixtures?team=42&last=15&status=FT", rawResponseCount: 0 },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new RawEmptyClient() as never);
+
+  const result = await refreshTeamProfile({
+    ...IDENTITY,
+    runDate: "2026-07-20",
+    allowApiFetch: true,
+    side: "home",
+    matchLabel: "Arsenal vs Chelsea",
+  });
+
+  assert(result.diagnostics.rawResponseCount === 0, "raw empty diagnostic should expose rawResponseCount=0");
+  assert(result.skippedReason === "api_raw_empty" || result.skippedReason === "normalized_empty", "raw empty should expose api_raw_empty or normalized_empty");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testNormalizedEmptyDiagnostics(): Promise<void> {
+  resetTeamProfileRefreshDedupeForTests();
+  resetTeamProfileMemoryStoreForTests();
+  enableTeamProfileMemoryStoreForTests();
+  resetApiFootballQuotaForTests();
+
+  class NormalizedEmptyClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(): Promise<{ teamId: number; fixtures: ApiFootballFixtureRecord[]; meta: { requestPath: string; rawResponseCount: number } }> {
+      recordApiFootballRequest();
+      return {
+        teamId: 42,
+        fixtures: [
+          {
+            fixtureId: 701,
+            date: "2026-06-01",
+            kickoffTime: null,
+            league: "Friendlies",
+            leagueId: 667,
+            season: 2025,
+            homeTeam: "Arsenal",
+            awayTeam: "Lyon",
+            homeTeamId: 42,
+            awayTeamId: 80,
+            status: "FT",
+            homeGoals: 4,
+            awayGoals: 0,
+            halfTimeHome: 2,
+            halfTimeAway: 0,
+            venue: null,
+            neutralVenue: false,
+          },
+        ],
+        meta: { requestPath: "/fixtures?team=42&last=15&status=FT", rawResponseCount: 1 },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new NormalizedEmptyClient() as never);
+
+  const result = await refreshTeamProfile({
+    ...IDENTITY,
+    runDate: "2026-07-21",
+    allowApiFetch: true,
+    side: "home",
+    matchLabel: "Arsenal vs Chelsea",
+  });
+
+  assert(result.diagnostics.rawResponseCount === 1, "normalized empty should keep raw count");
+  assert(result.diagnostics.normalizedMatchCount === 0, "normalized empty should expose normalizedMatchCount=0");
+  assert(result.skippedReason === "normalized_empty", "friendly-only history should mark normalized_empty");
+
+  setApiFootballClientForTests(null);
 }
 
 function testMapFixtureRecordFulltimeFallback(): void {
@@ -616,6 +774,9 @@ async function runTests(): Promise<void> {
     await testUpsertAndStale();
     await testSameDayDedupe();
     await testQuotaFallback();
+    await testQuotaSkipDiagnostics();
+    await testApiRawEmptyDiagnostics();
+    await testNormalizedEmptyDiagnostics();
     testMapFixtureRecordFulltimeFallback();
     await testSeasonFallbackFetch();
     await testEmptyProfileDedupeRetry();

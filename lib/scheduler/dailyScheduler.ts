@@ -13,7 +13,6 @@ import {
   startExecutionLog,
 } from "@/lib/scheduler/executionLogStore";
 import { getApiFootballQuotaSnapshot } from "@/lib/providers/apiFootball/apiFootballQuota";
-import { enrichAnalysisReportWithFixture } from "@/lib/scheduler/fixtureMapping";
 import {
   fetchFixturesByDate,
   filterAnalyzableFixtures,
@@ -34,6 +33,8 @@ import {
   buildMatchTeamProfilesSnapshot,
   ensureTeamProfilesForMatch,
 } from "@/lib/teamProfile";
+import type { TeamProfileTeamDiagnostic } from "@/lib/teamProfile/teamProfileTypes";
+import { enrichAnalysisReportWithFixture } from "@/lib/scheduler/fixtureMapping";
 
 export interface DailySchedulerDependencies {
   runDate?: string;
@@ -74,12 +75,20 @@ async function runScheduledDailyPipeline(
     maxRetries: number;
     retryDelayMs: number;
   }
-): Promise<DailyPipelineResult & { teamProfileWarnings: string[] }> {
+): Promise<
+  DailyPipelineResult & {
+    teamProfileWarnings: string[];
+    teamProfileDiagnostics: TeamProfileTeamDiagnostic[];
+    teamProfileApiRequestCount: number;
+  }
+> {
   const items: DailyPipelineResult["items"] = [];
   let created = 0;
   let duplicates = 0;
   let failed = 0;
   const teamProfileWarnings: string[] = [];
+  const teamProfileDiagnostics: TeamProfileTeamDiagnostic[] = [];
+  const teamProfileQuotaStart = getApiFootballQuotaSnapshot().dailyCount;
 
   for (const fixture of fixtures) {
     try {
@@ -101,6 +110,7 @@ async function runScheduledDailyPipeline(
                 });
                 profileSnapshot = profileResult.snapshot;
                 teamProfileWarnings.push(...profileResult.profileWarnings);
+                teamProfileDiagnostics.push(...profileResult.profileDiagnostics);
               } catch (error) {
                 const message =
                   error instanceof Error ? error.message : String(error);
@@ -173,6 +183,11 @@ async function runScheduledDailyPipeline(
     failed,
     items,
     teamProfileWarnings,
+    teamProfileDiagnostics,
+    teamProfileApiRequestCount: Math.max(
+      0,
+      getApiFootballQuotaSnapshot().dailyCount - teamProfileQuotaStart
+    ),
   };
 }
 
@@ -315,12 +330,14 @@ export async function runDailyScheduler(
             skippedCount: intake.skipped.length,
             errorCount: pipeline.failed,
             apiFootballRequestCount,
+            teamProfileApiRequestCount: pipeline.teamProfileApiRequestCount,
             fixturesAfterWhitelist: whitelisted.length,
             created: pipeline.created,
             duplicates: pipeline.duplicates,
             failed: pipeline.failed,
             intakeWarnings,
             teamProfileWarnings: pipeline.teamProfileWarnings,
+            teamProfileDiagnostics: pipeline.teamProfileDiagnostics,
           }),
         });
 

@@ -83,15 +83,55 @@ export interface TeamProfileIdentity {
   season: number | null;
 }
 
+export interface TeamProfileApiAttemptDiagnostic {
+  requestUrl: string;
+  rawResponseCount: number;
+  afterGoalFilterCount: number;
+  normalizedMatchCount: number;
+}
+
+export interface TeamProfileFetchDiagnostics {
+  apiConfigured: boolean;
+  quotaAvailableAtStart: boolean;
+  quotaExhausted: boolean;
+  quotaBlockReason: string | null;
+  attempts: TeamProfileApiAttemptDiagnostic[];
+  normalizedMatchCount: number;
+}
+
+export interface TeamProfileTeamDiagnostic {
+  teamId: number;
+  teamName: string;
+  side: "home" | "away";
+  matchLabel: string;
+  requestUrl: string | null;
+  requestUrls: string[];
+  rawResponseCount: number;
+  afterGoalFilterCount: number;
+  normalizedMatchCount: number;
+  skippedReason?: string;
+  quotaAvailable: boolean;
+  apiConfigured: boolean;
+  quotaExhausted: boolean;
+  quotaBlockReason: string | null;
+  source?: string;
+  sampleSize?: number;
+  warnings: string[];
+  attempts: TeamProfileApiAttemptDiagnostic[];
+}
+
 export interface RefreshTeamProfileInput extends TeamProfileIdentity {
   runDate?: string;
   allowApiFetch?: boolean;
+  waitForQuota?: boolean;
+  maxQuotaWaitMs?: number;
 }
 
 export interface RefreshTeamProfileResult {
   profile: TeamProfile;
   completeness: number;
   warnings: string[];
+  diagnostics: TeamProfileTeamDiagnostic;
   refreshed: boolean;
   skippedReason?: string;
 }
@@ -118,6 +158,7 @@ export interface EnsureTeamProfilesInput {
 export interface EnsureTeamProfilesResult {
   snapshot: MatchTeamProfilesSnapshot;
   profileWarnings: string[];
+  profileDiagnostics: TeamProfileTeamDiagnostic[];
 }
 
 export const FORM_SCORE_DECAY = 0.92;

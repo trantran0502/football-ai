@@ -8,6 +8,9 @@ export type {
   TeamProfileIdentity,
   TeamProfileMatchInput,
   TeamProfileSource,
+  TeamProfileTeamDiagnostic,
+  TeamProfileFetchDiagnostics,
+  TeamProfileApiAttemptDiagnostic,
 } from "@/lib/teamProfile/teamProfileTypes";
 
 export {
@@ -33,6 +36,11 @@ export {
 } from "@/lib/teamProfile/teamProfileNormalizer";
 
 export { fetchTeamProfileData } from "@/lib/teamProfile/teamProfileDataSource";
+
+export {
+  buildTeamProfileTeamDiagnostic,
+  summarizeTeamProfileDiagnostics,
+} from "@/lib/teamProfile/teamProfileDiagnostics";
 
 export {
   disableTeamProfileMemoryStoreForTests,

@@ -11,6 +11,11 @@ import {
   recordApiFootballRequest,
   resetApiFootballQuotaForTests,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
+import { setApiFootballClientForTests } from "@/lib/providers/apiFootball/apiFootballClient";
+import {
+  enableTeamProfileMemoryStoreForTests,
+  resetTeamProfileRefreshDedupeForTests,
+} from "@/lib/teamProfile";
 import {
   buildSchedulerPlaceholderOdds,
   disableExecutionLogPersistStoreForTests,
@@ -613,6 +618,136 @@ async function testAnalyzePipelineIntegrity(): Promise<void> {
   assert(report.bettingIntelligence !== undefined, "analyzeMatch should still produce betting intelligence");
 }
 
+async function testTeamProfileExecutionLogDiagnostics(): Promise<void> {
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetPersistedExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  resetApiFootballQuotaForTests();
+  resetTeamProfileRefreshDedupeForTests();
+  enableTeamProfileMemoryStoreForTests();
+
+  class TeamProfileMockClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      _last: number,
+      _options: Record<string, unknown> = {}
+    ): Promise<{ teamId: number; fixtures: ApiFootballFixtureRecord[]; meta: { requestPath: string; rawResponseCount: number } }> {
+      recordApiFootballRequest();
+      return {
+        teamId,
+        fixtures: [],
+        meta: {
+          requestPath: `/fixtures?team=${teamId}&last=15&status=FT`,
+          rawResponseCount: 0,
+        },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new TeamProfileMockClient() as never);
+
+  const apiFixtures = [
+    buildApiFixture({
+      id: 21,
+      home: "Arsenal",
+      away: "Chelsea",
+      league: "Premier League",
+      leagueId: 39,
+      status: "NS",
+    }),
+  ];
+
+  await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "test-team-profile-diagnostics",
+    fetchFixtures: async () => intakeFixtures(apiFixtures),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  const logs = listExecutionLogs();
+  const dailyLog = logs.find((entry) => entry.jobName === "daily_analysis" && entry.success);
+  assert(dailyLog !== undefined, "daily execution log should exist");
+  assert(Array.isArray(dailyLog?.context?.teamProfileDiagnostics), "execution log should include teamProfileDiagnostics");
+  assert(
+    (dailyLog?.context?.teamProfileDiagnostics as unknown[]).length >= 2,
+    "execution log should include home and away diagnostics"
+  );
+  assert(Array.isArray(dailyLog?.context?.teamProfileWarnings), "execution log should include teamProfileWarnings");
+  assert(
+    typeof dailyLog?.context?.teamProfileApiRequestCount === "number",
+    "execution log should include teamProfileApiRequestCount"
+  );
+
+  setApiFootballClientForTests(null);
+}
+
+async function testTeamProfileQuotaDiagnosticsInExecutionLog(): Promise<void> {
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetPersistedExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  resetApiFootballQuotaForTests();
+  resetTeamProfileRefreshDedupeForTests();
+  enableTeamProfileMemoryStoreForTests();
+
+  for (let index = 0; index < 10; index += 1) {
+    recordApiFootballRequest();
+  }
+
+  process.env.TEAM_PROFILE_QUOTA_WAIT_MS = "0";
+
+  class UnusedClient {
+    isConfigured(): boolean {
+      return true;
+    }
+  }
+
+  setApiFootballClientForTests(new UnusedClient() as never);
+
+  const apiFixtures = [
+    buildApiFixture({
+      id: 22,
+      home: "Liverpool",
+      away: "Tottenham",
+      league: "Premier League",
+      leagueId: 39,
+      status: "NS",
+    }),
+  ];
+
+  await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "test-team-profile-quota",
+    fetchFixtures: async () => intakeFixtures(apiFixtures),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  const logs = listExecutionLogs();
+  const dailyLog = logs.find((entry) => entry.jobName === "daily_analysis" && entry.success);
+  const diagnostics = dailyLog?.context?.teamProfileDiagnostics as Array<{ quotaExhausted?: boolean }> | undefined;
+  assert(Array.isArray(diagnostics) && diagnostics.length > 0, "quota diagnostics should be logged");
+  assert(
+    Boolean(diagnostics?.some((entry) => entry.quotaExhausted === true)),
+    "quota exhausted teams should be logged in diagnostics"
+  );
+
+  setApiFootballClientForTests(null);
+  delete process.env.TEAM_PROFILE_QUOTA_WAIT_MS;
+}
+
 async function runTests(): Promise<void> {
   enableExecutionLogPersistStoreForTests();
   try {
@@ -629,6 +764,8 @@ async function runTests(): Promise<void> {
     await testSchedulerObservabilityColdStart();
     await testSchedulerApiUsageFromSnapshot();
     await testExecutionLogPersistFailureWarning();
+    await testTeamProfileExecutionLogDiagnostics();
+    await testTeamProfileQuotaDiagnosticsInExecutionLog();
     await testLeagueIdWhitelistHelper();
     await testAnalyzePipelineIntegrity();
     console.log("All scheduler tests passed.");

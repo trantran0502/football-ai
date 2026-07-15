@@ -4,8 +4,17 @@ import {
   getApiFootballClient,
   getApiFootballCurrentSeason,
 } from "@/lib/providers/apiFootball/apiFootballClient";
-import { canMakeApiFootballRequest } from "@/lib/providers/apiFootball/apiFootballQuota";
+import {
+  canMakeApiFootballRequest,
+  getApiFootballQuotaBlockReason,
+  getApiFootballQuotaSnapshot,
+  waitForApiFootballQuota,
+} from "@/lib/providers/apiFootball/apiFootballQuota";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import {
+  createEmptyFetchDiagnostics,
+  recordApiAttempt,
+} from "@/lib/teamProfile/teamProfileDiagnostics";
 import {
   normalizeApiFootballFixtures,
   normalizeVerifiedMatchRecords,
@@ -13,6 +22,7 @@ import {
 } from "@/lib/teamProfile/teamProfileNormalizer";
 import type {
   TeamProfileAdvancedStatsInput,
+  TeamProfileFetchDiagnostics,
   TeamProfileIdentity,
   TeamProfileMatchInput,
 } from "@/lib/teamProfile/teamProfileTypes";
@@ -22,6 +32,7 @@ export interface TeamProfileDataFetchResult {
   advancedStats: TeamProfileAdvancedStatsInput | null;
   source: "api-football" | "match-records" | "incomplete";
   warnings: string[];
+  diagnostics: TeamProfileFetchDiagnostics;
 }
 
 const TEAM_FORM_LAST = 15;
@@ -31,30 +42,71 @@ export async function fetchTeamProfileData(
   options: {
     allowApiFetch?: boolean;
     listVerifiedRecords?: () => Promise<HistoricalMatchRecord[]>;
+    waitForQuota?: boolean;
+    maxQuotaWaitMs?: number;
   } = {}
 ): Promise<TeamProfileDataFetchResult> {
   const allowApiFetch = options.allowApiFetch ?? true;
+  const waitForQuota = options.waitForQuota ?? true;
+  const maxQuotaWaitMs =
+    options.maxQuotaWaitMs ??
+    readTeamProfileQuotaWaitMsFromEnv();
   const warnings: string[] = [];
+  const quotaAvailableAtStart = canMakeApiFootballRequest();
+  const client = getApiFootballClient();
+  const apiConfigured = client.isConfigured();
+  let diagnostics = createEmptyFetchDiagnostics({
+    apiConfigured,
+    quotaAvailable: quotaAvailableAtStart,
+    quotaExhausted: !quotaAvailableAtStart,
+    quotaBlockReason: getApiFootballQuotaBlockReason(),
+  });
+
+  if (allowApiFetch && !apiConfigured) {
+    warnings.push("API-Football is not configured; team profile API fetch skipped.");
+    return finalizeWithoutApiMatches(identity, options, warnings, diagnostics);
+  }
+
+  if (allowApiFetch && !quotaAvailableAtStart) {
+    diagnostics.quotaExhausted = true;
+    diagnostics.quotaBlockReason = getApiFootballQuotaBlockReason();
+    warnings.push(
+      `API-Football quota exhausted before team profile fetch (${diagnostics.quotaBlockReason ?? "unknown"}).`
+    );
+
+    if (waitForQuota) {
+      const waitResult = await waitForApiFootballQuota({ maxWaitMs: maxQuotaWaitMs });
+      warnings.push(
+        waitResult.available
+          ? `API-Football quota became available after ${waitResult.waitedMs}ms.`
+          : `API-Football quota still unavailable after waiting ${waitResult.waitedMs}ms.`
+      );
+      diagnostics.quotaAvailableAtStart = waitResult.available;
+      diagnostics.quotaExhausted = !waitResult.available;
+      diagnostics.quotaBlockReason = waitResult.available
+        ? null
+        : getApiFootballQuotaBlockReason();
+    }
+  }
 
   if (allowApiFetch && canMakeApiFootballRequest()) {
     try {
-      const client = getApiFootballClient();
-      if (client.isConfigured()) {
-        const matches = await fetchTeamFixturesFromApi(client, identity, warnings);
-        const advancedStats = await fetchAdvancedStatsFromApi(client, identity, warnings);
+      const apiResult = await fetchTeamProfileDataFromApi(client, identity, warnings);
+      diagnostics = apiResult.diagnostics;
 
-        if (matches.length > 0) {
-          return {
-            matches,
-            advancedStats,
-            source: "api-football",
-            warnings,
-          };
-        }
-        warnings.push(
-          "API-Football returned no official completed matches after all fetch strategies."
-        );
+      if (apiResult.matches.length > 0) {
+        return {
+          matches: apiResult.matches,
+          advancedStats: apiResult.advancedStats,
+          source: "api-football",
+          warnings,
+          diagnostics,
+        };
       }
+
+      warnings.push(
+        "API-Football returned no official completed matches after all fetch strategies."
+      );
     } catch (error) {
       warnings.push(
         error instanceof Error
@@ -63,35 +115,14 @@ export async function fetchTeamProfileData(
       );
     }
   } else if (allowApiFetch) {
-    warnings.push("API-Football quota exceeded; using fallback sources.");
+    diagnostics.quotaExhausted = true;
+    diagnostics.quotaBlockReason = getApiFootballQuotaBlockReason();
+    warnings.push(
+      `API-Football quota exhausted; team profile API fetch skipped (${diagnostics.quotaBlockReason ?? "unknown"}).`
+    );
   }
 
-  const verifiedRecords = options.listVerifiedRecords
-    ? await options.listVerifiedRecords()
-    : await loadVerifiedRecordsFallback(identity.teamName);
-
-  const verifiedMatches = normalizeVerifiedMatchRecords(
-    verifiedRecords,
-    identity.teamId,
-    identity.teamName
-  );
-
-  if (verifiedMatches.length > 0) {
-    return {
-      matches: verifiedMatches,
-      advancedStats: null,
-      source: "match-records",
-      warnings,
-    };
-  }
-
-  warnings.push("Insufficient team history from API and verified match records.");
-  return {
-    matches: [],
-    advancedStats: null,
-    source: "incomplete",
-    warnings,
-  };
+  return finalizeWithoutApiMatches(identity, options, warnings, diagnostics);
 }
 
 export function mergeTeamProfileMatches(
@@ -105,17 +136,39 @@ export function mergeTeamProfileMatches(
   return sortMatchesDesc([...merged.values()]);
 }
 
-async function fetchTeamFixturesFromApi(
+async function fetchTeamProfileDataFromApi(
   client: ApiFootballClient,
   identity: TeamProfileIdentity,
   warnings: string[]
+): Promise<{
+  matches: TeamProfileMatchInput[];
+  advancedStats: TeamProfileAdvancedStatsInput | null;
+  diagnostics: TeamProfileFetchDiagnostics;
+}> {
+  const diagnostics = createEmptyFetchDiagnostics({
+    apiConfigured: client.isConfigured(),
+    quotaAvailable: canMakeApiFootballRequest(),
+    quotaBlockReason: getApiFootballQuotaBlockReason(),
+  });
+
+  const matches = await fetchTeamFixturesFromApi(client, identity, warnings, diagnostics);
+  const advancedStats = await fetchAdvancedStatsFromApi(client, identity, warnings, diagnostics);
+
+  return { matches, advancedStats, diagnostics };
+}
+
+async function fetchTeamFixturesFromApi(
+  client: ApiFootballClient,
+  identity: TeamProfileIdentity,
+  warnings: string[],
+  diagnostics: TeamProfileFetchDiagnostics
 ): Promise<TeamProfileMatchInput[]> {
   const seasonCandidates = buildSeasonCandidates(identity.season);
 
   if (identity.leagueId !== null) {
     for (const season of seasonCandidates) {
       if (!canMakeApiFootballRequest()) {
-        warnings.push("API-Football quota exceeded during league-scoped fixture fetch.");
+        markQuotaExhausted(diagnostics, warnings, "league-scoped fixture fetch");
         break;
       }
 
@@ -124,6 +177,17 @@ async function fetchTeamFixturesFromApi(
         season,
         status: "FT",
       });
+      const matches = normalizeApiFootballFixtures(form.fixtures);
+      recordApiAttempt(diagnostics, {
+        requestUrl: form.meta?.requestPath ?? buildTeamFormPath(identity.teamId, {
+          leagueId: identity.leagueId,
+          season,
+          status: "FT",
+        }),
+        rawResponseCount: form.meta?.rawResponseCount ?? 0,
+        afterGoalFilterCount: form.fixtures.length,
+        normalizedMatchCount: matches.length,
+      });
       appendFixtureAttemptWarning(
         warnings,
         form.meta,
@@ -131,8 +195,6 @@ async function fetchTeamFixturesFromApi(
         identity.leagueId,
         season
       );
-
-      const matches = normalizeApiFootballFixtures(form.fixtures);
       warnings.push(
         `Normalizer: ${matches.length} official completed matches (league=${identity.leagueId}, season=${season}).`
       );
@@ -146,36 +208,38 @@ async function fetchTeamFixturesFromApi(
     const form = await client.getTeamForm(identity.teamId, TEAM_FORM_LAST, {
       status: "FT",
     });
-    appendFixtureAttemptWarning(
-      warnings,
-      form.meta,
-      form.fixtures.length,
-      null,
-      null
-    );
-
     const matches = normalizeApiFootballFixtures(form.fixtures);
+    recordApiAttempt(diagnostics, {
+      requestUrl: form.meta?.requestPath ?? buildTeamFormPath(identity.teamId, { status: "FT" }),
+      rawResponseCount: form.meta?.rawResponseCount ?? 0,
+      afterGoalFilterCount: form.fixtures.length,
+      normalizedMatchCount: matches.length,
+    });
+    appendFixtureAttemptWarning(warnings, form.meta, form.fixtures.length, null, null);
     warnings.push(`Normalizer: ${matches.length} official completed matches (global FT).`);
     if (matches.length > 0) {
       return matches;
     }
+  } else {
+    markQuotaExhausted(diagnostics, warnings, "global FT fixture fetch");
   }
 
   if (canMakeApiFootballRequest()) {
     const form = await client.getTeamForm(identity.teamId, TEAM_FORM_LAST);
-    appendFixtureAttemptWarning(
-      warnings,
-      form.meta,
-      form.fixtures.length,
-      null,
-      null
-    );
-
     const matches = normalizeApiFootballFixtures(form.fixtures);
+    recordApiAttempt(diagnostics, {
+      requestUrl: form.meta?.requestPath ?? buildTeamFormPath(identity.teamId, {}),
+      rawResponseCount: form.meta?.rawResponseCount ?? 0,
+      afterGoalFilterCount: form.fixtures.length,
+      normalizedMatchCount: matches.length,
+    });
+    appendFixtureAttemptWarning(warnings, form.meta, form.fixtures.length, null, null);
     warnings.push(`Normalizer: ${matches.length} official completed matches (global last).`);
     if (matches.length > 0) {
       return matches;
     }
+  } else {
+    markQuotaExhausted(diagnostics, warnings, "global last fixture fetch");
   }
 
   return [];
@@ -184,7 +248,8 @@ async function fetchTeamFixturesFromApi(
 async function fetchAdvancedStatsFromApi(
   client: ApiFootballClient,
   identity: TeamProfileIdentity,
-  warnings: string[]
+  warnings: string[],
+  diagnostics: TeamProfileFetchDiagnostics
 ): Promise<TeamProfileAdvancedStatsInput | null> {
   if (identity.leagueId === null) {
     return null;
@@ -192,7 +257,7 @@ async function fetchAdvancedStatsFromApi(
 
   for (const season of buildSeasonCandidates(identity.season)) {
     if (!canMakeApiFootballRequest()) {
-      warnings.push("API-Football quota exceeded during team statistics fetch.");
+      markQuotaExhausted(diagnostics, warnings, "team statistics fetch");
       break;
     }
 
@@ -214,6 +279,45 @@ async function fetchAdvancedStatsFromApi(
   }
 
   return null;
+}
+
+async function finalizeWithoutApiMatches(
+  identity: TeamProfileIdentity,
+  options: {
+    listVerifiedRecords?: () => Promise<HistoricalMatchRecord[]>;
+  },
+  warnings: string[],
+  diagnostics: TeamProfileFetchDiagnostics
+): Promise<TeamProfileDataFetchResult> {
+  const verifiedRecords = options.listVerifiedRecords
+    ? await options.listVerifiedRecords()
+    : await loadVerifiedRecordsFallback(identity.teamName);
+
+  const verifiedMatches = normalizeVerifiedMatchRecords(
+    verifiedRecords,
+    identity.teamId,
+    identity.teamName
+  );
+
+  if (verifiedMatches.length > 0) {
+    diagnostics.normalizedMatchCount = verifiedMatches.length;
+    return {
+      matches: verifiedMatches,
+      advancedStats: null,
+      source: "match-records",
+      warnings,
+      diagnostics,
+    };
+  }
+
+  warnings.push("Insufficient team history from API and verified match records.");
+  return {
+    matches: [],
+    advancedStats: null,
+    source: "incomplete",
+    warnings,
+    diagnostics,
+  };
 }
 
 function buildSeasonCandidates(season: number | null): number[] {
@@ -250,6 +354,37 @@ function appendFixtureAttemptWarning(
   warnings.push(
     `API ${meta.requestPath} raw=${meta.rawResponseCount} afterGoalFilter=${afterGoalFilterCount} (${scope}).`
   );
+}
+
+function markQuotaExhausted(
+  diagnostics: TeamProfileFetchDiagnostics,
+  warnings: string[],
+  phase: string
+): void {
+  diagnostics.quotaExhausted = true;
+  diagnostics.quotaBlockReason = getApiFootballQuotaBlockReason();
+  warnings.push(
+    `API-Football quota exhausted during ${phase} (${diagnostics.quotaBlockReason ?? "unknown"}).`
+  );
+}
+
+function buildTeamFormPath(
+  teamId: number,
+  options: { leagueId?: number; season?: number; status?: string }
+): string {
+  const params = new URLSearchParams();
+  params.set("team", String(teamId));
+  params.set("last", String(TEAM_FORM_LAST));
+  if (options.leagueId !== undefined) {
+    params.set("league", String(options.leagueId));
+  }
+  if (options.season !== undefined) {
+    params.set("season", String(options.season));
+  }
+  if (options.status) {
+    params.set("status", options.status);
+  }
+  return `/fixtures?${params.toString()}`;
 }
 
 function mapSeasonStatistics(
@@ -310,4 +445,17 @@ async function loadVerifiedRecordsFallback(
   } catch {
     return [];
   }
+}
+
+export function getTeamProfileQuotaSnapshotForDiagnostics() {
+  return getApiFootballQuotaSnapshot();
+}
+
+function readTeamProfileQuotaWaitMsFromEnv(): number {
+  const raw = process.env.TEAM_PROFILE_QUOTA_WAIT_MS?.trim();
+  if (!raw) {
+    return 65_000;
+  }
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 65_000;
 }

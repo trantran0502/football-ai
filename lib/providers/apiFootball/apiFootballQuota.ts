@@ -17,6 +17,40 @@ export function canMakeApiFootballRequest(now = Date.now()): boolean {
   );
 }
 
+export function getApiFootballQuotaBlockReason(
+  now = Date.now()
+): "minute_limit" | "daily_limit" | null {
+  refreshWindow(now);
+  if (quotaState.dailyCount >= DAILY_LIMIT) {
+    return "daily_limit";
+  }
+  if (quotaState.minuteCount >= MINUTE_LIMIT) {
+    return "minute_limit";
+  }
+  return null;
+}
+
+export async function waitForApiFootballQuota(
+  options: { maxWaitMs?: number; intervalMs?: number } = {}
+): Promise<{ available: boolean; waitedMs: number }> {
+  const maxWaitMs = options.maxWaitMs ?? 65_000;
+  const intervalMs = options.intervalMs ?? 1_000;
+  const startedAt = Date.now();
+
+  if (canMakeApiFootballRequest(startedAt)) {
+    return { available: true, waitedMs: 0 };
+  }
+
+  while (Date.now() - startedAt < maxWaitMs) {
+    await sleep(intervalMs);
+    if (canMakeApiFootballRequest()) {
+      return { available: true, waitedMs: Date.now() - startedAt };
+    }
+  }
+
+  return { available: false, waitedMs: Date.now() - startedAt };
+}
+
 export function recordApiFootballRequest(now = Date.now()): void {
   refreshWindow(now);
   quotaState.dailyCount += 1;
@@ -73,4 +107,10 @@ function toDayKey(now: number): string {
 function toMinuteKey(now: number): string {
   const date = new Date(now);
   return `${date.toISOString().slice(0, 16)}`;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
