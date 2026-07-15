@@ -18,6 +18,8 @@ export interface ProductionFixture {
   kickoffTime: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamId: number;
+  awayTeamId: number;
   rawOdds: string;
 }
 

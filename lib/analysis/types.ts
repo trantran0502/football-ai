@@ -152,6 +152,8 @@ export interface RecommendationSection {
   message: string;
 }
 
+import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
+
 /** 端到端分析報告 */
 export interface AnalysisReport {
   match: MatchData;
@@ -163,6 +165,7 @@ export interface AnalysisReport {
   recommendation: RecommendationSection;
   bettingIntelligence: BettingIntelligenceResult | null;
   decision: DecisionResult | null;
+  teamProfiles?: MatchTeamProfilesSnapshot | null;
 }
 
 export type MarketSelectionInput = MarketSelection[];

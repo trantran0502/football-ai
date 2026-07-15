@@ -14,6 +14,7 @@ import type { BacktestEngineResult } from "@/lib/backtest/types";
 import type { RuleValidationReport } from "@/lib/rules/validation/types";
 import type { RecommendationValidationResult } from "@/lib/validation/validationTypes";
 import type { ReplaySnapshot } from "@/lib/replay/replayTypes";
+import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type { BettingIntelligenceResult } from "@/lib/betting/intelligenceTypes";
 import type { DecisionResult } from "@/lib/decision/decisionTypes";
 import { buildReplaySnapshotFromReport } from "@/lib/replay/replayBuilder";
@@ -42,6 +43,7 @@ export interface AnalysisSnapshot {
   replay: ReplaySnapshot | null;
   bettingIntelligence: BettingIntelligenceResult | null;
   decision: DecisionResult | null;
+  teamProfiles?: MatchTeamProfilesSnapshot | null;
   capturedAt: string;
 }
 
@@ -161,6 +163,7 @@ export function createAnalysisSnapshotFromReport(
     replay: null,
     bettingIntelligence: report.bettingIntelligence ?? null,
     decision: report.decision ?? null,
+    teamProfiles: report.teamProfiles ?? null,
     capturedAt,
   };
 

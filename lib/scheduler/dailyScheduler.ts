@@ -29,6 +29,11 @@ import {
 import { getSchedulerConfig } from "@/lib/scheduler/schedulerConfig";
 import type { DailySchedulerResult } from "@/lib/scheduler/schedulerTypes";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import {
+  attachTeamProfilesToReport,
+  buildMatchTeamProfilesSnapshot,
+  ensureTeamProfilesForMatch,
+} from "@/lib/teamProfile";
 
 export interface DailySchedulerDependencies {
   runDate?: string;
@@ -69,11 +74,12 @@ async function runScheduledDailyPipeline(
     maxRetries: number;
     retryDelayMs: number;
   }
-): Promise<DailyPipelineResult> {
+): Promise<DailyPipelineResult & { teamProfileWarnings: string[] }> {
   const items: DailyPipelineResult["items"] = [];
   let created = 0;
   let duplicates = 0;
   let failed = 0;
+  const teamProfileWarnings: string[] = [];
 
   for (const fixture of fixtures) {
     try {
@@ -81,9 +87,44 @@ async function runScheduledDailyPipeline(
         async () =>
           withTimeout(
             (async () => {
-              const report = enrichAnalysisReportWithFixture(
-                analyzeMatch(fixture.rawOdds),
-                fixture
+              let profileSnapshot = buildMatchTeamProfilesSnapshot(null, null, []);
+              try {
+                const profileResult = await ensureTeamProfilesForMatch({
+                  runDate,
+                  homeTeamId: fixture.homeTeamId,
+                  awayTeamId: fixture.awayTeamId,
+                  homeTeamName: fixture.homeTeam,
+                  awayTeamName: fixture.awayTeam,
+                  leagueId: fixture.leagueId,
+                  leagueName: fixture.leagueName,
+                  season: fixture.season,
+                });
+                profileSnapshot = profileResult.snapshot;
+                teamProfileWarnings.push(...profileResult.profileWarnings);
+              } catch (error) {
+                const message =
+                  error instanceof Error ? error.message : String(error);
+                teamProfileWarnings.push(
+                  `Team profile refresh failed for ${fixture.homeTeam} vs ${fixture.awayTeam}: ${message}`
+                );
+                logAdminError({
+                  category: "scheduler",
+                  message: "Team profile refresh failed",
+                  context: {
+                    runDate,
+                    homeTeam: fixture.homeTeam,
+                    awayTeam: fixture.awayTeam,
+                    error: message,
+                  },
+                });
+              }
+
+              const report = attachTeamProfilesToReport(
+                enrichAnalysisReportWithFixture(
+                  analyzeMatch(fixture.rawOdds),
+                  fixture
+                ),
+                profileSnapshot
               );
               return dependencies.saveMatch(fixture.rawOdds, report, fixture.matchDate);
             })(),
@@ -131,6 +172,7 @@ async function runScheduledDailyPipeline(
     duplicates,
     failed,
     items,
+    teamProfileWarnings,
   };
 }
 
@@ -278,6 +320,7 @@ export async function runDailyScheduler(
             duplicates: pipeline.duplicates,
             failed: pipeline.failed,
             intakeWarnings,
+            teamProfileWarnings: pipeline.teamProfileWarnings,
           }),
         });
 

@@ -42,6 +42,12 @@ export function validateApiFixtureRecord(
   if (!isNonEmptyString(fixture.awayTeam)) {
     return { ok: false, reason: "Missing away team" };
   }
+  if (!isPositiveInteger(fixture.homeTeamId)) {
+    return { ok: false, reason: "Missing home team id" };
+  }
+  if (!isPositiveInteger(fixture.awayTeamId)) {
+    return { ok: false, reason: "Missing away team id" };
+  }
   return { ok: true };
 }
 
@@ -67,6 +73,8 @@ export function mapApiFixtureToSchedulerSource(
     kickoffTime: fixture.kickoffTime ?? `${fixture.date}T00:00:00.000Z`,
     homeTeam,
     awayTeam,
+    homeTeamId: fixture.homeTeamId,
+    awayTeamId: fixture.awayTeamId,
     status: fixture.status,
     rawOdds: buildSchedulerPlaceholderOdds(homeTeam, awayTeam),
   };
@@ -107,6 +115,8 @@ export function toProductionFixture(source: SchedulerFixtureSource): ProductionF
     kickoffTime: source.kickoffTime,
     homeTeam: source.homeTeam,
     awayTeam: source.awayTeam,
+    homeTeamId: source.homeTeamId,
+    awayTeamId: source.awayTeamId,
     rawOdds: source.rawOdds ?? buildSchedulerPlaceholderOdds(source.homeTeam, source.awayTeam),
   };
 }

@@ -37,6 +37,7 @@
     "test:decision": "tsx scripts/test-decision-engine.ts",
     "test:production-validation": "tsx scripts/test-production-validation.ts",
     "test:scheduler": "tsx scripts/test-scheduler.ts",
+    "test:team-profile": "tsx scripts/test-team-profile.ts",
     "test:learning": "tsx scripts/test-learning.ts",
     "test:security": "tsx scripts/test-security.ts",
     "test:odds-knowledge": "tsx scripts/test-odds-knowledge.ts",

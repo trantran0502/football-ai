@@ -238,6 +238,8 @@ async function runTests(): Promise<void> {
         kickoffTime: `${MATCH_DATE}T19:00:00.000Z`,
         homeTeam: "Arsenal",
         awayTeam: "Chelsea",
+        homeTeamId: 42,
+        awayTeamId: 49,
         rawOdds: SAMPLE_ODDS,
       },
     ],

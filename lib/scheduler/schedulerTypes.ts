@@ -123,6 +123,8 @@ export interface SchedulerFixtureSource {
   kickoffTime: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamId: number;
+  awayTeamId: number;
   status: string;
   rawOdds?: string;
 }
