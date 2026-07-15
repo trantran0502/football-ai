@@ -39,6 +39,7 @@ export {
   buildSchedulerPlaceholderOdds,
 } from "@/lib/scheduler/schedulerPlaceholderOdds";
 export {
+  buildFixtureFilterStats,
   fetchFixturesByDate,
   filterAnalyzableFixtures,
   filterFixturesByLeagueIdWhitelist,
@@ -46,6 +47,7 @@ export {
   filterFixturesBySchedulerLeaguePolicy,
   toProductionFixtures,
 } from "@/lib/scheduler/fixtureIntake";
+export type { FixtureFilterStats } from "@/lib/scheduler/fixtureFilterStats";
 export {
   enrichAnalysisReportWithFixture,
   intakeApiFixtures,
