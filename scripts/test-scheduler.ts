@@ -18,6 +18,7 @@ import {
 } from "@/lib/teamProfile";
 import {
   buildSchedulerPlaceholderOdds,
+  buildFixtureFilterStats,
   disableExecutionLogPersistStoreForTests,
   enableExecutionLogPersistStoreForTests,
   enrichAnalysisReportWithFixture,
@@ -586,6 +587,127 @@ async function testExecutionLogPersistFailureWarning(): Promise<void> {
   setExecutionLogPersistFailureForTests(false);
 }
 
+async function testFixtureFilterStatsAllFinished(): Promise<void> {
+  resetSchedulerEnv();
+  const intake = intakeFixtures([
+    buildApiFixture({
+      id: 1,
+      home: "A",
+      away: "B",
+      league: "Premier League",
+      leagueId: 39,
+      status: "FT",
+    }),
+    buildApiFixture({
+      id: 2,
+      home: "C",
+      away: "D",
+      league: "La Liga",
+      leagueId: 140,
+      status: "AET",
+    }),
+  ]);
+  intake.fetchMeta = { apiRaw: 3, cancelledOrAbandoned: 1 };
+
+  const stats = buildFixtureFilterStats(intake, {
+    leagueIdWhitelist: [],
+    leagueWhitelist: [],
+  });
+
+  assert(stats.total === 2, "total should include valid intake fixtures");
+  assert(stats.apiRaw === 3, "apiRaw should come from fetch meta");
+  assert(stats.cancelledOrAbandoned === 1, "cancelledOrAbandoned should be tracked");
+  assert(stats.analyzable === 0, "finished fixtures should not be analyzable");
+  assert(stats.blockedFinishedStatus === 2, "all valid fixtures should be blocked by status");
+  assert(stats.afterWhitelist === 0, "no analyzable fixtures should remain after whitelist");
+  assert(stats.whitelist.activePolicy === "none", "empty whitelist should use none policy");
+}
+
+async function testFixtureFilterStatsWhitelistBlocks(): Promise<void> {
+  resetSchedulerEnv();
+  process.env.SCHEDULER_LEAGUE_ID_WHITELIST = "39";
+
+  const intake = intakeFixtures([
+    buildApiFixture({
+      id: 1,
+      home: "A",
+      away: "B",
+      league: "Premier League",
+      leagueId: 39,
+      status: "NS",
+    }),
+    buildApiFixture({
+      id: 2,
+      home: "C",
+      away: "D",
+      league: "J1 League",
+      leagueId: 98,
+      status: "NS",
+    }),
+  ]);
+
+  const config = getSchedulerConfig();
+  const stats = buildFixtureFilterStats(intake, {
+    leagueIdWhitelist: config.leagueIdWhitelist,
+    leagueWhitelist: config.leagueWhitelist,
+  });
+
+  assert(stats.analyzable === 2, "scheduled fixtures should be analyzable");
+  assert(stats.blockedLeagueId === 1, "non-whitelisted league should be blocked");
+  assert(stats.allowedLeague === 1, "whitelisted league should pass");
+  assert(stats.afterWhitelist === 1, "afterWhitelist should equal allowedLeague");
+  assert(stats.whitelist.leagueIdWhitelistConfigured, "league id whitelist should be active");
+  assert(!stats.whitelist.leagueIdWhitelistReadFailed, "whitelist read should not fail");
+}
+
+async function testFixtureFilterStatsInExecutionLog(): Promise<void> {
+  resetSchedulerEnv();
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+
+  const apiFixtures = Array.from({ length: 3 }, (_, index) =>
+    buildApiFixture({
+      id: index + 1,
+      home: `Home ${index + 1}`,
+      away: `Away ${index + 1}`,
+      league: index === 0 ? "Premier League" : "Regional League",
+      leagueId: index === 0 ? 39 : 500 + index,
+      status: index === 0 ? "NS" : "FT",
+    })
+  );
+
+  await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "test-filter-stats",
+    fetchFixtures: async () => ({
+      ...intakeFixtures(apiFixtures),
+      fetchMeta: { apiRaw: 4, cancelledOrAbandoned: 1 },
+    }),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  const logs = listExecutionLogs();
+  const dailyLog = logs.find((entry) => entry.jobName === "daily_analysis" && entry.success);
+  const filterStats = dailyLog?.context?.filterStats as {
+    total?: number;
+    analyzable?: number;
+    blockedFinishedStatus?: number;
+    allowedLeague?: number;
+    afterWhitelist?: number;
+    whitelist?: { activePolicy?: string };
+  } | undefined;
+
+  assert(filterStats !== undefined, "execution log should include filterStats");
+  assert(filterStats?.total === 3, "filterStats.total should match fetched fixtures");
+  assert(filterStats?.blockedFinishedStatus === 2, "filterStats should count finished fixtures");
+  assert(filterStats?.allowedLeague === 1, "only one analyzable fixture should remain");
+  assert(filterStats?.afterWhitelist === 1, "afterWhitelist should match allowedLeague");
+  assert(filterStats?.whitelist?.activePolicy === "none", "default policy should be none");
+}
+
 async function testLeagueIdWhitelistHelper(): Promise<void> {
   const fixtures = intakeFixtures([
     buildApiFixture({
@@ -766,6 +888,9 @@ async function runTests(): Promise<void> {
     await testExecutionLogPersistFailureWarning();
     await testTeamProfileExecutionLogDiagnostics();
     await testTeamProfileQuotaDiagnosticsInExecutionLog();
+    await testFixtureFilterStatsAllFinished();
+    await testFixtureFilterStatsWhitelistBlocks();
+    await testFixtureFilterStatsInExecutionLog();
     await testLeagueIdWhitelistHelper();
     await testAnalyzePipelineIntegrity();
     console.log("All scheduler tests passed.");

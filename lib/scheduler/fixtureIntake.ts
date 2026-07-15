@@ -12,6 +12,11 @@ import {
   type FixtureIntakeResult,
 } from "@/lib/scheduler/fixtureMapping";
 import { buildSchedulerPlaceholderOdds } from "@/lib/scheduler/schedulerPlaceholderOdds";
+import {
+  buildFixtureFilterStats,
+  filterAnalyzableFixtures,
+  type FixtureFilterStats,
+} from "@/lib/scheduler/fixtureFilterStats";
 
 export { buildSchedulerPlaceholderOdds } from "@/lib/scheduler/schedulerPlaceholderOdds";
 
@@ -71,16 +76,17 @@ export async function fetchFixturesByDate(
     (fixture) => fixture.status !== "CANC" && fixture.status !== "ABD"
   );
 
-  return intakeApiFixtures(activeFixtures);
+  const intake = intakeApiFixtures(activeFixtures);
+  return {
+    ...intake,
+    fetchMeta: {
+      apiRaw: apiFixtures.length,
+      cancelledOrAbandoned: apiFixtures.length - activeFixtures.length,
+    },
+  };
 }
 
-const FINISHED_OR_CANCELLED = new Set(["FT", "AET", "PEN", "CANC", "ABD", "AWD", "WO"]);
-
-export function filterAnalyzableFixtures(
-  fixtures: SchedulerFixtureSource[]
-): SchedulerFixtureSource[] {
-  return fixtures.filter((fixture) => !FINISHED_OR_CANCELLED.has(fixture.status));
-}
+export { buildFixtureFilterStats, filterAnalyzableFixtures, type FixtureFilterStats } from "@/lib/scheduler/fixtureFilterStats";
 
 export {
   filterFixturesByLeagueIdWhitelist,

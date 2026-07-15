@@ -14,6 +14,10 @@ export interface FixtureMappingSkip {
 export interface FixtureIntakeResult {
   fixtures: SchedulerFixtureSource[];
   skipped: FixtureMappingSkip[];
+  fetchMeta?: {
+    apiRaw: number;
+    cancelledOrAbandoned: number;
+  };
 }
 
 function isNonEmptyString(value: unknown): value is string {

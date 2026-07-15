@@ -20,6 +20,7 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   teamProfileApiRequestCount?: number;
   teamProfileWarnings?: string[];
   teamProfileDiagnostics?: unknown[];
+  filterStats?: Record<string, unknown>;
 }
 
 export interface CompleteExecutionLogResult {

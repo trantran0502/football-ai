@@ -15,6 +15,7 @@ import {
 import { getApiFootballQuotaSnapshot } from "@/lib/providers/apiFootball/apiFootballQuota";
 import {
   fetchFixturesByDate,
+  buildFixtureFilterStats,
   filterAnalyzableFixtures,
   filterFixturesBySchedulerLeaguePolicy,
   toProductionFixtures,
@@ -291,6 +292,10 @@ export async function runDailyScheduler(
           leagueIdWhitelist: config.leagueIdWhitelist,
           leagueWhitelist: config.leagueWhitelist,
         });
+        const filterStats = buildFixtureFilterStats(intake, {
+          leagueIdWhitelist: config.leagueIdWhitelist,
+          leagueWhitelist: config.leagueWhitelist,
+        });
         const productionFixtures = toProductionFixtures(whitelisted);
 
         const saveMatch =
@@ -332,6 +337,7 @@ export async function runDailyScheduler(
             apiFootballRequestCount,
             teamProfileApiRequestCount: pipeline.teamProfileApiRequestCount,
             fixturesAfterWhitelist: whitelisted.length,
+            filterStats: filterStats as unknown as Record<string, unknown>,
             created: pipeline.created,
             duplicates: pipeline.duplicates,
             failed: pipeline.failed,
