@@ -10,7 +10,13 @@ import {
   recordApiFootballRequest,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
 import {
+  parseApiFootballPlanSeasonRestriction,
+  parsePlanSeasonMessage,
+  parsePlanSeasonRestrictionFromText,
+} from "@/lib/providers/apiFootball/apiFootballPlanErrors";
+import {
   buildTeamProfilePersistencePlan,
+  buildTeamProfileTeamDiagnostic,
   calculateFormScore,
   calculateMomentumScore,
   calculateTeamProfile,
@@ -1110,6 +1116,382 @@ async function testHistoricalBaselineRepositoryPersistence(): Promise<void> {
   assert(listMemoryTeamProfilesForTests().length === 1, "upsert should consolidate to one profile row");
 }
 
+async function testProductionPlanSeasonParserFormats(): Promise<void> {
+  const formats = [
+    "Free plans do not have access to this season, try from 2022 to 2024.",
+    "Free plans do not have access to this season, from 2022 to 2024",
+    "Free plans do not have access between 2022 and 2024",
+    "Free plans do not have access to seasons 2022-2024",
+    "API-Football error: {\"plan\":\"Free plans do not have access, from 2022 to 2024\"}",
+  ];
+
+  for (const message of formats) {
+    const parsed =
+      parsePlanSeasonMessage(message) ?? parsePlanSeasonRestrictionFromText(message);
+    assert(parsed !== null, `parser should resolve production format: ${message}`);
+    assert(parsed!.maxSeason === 2024, `maxSeason should be 2024 for: ${message}`);
+    assert(parsed!.minSeason === 2022, `minSeason should be 2022 for: ${message}`);
+  }
+
+  const nestedPlanObject = parseApiFootballPlanSeasonRestriction({
+    plan: {
+      season: "Free plans do not have access between 2022 and 2024",
+    },
+  });
+  assert(nestedPlanObject !== null, "parser should resolve nested errors.plan object");
+  assert(nestedPlanObject!.maxSeason === 2024, "nested errors.plan maxSeason should be 2024");
+}
+
+async function testProductionPlanErrorParserClientPath(): Promise<void> {
+  resetApiFootballQuotaForTests();
+  resetTeamProfileMemoryStoreForTests();
+  enableTeamProfileMemoryStoreForTests();
+  const calls: string[] = [];
+
+  class ProductionParserPathClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string } = {}
+    ): Promise<{
+      teamId: number;
+      fixtures: ApiFootballFixtureRecord[];
+      meta: {
+        requestPath: string;
+        rawResponseCount: number;
+        planRestriction?: { message: string; minSeason: number; maxSeason: number } | null;
+      };
+    }> {
+      recordApiFootballRequest();
+      const path =
+        `/fixtures?team=${teamId}&last=${last}` +
+        (options.leagueId ? `&league=${options.leagueId}` : "") +
+        (options.season ? `&season=${options.season}` : "") +
+        (options.status ? `&status=${options.status}` : "");
+      calls.push(path);
+
+      if (options.season === 2026) {
+        const errors = {
+          plan: "Free plans do not have access to this season, try from 2022 to 2024.",
+        };
+        const planRestriction = parseApiFootballPlanSeasonRestriction(errors);
+        assert(planRestriction !== null, "production errors.plan should parse without throw");
+        return {
+          teamId,
+          fixtures: [],
+          meta: {
+            requestPath: path,
+            rawResponseCount: 0,
+            planRestriction: {
+              message: planRestriction!.message,
+              minSeason: planRestriction!.minSeason,
+              maxSeason: planRestriction!.maxSeason,
+            },
+          },
+        };
+      }
+
+      if (options.season === 2024) {
+        const match = buildMatch({
+          fixtureId: 901,
+          date: "2024-04-12",
+          homeGoals: 2,
+          awayGoals: 0,
+        });
+        return {
+          teamId,
+          fixtures: [
+            {
+              fixtureId: match.fixtureId,
+              date: match.date,
+              kickoffTime: null,
+              league: match.league,
+              leagueId: 39,
+              season: 2024,
+              homeTeam: match.homeTeam,
+              awayTeam: match.awayTeam,
+              homeTeamId: match.homeTeamId,
+              awayTeamId: match.awayTeamId,
+              status: match.status,
+              homeGoals: match.homeGoals,
+              awayGoals: match.awayGoals,
+              halfTimeHome: match.halfTimeHome,
+              halfTimeAway: match.halfTimeAway,
+              venue: null,
+              neutralVenue: false,
+            },
+          ],
+          meta: { requestPath: path, rawResponseCount: 1, planRestriction: null },
+        };
+      }
+
+      return {
+        teamId,
+        fixtures: [],
+        meta: { requestPath: path, rawResponseCount: 0, planRestriction: null },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new ProductionParserPathClient() as never);
+
+  const fetched = await fetchTeamProfileData(
+    { ...IDENTITY },
+    { allowApiFetch: true, listVerifiedRecords: async () => [] }
+  );
+  const profile = calculateTeamProfile({
+    identity: IDENTITY,
+    matches: fetched.matches,
+    advancedStats: fetched.advancedStats,
+    source: fetched.source,
+    seasonMetadata: fetched.seasonMetadata,
+  });
+  const diagnostic = buildTeamProfileTeamDiagnostic({
+    teamId: IDENTITY.teamId,
+    teamName: IDENTITY.teamName,
+    side: "home",
+    matchLabel: "Arsenal vs Chelsea",
+    fetchDiagnostics: fetched.diagnostics,
+    source: profile.source,
+    sampleSize: profile.sampleSize,
+    warnings: fetched.warnings,
+    quotaAvailable: true,
+  });
+
+  assert(fetched.diagnostics.attempts.length >= 2, "parser path should record at least 2 attempts");
+  assert(
+    fetched.diagnostics.attempts.some((attempt) => attempt.season === 2026 && attempt.planRestricted),
+    "2026 attempt should be marked plan restricted"
+  );
+  assert(
+    fetched.diagnostics.attempts.some((attempt) => attempt.season === 2024),
+    "2024 fallback attempt should be recorded"
+  );
+  assert(
+    diagnostic.requestUrls.some((url) => url.includes("season=2026")),
+    "requestUrls should include season=2026"
+  );
+  assert(
+    diagnostic.requestUrls.some((url) => url.includes("season=2024")),
+    "requestUrls should include season=2024"
+  );
+  assert(profile.season === 2024, "profile season should be dataSeason 2024");
+  assert(profile.requestedSeason === 2026, "profile requestedSeason should remain 2026");
+  assert(profile.isHistoricalBaseline, "profile should be historical baseline");
+  assert(profile.sampleSize > 0, "2024 fallback with data should populate sample size");
+  assert(calls.some((path) => path.includes("season=2026")), "2026 request should be attempted");
+  assert(calls.some((path) => path.includes("season=2024")), "2024 fallback request should be attempted");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testProductionPlanErrorCatchFallbackPath(): Promise<void> {
+  resetApiFootballQuotaForTests();
+  const calls: string[] = [];
+
+  class ThrowingProductionClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string } = {}
+    ): Promise<{
+      teamId: number;
+      fixtures: ApiFootballFixtureRecord[];
+      meta: { requestPath: string; rawResponseCount: number };
+    }> {
+      recordApiFootballRequest();
+      const path =
+        `/fixtures?team=${teamId}&last=${last}` +
+        (options.leagueId ? `&league=${options.leagueId}` : "") +
+        (options.season ? `&season=${options.season}` : "") +
+        (options.status ? `&status=${options.status}` : "");
+      calls.push(path);
+
+      if (options.season === 2026) {
+        throw new Error(
+          'API-Football error: {"plan":"Free plans do not have access to this season, from 2022 to 2024"}'
+        );
+      }
+
+      if (options.season === 2024) {
+        const match = buildMatch({
+          fixtureId: 902,
+          date: "2024-03-18",
+          homeGoals: 1,
+          awayGoals: 1,
+        });
+        return {
+          teamId,
+          fixtures: [
+            {
+              fixtureId: match.fixtureId,
+              date: match.date,
+              kickoffTime: null,
+              league: match.league,
+              leagueId: 39,
+              season: 2024,
+              homeTeam: match.homeTeam,
+              awayTeam: match.awayTeam,
+              homeTeamId: match.homeTeamId,
+              awayTeamId: match.awayTeamId,
+              status: match.status,
+              homeGoals: match.homeGoals,
+              awayGoals: match.awayGoals,
+              halfTimeHome: match.halfTimeHome,
+              halfTimeAway: match.halfTimeAway,
+              venue: null,
+              neutralVenue: false,
+            },
+          ],
+          meta: { requestPath: path, rawResponseCount: 1 },
+        };
+      }
+
+      return {
+        teamId,
+        fixtures: [],
+        meta: { requestPath: path, rawResponseCount: 0 },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new ThrowingProductionClient() as never);
+
+  const fetched = await fetchTeamProfileData(
+    { ...IDENTITY },
+    { allowApiFetch: true, listVerifiedRecords: async () => [] }
+  );
+  const profile = calculateTeamProfile({
+    identity: IDENTITY,
+    matches: fetched.matches,
+    advancedStats: fetched.advancedStats,
+    source: fetched.source,
+    seasonMetadata: fetched.seasonMetadata,
+  });
+
+  assert(fetched.diagnostics.attempts.length >= 2, "catch fallback should record at least 2 attempts");
+  assert(
+    fetched.diagnostics.attempts.some((attempt) => attempt.season === 2026 && attempt.planRestricted),
+    "catch fallback should record synthetic 2026 plan-restricted attempt"
+  );
+  assert(
+    fetched.diagnostics.attempts.some((attempt) => attempt.season === 2024),
+    "catch fallback should record 2024 attempt"
+  );
+  assert(profile.season === 2024, "catch fallback profile season should be 2024");
+  assert(profile.sampleSize > 0, "catch fallback with 2024 data should populate sample size");
+  assert(calls.some((path) => path.includes("season=2024")), "catch fallback should call season=2024");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testProductionPlanErrorEmptyHistoricalMetadata(): Promise<void> {
+  resetApiFootballQuotaForTests();
+
+  class EmptyHistoricalClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string } = {}
+    ): Promise<{
+      teamId: number;
+      fixtures: ApiFootballFixtureRecord[];
+      meta: {
+        requestPath: string;
+        rawResponseCount: number;
+        planRestriction?: { message: string; minSeason: number; maxSeason: number } | null;
+      };
+    }> {
+      recordApiFootballRequest();
+      const path =
+        `/fixtures?team=${teamId}&last=${last}` +
+        (options.leagueId ? `&league=${options.leagueId}` : "") +
+        (options.season ? `&season=${options.season}` : "") +
+        (options.status ? `&status=${options.status}` : "");
+
+      if (options.season === 2026) {
+        const planRestriction = parseApiFootballPlanSeasonRestriction({
+          plan: "Free plans do not have access between 2022 and 2024",
+        });
+        return {
+          teamId,
+          fixtures: [],
+          meta: {
+            requestPath: path,
+            rawResponseCount: 0,
+            planRestriction: planRestriction
+              ? {
+                  message: planRestriction.message,
+                  minSeason: planRestriction.minSeason,
+                  maxSeason: planRestriction.maxSeason,
+                }
+              : null,
+          },
+        };
+      }
+
+      return {
+        teamId,
+        fixtures: [],
+        meta: { requestPath: path, rawResponseCount: 0, planRestriction: null },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new EmptyHistoricalClient() as never);
+
+  const fetched = await fetchTeamProfileData(
+    { ...IDENTITY },
+    { allowApiFetch: true, listVerifiedRecords: async () => [] }
+  );
+  const profile = calculateTeamProfile({
+    identity: IDENTITY,
+    matches: fetched.matches,
+    advancedStats: fetched.advancedStats,
+    source: fetched.source,
+    seasonMetadata: fetched.seasonMetadata,
+  });
+
+  assert(fetched.source === "incomplete", "empty historical fallback may still be incomplete source");
+  assert(fetched.seasonMetadata.dataSeason === 2024, "empty fallback should preserve dataSeason 2024");
+  assert(fetched.seasonMetadata.requestedSeason === 2026, "empty fallback should preserve requestedSeason 2026");
+  assert(fetched.seasonMetadata.isHistoricalBaseline, "empty fallback should preserve historical baseline flag");
+  assert(fetched.seasonMetadata.stalenessYears === 2, "empty fallback should preserve stalenessYears");
+  assert(
+    fetched.seasonMetadata.fallbackReason === "historical_season_fallback",
+    "empty fallback should preserve fallbackReason"
+  );
+  assert(profile.season === 2024, "calculator should not backfill requested season 2026");
+  assert(profile.sampleSize === 0, "empty fallback should keep sample size at 0");
+  assert(fetched.diagnostics.attempts.length >= 2, "empty fallback should still record both attempts");
+
+  setApiFootballClientForTests(null);
+}
+
 async function runTests(): Promise<void> {
   enableTeamProfileMemoryStoreForTests();
   try {
@@ -1129,6 +1511,10 @@ async function runTests(): Promise<void> {
     await testSeasonFallbackFetch();
     await testFreePlanHistoricalFallback();
     testHistoricalCompletenessPenalty();
+    await testProductionPlanSeasonParserFormats();
+    await testProductionPlanErrorParserClientPath();
+    await testProductionPlanErrorCatchFallbackPath();
+    await testProductionPlanErrorEmptyHistoricalMetadata();
     await testHistoricalBaselineRepositoryPersistence();
     await testVerifiedRecordsFusion();
     await testEmptyProfileDedupeRetry();

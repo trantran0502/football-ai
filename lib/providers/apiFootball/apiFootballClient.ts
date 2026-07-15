@@ -14,7 +14,11 @@ import {
   canMakeApiFootballRequest,
   recordApiFootballRequest,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
-import { parseApiFootballPlanSeasonRestriction } from "@/lib/providers/apiFootball/apiFootballPlanErrors";
+import {
+  parseApiFootballPlanSeasonRestriction,
+  parsePlanSeasonRestrictionFromText,
+  type ApiFootballPlanSeasonRange,
+} from "@/lib/providers/apiFootball/apiFootballPlanErrors";
 
 const DEFAULT_BASE_URL = "https://v3.football.api-sports.io";
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -357,7 +361,7 @@ export class ApiFootballClient {
         }
 
         const payload = (await response.json()) as ApiFootballRawEnvelope<T>;
-        const planRestriction = parseApiFootballPlanSeasonRestriction(payload.errors);
+        const planRestriction = resolvePlanSeasonRestriction(payload.errors);
         if (planRestriction) {
           return {
             response: (payload.response ?? []) as T,
@@ -404,6 +408,30 @@ export function getApiFootballClient(): ApiFootballClient {
 
 export function setApiFootballClientForTests(client: ApiFootballClient | null): void {
   testClientOverride = client;
+}
+
+function resolvePlanSeasonRestriction(
+  errors: unknown
+): ApiFootballPlanSeasonRange | null {
+  const direct = parseApiFootballPlanSeasonRestriction(errors);
+  if (direct) {
+    return direct;
+  }
+
+  if (!errors) {
+    return null;
+  }
+
+  const serialized = Array.isArray(errors)
+    ? errors.join(", ")
+    : typeof errors === "string"
+      ? errors
+      : JSON.stringify(errors);
+
+  return (
+    parseApiFootballPlanSeasonRestriction(serialized) ??
+    parsePlanSeasonRestrictionFromText(serialized)
+  );
 }
 
 function mapFixtureRecord(item: Record<string, unknown>): ApiFootballFixtureRecord {
