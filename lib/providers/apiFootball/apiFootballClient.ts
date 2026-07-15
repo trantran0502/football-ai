@@ -1,6 +1,7 @@
 import type {
   ApiFootballClientConfig,
   ApiFootballFixtureRecord,
+  ApiFootballGetTeamFormOptions,
   ApiFootballInjuryRecord,
   ApiFootballRawEnvelope,
   ApiFootballStandingRecord,
@@ -101,10 +102,13 @@ export class ApiFootballClient {
     return h2h[0] ?? null;
   }
 
-  async getTeamForm(teamId: number, last = 10): Promise<ApiFootballTeamFormRecord> {
-    const response = await this.request<Array<Record<string, unknown>>>(
-      `/fixtures?team=${teamId}&last=${last}`
-    );
+  async getTeamForm(
+    teamId: number,
+    last = 10,
+    options: ApiFootballGetTeamFormOptions = {}
+  ): Promise<ApiFootballTeamFormRecord> {
+    const requestPath = buildTeamFormRequestPath(teamId, last, options);
+    const response = await this.request<Array<Record<string, unknown>>>(requestPath);
     return {
       teamId,
       fixtures: response
@@ -112,6 +116,10 @@ export class ApiFootballClient {
         .filter(
           (fixture) => fixture.homeGoals !== null && fixture.awayGoals !== null
         ),
+      meta: {
+        requestPath,
+        rawResponseCount: response.length,
+      },
     };
   }
 
@@ -340,8 +348,8 @@ function mapFixtureRecord(item: Record<string, unknown>): ApiFootballFixtureReco
     homeTeamId: teams.home.id as number,
     awayTeamId: teams.away.id as number,
     status: (fixture.status as Record<string, string>).short,
-    homeGoals: goals.home ?? null,
-    awayGoals: goals.away ?? null,
+    homeGoals: goals.home ?? score.fulltime?.home ?? null,
+    awayGoals: goals.away ?? score.fulltime?.away ?? null,
     halfTimeHome: score.halftime?.home ?? null,
     halfTimeAway: score.halftime?.away ?? null,
     venue: venue?.name ?? null,
@@ -364,9 +372,32 @@ function roundMetric(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
-function currentSeason(): number {
-  const now = new Date();
+export function getApiFootballCurrentSeason(now = new Date()): number {
   return now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
+}
+
+function buildTeamFormRequestPath(
+  teamId: number,
+  last: number,
+  options: ApiFootballGetTeamFormOptions
+): string {
+  const params = new URLSearchParams();
+  params.set("team", String(teamId));
+  params.set("last", String(last));
+  if (options.leagueId !== undefined) {
+    params.set("league", String(options.leagueId));
+  }
+  if (options.season !== undefined) {
+    params.set("season", String(options.season));
+  }
+  if (options.status) {
+    params.set("status", options.status);
+  }
+  return `/fixtures?${params.toString()}`;
+}
+
+function currentSeason(): number {
+  return getApiFootballCurrentSeason();
 }
 
 function sleep(ms: number): Promise<void> {

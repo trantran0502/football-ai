@@ -51,19 +51,19 @@ export async function refreshTeamProfile(
   const dedupe = dedupeKey(input.teamId, input.leagueId, input.season, runDate);
   if (refreshedToday.has(dedupe)) {
     const existing = await getTeamProfile(input.teamId, input.leagueId, input.season);
-    return {
-      profile:
-        existing ??
-        buildIncompleteProfile(input, ["Profile refresh skipped due to same-day dedupe."]),
-      completeness: existing?.dataCompleteness ?? 0,
-      warnings: ["Profile refresh skipped due to same-day dedupe."],
-      refreshed: false,
-      skippedReason: "same_day_dedupe",
-    };
+    if (existing && existing.sampleSize > 0) {
+      return {
+        profile: existing,
+        completeness: existing.dataCompleteness,
+        warnings: ["Profile refresh skipped due to same-day dedupe."],
+        refreshed: false,
+        skippedReason: "same_day_dedupe",
+      };
+    }
   }
 
   const existing = await getTeamProfile(input.teamId, input.leagueId, input.season);
-  if (existing && !isTeamProfileStale(existing)) {
+  if (existing && !isTeamProfileStale(existing) && existing.sampleSize > 0) {
     return {
       profile: existing,
       completeness: existing.dataCompleteness,
@@ -156,26 +156,24 @@ export async function ensureTeamProfilesForMatch(
 ): Promise<EnsureTeamProfilesResult> {
   const profileWarnings: string[] = [];
 
-  const [homeResult, awayResult] = await Promise.all([
-    refreshTeamProfile({
-      teamId: input.homeTeamId,
-      teamName: input.homeTeamName,
-      leagueId: input.leagueId,
-      leagueName: input.leagueName,
-      season: input.season,
-      runDate: input.runDate,
-      allowApiFetch: input.allowApiFetch,
-    }),
-    refreshTeamProfile({
-      teamId: input.awayTeamId,
-      teamName: input.awayTeamName,
-      leagueId: input.leagueId,
-      leagueName: input.leagueName,
-      season: input.season,
-      runDate: input.runDate,
-      allowApiFetch: input.allowApiFetch,
-    }),
-  ]);
+  const homeResult = await refreshTeamProfile({
+    teamId: input.homeTeamId,
+    teamName: input.homeTeamName,
+    leagueId: input.leagueId,
+    leagueName: input.leagueName,
+    season: input.season,
+    runDate: input.runDate,
+    allowApiFetch: input.allowApiFetch,
+  });
+  const awayResult = await refreshTeamProfile({
+    teamId: input.awayTeamId,
+    teamName: input.awayTeamName,
+    leagueId: input.leagueId,
+    leagueName: input.leagueName,
+    season: input.season,
+    runDate: input.runDate,
+    allowApiFetch: input.allowApiFetch,
+  });
 
   profileWarnings.push(...homeResult.warnings, ...awayResult.warnings);
 
@@ -224,17 +222,6 @@ export function buildMatchTeamProfilesSnapshot(
   };
 }
 
-function buildIncompleteProfile(
-  identity: RefreshTeamProfileInput,
-  warnings: string[]
-): TeamProfile {
-  return calculateTeamProfile({
-    identity,
-    matches: [],
-    advancedStats: null,
-    source: warnings.length > 0 ? "incomplete" : "incomplete",
-  });
-}
 
 export function attachTeamProfilesToReport<T extends { teamProfiles?: MatchTeamProfilesSnapshot | null }>(
   report: T,

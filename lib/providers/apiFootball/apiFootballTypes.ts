@@ -82,9 +82,21 @@ export interface ApiFootballInjuryRecord {
   reason: string | null;
 }
 
+export interface ApiFootballGetTeamFormOptions {
+  leagueId?: number;
+  season?: number;
+  status?: string;
+}
+
+export interface ApiFootballTeamFormMeta {
+  requestPath: string;
+  rawResponseCount: number;
+}
+
 export interface ApiFootballTeamFormRecord {
   teamId: number;
   fixtures: ApiFootballFixtureRecord[];
+  meta?: ApiFootballTeamFormMeta;
 }
 
 export interface ApiFootballMatchBundle {

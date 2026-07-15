@@ -1,6 +1,7 @@
 import { createAnalysisSnapshotFromReport } from "@/lib/database/matchSchema";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import {
+  mapFixtureRecord,
   setApiFootballClientForTests,
 } from "@/lib/providers/apiFootball/apiFootballClient";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
@@ -16,6 +17,7 @@ import {
   ensureTeamProfilesForMatch,
   enableTeamProfileMemoryStoreForTests,
   disableTeamProfileMemoryStoreForTests,
+  fetchTeamProfileData,
   filterAwayMatches,
   filterHomeMatches,
   isFriendlyLeague,
@@ -390,6 +392,184 @@ async function testQuotaFallback(): Promise<void> {
   assert(!result.refreshed || result.profile.source !== "api-football" || result.warnings.length > 0, "quota fallback should warn or use fallback");
 }
 
+function testMapFixtureRecordFulltimeFallback(): void {
+  const fixture = mapFixtureRecord({
+    fixture: {
+      id: 9001,
+      date: "2026-06-01T15:00:00+00:00",
+      status: { short: "FT" },
+      venue: { name: "Emirates Stadium" },
+    },
+    league: { id: 39, name: "Premier League", season: 2025 },
+    teams: {
+      home: { id: 42, name: "Arsenal" },
+      away: { id: 49, name: "Chelsea" },
+    },
+    goals: { home: null, away: null },
+    score: {
+      fulltime: { home: 2, away: 1 },
+      halftime: { home: 1, away: 0 },
+    },
+  });
+
+  assert(fixture.homeGoals === 2, "fulltime home goals fallback");
+  assert(fixture.awayGoals === 1, "fulltime away goals fallback");
+}
+
+async function testSeasonFallbackFetch(): Promise<void> {
+  resetApiFootballQuotaForTests();
+  const calls: string[] = [];
+
+  class SeasonFallbackClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string } = {}
+    ): Promise<{ teamId: number; fixtures: ApiFootballFixtureRecord[]; meta: { requestPath: string; rawResponseCount: number } }> {
+      recordApiFootballRequest();
+      const path = `/fixtures?team=${teamId}&last=${last}` +
+        (options.leagueId ? `&league=${options.leagueId}` : "") +
+        (options.season ? `&season=${options.season}` : "") +
+        (options.status ? `&status=${options.status}` : "");
+      calls.push(path);
+
+      if (options.season === 2026) {
+        return {
+          teamId,
+          fixtures: [],
+          meta: { requestPath: path, rawResponseCount: 0 },
+        };
+      }
+
+      const match = buildMatch({ fixtureId: 501, homeGoals: 2, awayGoals: 1 });
+      return {
+        teamId,
+        fixtures: [
+          {
+            fixtureId: match.fixtureId,
+            date: match.date,
+            kickoffTime: null,
+            league: match.league,
+            leagueId: 39,
+            season: 2025,
+            homeTeam: match.homeTeam,
+            awayTeam: match.awayTeam,
+            homeTeamId: match.homeTeamId,
+            awayTeamId: match.awayTeamId,
+            status: match.status,
+            homeGoals: match.homeGoals,
+            awayGoals: match.awayGoals,
+            halfTimeHome: match.halfTimeHome,
+            halfTimeAway: match.halfTimeAway,
+            venue: null,
+            neutralVenue: false,
+          },
+        ],
+        meta: { requestPath: path, rawResponseCount: 1 },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new SeasonFallbackClient() as never);
+
+  const result = await fetchTeamProfileData({
+    ...IDENTITY,
+    season: 2026,
+  });
+
+  assert(result.matches.length === 1, "season fallback should use previous season data");
+  assert(calls.some((path) => path.includes("season=2026")), "should try current season first");
+  assert(calls.some((path) => path.includes("season=2025")), "should fallback to previous season");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testEmptyProfileDedupeRetry(): Promise<void> {
+  resetTeamProfileRefreshDedupeForTests();
+  resetTeamProfileMemoryStoreForTests();
+  enableTeamProfileMemoryStoreForTests();
+  resetApiFootballQuotaForTests();
+
+  let phase: "first" | "second" = "first";
+
+  class RetryClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(): Promise<{ teamId: number; fixtures: ApiFootballFixtureRecord[]; meta: { requestPath: string; rawResponseCount: number } }> {
+      recordApiFootballRequest();
+
+      if (phase === "first") {
+        return {
+          teamId: 42,
+          fixtures: [],
+          meta: { requestPath: "/fixtures?team=42&last=15", rawResponseCount: 0 },
+        };
+      }
+
+      const match = buildMatch({ fixtureId: 601, homeGoals: 1, awayGoals: 0 });
+      return {
+        teamId: 42,
+        fixtures: [
+          {
+            fixtureId: match.fixtureId,
+            date: match.date,
+            kickoffTime: null,
+            league: match.league,
+            leagueId: 39,
+            season: 2025,
+            homeTeam: match.homeTeam,
+            awayTeam: match.awayTeam,
+            homeTeamId: match.homeTeamId,
+            awayTeamId: match.awayTeamId,
+            status: match.status,
+            homeGoals: match.homeGoals,
+            awayGoals: match.awayGoals,
+            halfTimeHome: match.halfTimeHome,
+            halfTimeAway: match.halfTimeAway,
+            venue: null,
+            neutralVenue: false,
+          },
+        ],
+        meta: { requestPath: "/fixtures?team=42&last=15", rawResponseCount: 1 },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new RetryClient() as never);
+
+  const first = await refreshTeamProfile({
+    ...IDENTITY,
+    runDate: "2026-07-18",
+    allowApiFetch: true,
+  });
+  phase = "second";
+  const second = await refreshTeamProfile({
+    ...IDENTITY,
+    runDate: "2026-07-18",
+    allowApiFetch: true,
+  });
+
+  assert(first.profile.sampleSize === 0, "first refresh may remain empty");
+  assert(second.refreshed, "empty profile should retry on same-day dedupe");
+  assert(second.profile.sampleSize === 1, "retry should populate sample size");
+
+  setApiFootballClientForTests(null);
+}
+
 function testAnalysisSnapshotTeamProfiles(): void {
   const profile = calculateTeamProfile({
     identity: IDENTITY,
@@ -436,6 +616,9 @@ async function runTests(): Promise<void> {
     await testUpsertAndStale();
     await testSameDayDedupe();
     await testQuotaFallback();
+    testMapFixtureRecordFulltimeFallback();
+    await testSeasonFallbackFetch();
+    await testEmptyProfileDedupeRetry();
     testAnalysisSnapshotTeamProfiles();
     console.log("All team profile tests passed.");
   } finally {
