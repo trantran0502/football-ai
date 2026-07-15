@@ -650,6 +650,265 @@ async function testSeasonFallbackFetch(): Promise<void> {
   setApiFootballClientForTests(null);
 }
 
+async function testFreePlanHistoricalFallback(): Promise<void> {
+  resetApiFootballQuotaForTests();
+  resetTeamProfileRefreshDedupeForTests();
+  resetTeamProfileMemoryStoreForTests();
+  enableTeamProfileMemoryStoreForTests();
+  const calls: string[] = [];
+
+  class FreePlanClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string } = {}
+    ): Promise<{
+      teamId: number;
+      fixtures: ApiFootballFixtureRecord[];
+      meta: {
+        requestPath: string;
+        rawResponseCount: number;
+        planRestriction?: { message: string; minSeason: number; maxSeason: number } | null;
+      };
+    }> {
+      recordApiFootballRequest();
+      const path = `/fixtures?team=${teamId}&last=${last}` +
+        (options.leagueId ? `&league=${options.leagueId}` : "") +
+        (options.season ? `&season=${options.season}` : "") +
+        (options.status ? `&status=${options.status}` : "");
+      calls.push(path);
+
+      if (options.season === 2026) {
+        return {
+          teamId,
+          fixtures: [],
+          meta: {
+            requestPath: path,
+            rawResponseCount: 0,
+            planRestriction: {
+              message: "Free plans do not have access to this season, try from 2022 to 2024.",
+              minSeason: 2022,
+              maxSeason: 2024,
+            },
+          },
+        };
+      }
+
+      if (options.season === 2024) {
+        const match = buildMatch({
+          fixtureId: 801,
+          date: "2024-05-01",
+          homeGoals: 2,
+          awayGoals: 1,
+        });
+        return {
+          teamId,
+          fixtures: [
+            {
+              fixtureId: match.fixtureId,
+              date: match.date,
+              kickoffTime: null,
+              league: match.league,
+              leagueId: 39,
+              season: 2024,
+              homeTeam: match.homeTeam,
+              awayTeam: match.awayTeam,
+              homeTeamId: match.homeTeamId,
+              awayTeamId: match.awayTeamId,
+              status: match.status,
+              homeGoals: match.homeGoals,
+              awayGoals: match.awayGoals,
+              halfTimeHome: match.halfTimeHome,
+              halfTimeAway: match.halfTimeAway,
+              venue: null,
+              neutralVenue: false,
+            },
+          ],
+          meta: { requestPath: path, rawResponseCount: 1, planRestriction: null },
+        };
+      }
+
+      return {
+        teamId,
+        fixtures: [],
+        meta: { requestPath: path, rawResponseCount: 0, planRestriction: null },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new FreePlanClient() as never);
+
+  const result = await refreshTeamProfile({
+    ...IDENTITY,
+    runDate: "2026-07-22",
+    allowApiFetch: true,
+    side: "home",
+    matchLabel: "Arsenal vs Chelsea",
+  });
+
+  assert(result.profile.requestedSeason === 2026, "requestedSeason should stay 2026");
+  assert(result.profile.season === 2024, "stored season should be dataSeason 2024");
+  assert(result.profile.isHistoricalBaseline, "historical baseline flag should be true");
+  assert(result.profile.stalenessYears === 2, "stalenessYears should be 2");
+  assert(result.profile.sampleSize === 1, "historical baseline should populate sample size");
+  assert(
+    result.warnings.some((warning) => warning.includes("Using 2024 historical baseline")),
+    "historical baseline warning should be present"
+  );
+  assert(calls.some((path) => path.includes("season=2026")), "should attempt requested season first");
+  assert(calls.some((path) => path.includes("season=2024")), "should fallback to max free-plan season");
+  assert(!calls.some((path) => path.includes("season=2025")), "should not waste requests on unsupported 2025");
+  assert(result.diagnostics.attempts.length >= 2, "diagnostics attempts should include season calls");
+  assert(result.diagnostics.requestUrls.length >= 2, "requestUrls should be populated");
+  assert(
+    result.skippedReason !== "normalized_empty",
+    "plan restriction fallback should not be labeled normalized_empty"
+  );
+
+  setApiFootballClientForTests(null);
+}
+
+function testHistoricalCompletenessPenalty(): void {
+  const full = calculateTeamProfile({
+    identity: IDENTITY,
+    matches: buildRecent10(),
+    source: "api-football",
+    seasonMetadata: {
+      requestedSeason: 2026,
+      dataSeason: 2026,
+      isHistoricalBaseline: false,
+      stalenessYears: 0,
+      fallbackReason: null,
+    },
+  });
+  const historical = calculateTeamProfile({
+    identity: IDENTITY,
+    matches: buildRecent10(),
+    source: "api-football",
+    seasonMetadata: {
+      requestedSeason: 2026,
+      dataSeason: 2024,
+      isHistoricalBaseline: true,
+      stalenessYears: 2,
+      fallbackReason: "historical_season_fallback",
+    },
+  });
+
+  assert(
+    (historical.dataCompleteness ?? 0) < (full.dataCompleteness ?? 0),
+    "historical baseline completeness should be penalized"
+  );
+  assert((historical.dataCompleteness ?? 0) < 100, "historical baseline must not score full completeness");
+}
+
+async function testVerifiedRecordsFusion(): Promise<void> {
+  resetApiFootballQuotaForTests();
+
+  class Baseline2024Client {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string } = {}
+    ) {
+      recordApiFootballRequest();
+      if (options.season === 2024) {
+        const match = buildMatch({ fixtureId: 901, date: "2024-04-01", homeGoals: 1, awayGoals: 0 });
+        return {
+          teamId,
+          fixtures: [
+            {
+              fixtureId: match.fixtureId,
+              date: match.date,
+              kickoffTime: null,
+              league: match.league,
+              leagueId: 39,
+              season: 2024,
+              homeTeam: match.homeTeam,
+              awayTeam: match.awayTeam,
+              homeTeamId: match.homeTeamId,
+              awayTeamId: match.awayTeamId,
+              status: match.status,
+              homeGoals: match.homeGoals,
+              awayGoals: match.awayGoals,
+              halfTimeHome: match.halfTimeHome,
+              halfTimeAway: match.halfTimeAway,
+              venue: null,
+              neutralVenue: false,
+            },
+          ],
+          meta: {
+            requestPath: `/fixtures?team=${teamId}&last=${last}&season=2024`,
+            rawResponseCount: 1,
+            planRestriction: null,
+          },
+        };
+      }
+      return {
+        teamId,
+        fixtures: [],
+        meta: {
+          requestPath: `/fixtures?team=${teamId}&last=${last}&season=${options.season ?? "none"}`,
+          rawResponseCount: 0,
+          planRestriction:
+            options.season === 2026
+              ? {
+                  message: "Free plans do not have access to this season, try from 2022 to 2024.",
+                  minSeason: 2022,
+                  maxSeason: 2024,
+                }
+              : null,
+        },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new Baseline2024Client() as never);
+
+  const verifiedMatch = buildMatch({ fixtureId: 902, date: "2025-09-01", homeGoals: 3, awayGoals: 2 });
+  const result = await fetchTeamProfileData(
+    { ...IDENTITY, season: 2026 },
+    {
+      listVerifiedRecords: async () => [
+        {
+          id: "verified-1",
+          matchDate: verifiedMatch.date,
+          homeTeam: verifiedMatch.homeTeam,
+          awayTeam: verifiedMatch.awayTeam,
+          league: verifiedMatch.league ?? "Premier League",
+          status: "VERIFIED",
+          result: {
+            fullTimeHomeGoals: verifiedMatch.homeGoals,
+            fullTimeAwayGoals: verifiedMatch.awayGoals,
+            halfTimeHomeGoals: verifiedMatch.halfTimeHome,
+            halfTimeAwayGoals: verifiedMatch.halfTimeAway,
+          },
+        } as never,
+      ],
+    }
+  );
+
+  assert(result.matches.length === 2, "verified newer records should fuse with API baseline");
+  assert(result.matches[0].date === "2025-09-01", "newer verified match should sort first");
+
+  setApiFootballClientForTests(null);
+}
+
 async function testEmptyProfileDedupeRetry(): Promise<void> {
   resetTeamProfileRefreshDedupeForTests();
   resetTeamProfileMemoryStoreForTests();
@@ -779,6 +1038,9 @@ async function runTests(): Promise<void> {
     await testNormalizedEmptyDiagnostics();
     testMapFixtureRecordFulltimeFallback();
     await testSeasonFallbackFetch();
+    await testFreePlanHistoricalFallback();
+    testHistoricalCompletenessPenalty();
+    await testVerifiedRecordsFusion();
     await testEmptyProfileDedupeRetry();
     testAnalysisSnapshotTeamProfiles();
     console.log("All team profile tests passed.");

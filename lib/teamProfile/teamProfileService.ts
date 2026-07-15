@@ -154,6 +154,7 @@ export async function refreshTeamProfile(
       matches: fetched.matches,
       advancedStats: fetched.advancedStats,
       source: fetched.source,
+      seasonMetadata: fetched.seasonMetadata,
     });
 
     const saved = await upsertTeamProfile(profile);
@@ -166,6 +167,8 @@ export async function refreshTeamProfile(
       warnings.push(
         saved.error ?? `Team profile upsert failed for team ${input.teamId}.`
       );
+    } else if (profile.sampleSize === 0 && fetched.seasonMetadata.fallbackReason === "plan_season_restricted") {
+      skippedReason = "plan_season_restricted";
     } else if (profile.sampleSize === 0 && fetched.diagnostics.quotaExhausted) {
       skippedReason = "quota_exhausted";
       warnings.push("Team profile saved as incomplete due to API quota exhaustion.");
@@ -188,6 +191,7 @@ export async function refreshTeamProfile(
         matchLabel,
         fetchDiagnostics: fetched.diagnostics,
         skippedReason,
+        fallbackReason: fetched.seasonMetadata.fallbackReason ?? undefined,
         source: saved.profile.source,
         sampleSize: saved.profile.sampleSize,
         warnings,

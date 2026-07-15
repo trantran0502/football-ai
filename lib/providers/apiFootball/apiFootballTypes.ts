@@ -88,9 +88,16 @@ export interface ApiFootballGetTeamFormOptions {
   status?: string;
 }
 
+export interface ApiFootballPlanSeasonRestriction {
+  message: string;
+  minSeason: number;
+  maxSeason: number;
+}
+
 export interface ApiFootballTeamFormMeta {
   requestPath: string;
   rawResponseCount: number;
+  planRestriction?: ApiFootballPlanSeasonRestriction | null;
 }
 
 export interface ApiFootballTeamFormRecord {

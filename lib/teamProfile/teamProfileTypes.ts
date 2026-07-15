@@ -40,6 +40,9 @@ export interface TeamProfile {
   leagueId: number | null;
   leagueName: string | null;
   season: number | null;
+  requestedSeason: number | null;
+  isHistoricalBaseline: boolean;
+  stalenessYears: number | null;
   sampleSize: number;
   recent10Wins: number | null;
   recent10Draws: number | null;
@@ -83,11 +86,27 @@ export interface TeamProfileIdentity {
   season: number | null;
 }
 
+export type TeamProfileFallbackReason =
+  | "plan_season_restricted"
+  | "historical_season_fallback"
+  | null;
+
+export interface TeamProfileSeasonMetadata {
+  requestedSeason: number | null;
+  dataSeason: number | null;
+  isHistoricalBaseline: boolean;
+  stalenessYears: number | null;
+  fallbackReason: TeamProfileFallbackReason;
+}
+
 export interface TeamProfileApiAttemptDiagnostic {
   requestUrl: string;
   rawResponseCount: number;
   afterGoalFilterCount: number;
   normalizedMatchCount: number;
+  season?: number | null;
+  planRestricted?: boolean;
+  fallbackReason?: TeamProfileFallbackReason;
 }
 
 export interface TeamProfileFetchDiagnostics {
@@ -97,6 +116,12 @@ export interface TeamProfileFetchDiagnostics {
   quotaBlockReason: string | null;
   attempts: TeamProfileApiAttemptDiagnostic[];
   normalizedMatchCount: number;
+  requestedSeason?: number | null;
+  dataSeason?: number | null;
+  isHistoricalBaseline?: boolean;
+  stalenessYears?: number | null;
+  fallbackReason?: TeamProfileFallbackReason;
+  planSeasonRange?: { minSeason: number; maxSeason: number; message: string } | null;
 }
 
 export interface TeamProfileTeamDiagnostic {
@@ -110,10 +135,15 @@ export interface TeamProfileTeamDiagnostic {
   afterGoalFilterCount: number;
   normalizedMatchCount: number;
   skippedReason?: string;
+  fallbackReason?: TeamProfileFallbackReason;
   quotaAvailable: boolean;
   apiConfigured: boolean;
   quotaExhausted: boolean;
   quotaBlockReason: string | null;
+  requestedSeason?: number | null;
+  dataSeason?: number | null;
+  isHistoricalBaseline?: boolean;
+  stalenessYears?: number | null;
   source?: string;
   sampleSize?: number;
   warnings: string[];

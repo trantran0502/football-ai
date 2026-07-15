@@ -9,7 +9,8 @@ export type {
   TeamProfileMatchInput,
   TeamProfileSource,
   TeamProfileTeamDiagnostic,
-  TeamProfileFetchDiagnostics,
+  TeamProfileSeasonMetadata,
+  TeamProfileFallbackReason,
   TeamProfileApiAttemptDiagnostic,
 } from "@/lib/teamProfile/teamProfileTypes";
 
@@ -35,7 +36,7 @@ export {
   shouldExcludeMatch,
 } from "@/lib/teamProfile/teamProfileNormalizer";
 
-export { fetchTeamProfileData } from "@/lib/teamProfile/teamProfileDataSource";
+export { fetchTeamProfileData, mergeTeamProfileMatchesDeduped } from "@/lib/teamProfile/teamProfileDataSource";
 
 export {
   buildTeamProfileTeamDiagnostic,

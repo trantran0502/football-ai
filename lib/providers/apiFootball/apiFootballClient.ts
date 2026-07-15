@@ -2,6 +2,7 @@ import type {
   ApiFootballClientConfig,
   ApiFootballFixtureRecord,
   ApiFootballGetTeamFormOptions,
+  ApiFootballPlanSeasonRestriction,
   ApiFootballInjuryRecord,
   ApiFootballRawEnvelope,
   ApiFootballStandingRecord,
@@ -13,6 +14,7 @@ import {
   canMakeApiFootballRequest,
   recordApiFootballRequest,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
+import { parseApiFootballPlanSeasonRestriction } from "@/lib/providers/apiFootball/apiFootballPlanErrors";
 
 const DEFAULT_BASE_URL = "https://v3.football.api-sports.io";
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -108,17 +110,20 @@ export class ApiFootballClient {
     options: ApiFootballGetTeamFormOptions = {}
   ): Promise<ApiFootballTeamFormRecord> {
     const requestPath = buildTeamFormRequestPath(teamId, last, options);
-    const response = await this.request<Array<Record<string, unknown>>>(requestPath);
+    const result = await this.requestAllowingPlanSeasonError<Array<Record<string, unknown>>>(
+      requestPath
+    );
     return {
       teamId,
-      fixtures: response
+      fixtures: result.response
         .map((item) => mapFixtureRecord(item))
         .filter(
           (fixture) => fixture.homeGoals !== null && fixture.awayGoals !== null
         ),
       meta: {
         requestPath,
-        rawResponseCount: response.length,
+        rawResponseCount: result.response.length,
+        planRestriction: result.planRestriction,
       },
     };
   }
@@ -175,14 +180,15 @@ export class ApiFootballClient {
     leagueId: number;
     season: number;
   }): Promise<ApiFootballTeamStatisticsRecord | null> {
-    const response = await this.request<Array<Record<string, unknown>>>(
-      `/teams/statistics?team=${input.teamId}&league=${input.leagueId}&season=${input.season}`
+    const requestPath = `/teams/statistics?team=${input.teamId}&league=${input.leagueId}&season=${input.season}`;
+    const result = await this.requestAllowingPlanSeasonError<Array<Record<string, unknown>>>(
+      requestPath
     );
-    if (!response.length) {
+    if (result.planRestriction || !result.response.length) {
       return null;
     }
 
-    const payload = response[0];
+    const payload = result.response[0];
     const fixtures = payload.fixtures as Record<string, Record<string, number>>;
     const goals = payload.goals as Record<string, Record<string, unknown>>;
     const shots = (payload.shots as Record<string, Record<string, number>>) ?? {};
@@ -300,6 +306,78 @@ export class ApiFootballClient {
         }
 
         return payload.response;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (attempt < this.maxRetries - 1) {
+          await sleep(250 * (attempt + 1));
+        }
+      }
+    }
+
+    throw lastError ?? new Error("API-Football request failed.");
+  }
+
+  private async requestAllowingPlanSeasonError<T>(path: string): Promise<{
+    response: T;
+    planRestriction: ApiFootballPlanSeasonRestriction | null;
+  }> {
+    if (!this.apiKey) {
+      throw new Error("API_FOOTBALL_KEY is not configured.");
+    }
+
+    if (!canMakeApiFootballRequest()) {
+      throw new Error("API-Football quota exceeded.");
+    }
+
+    await this.enforceRateLimit();
+    recordApiFootballRequest();
+
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < this.maxRetries; attempt += 1) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+        this.requestCount += 1;
+
+        const response = await fetch(`${this.baseUrl}${path}`, {
+          headers: {
+            "x-apisports-key": this.apiKey,
+          },
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (response.status === 429 || response.status >= 500) {
+          throw new Error(`API-Football transient error: ${response.status}`);
+        }
+
+        if (!response.ok) {
+          throw new Error(`API-Football request failed: ${response.status}`);
+        }
+
+        const payload = (await response.json()) as ApiFootballRawEnvelope<T>;
+        const planRestriction = parseApiFootballPlanSeasonRestriction(payload.errors);
+        if (planRestriction) {
+          return {
+            response: (payload.response ?? []) as T,
+            planRestriction,
+          };
+        }
+
+        if (payload.errors) {
+          const serialized = Array.isArray(payload.errors)
+            ? payload.errors.join(", ")
+            : JSON.stringify(payload.errors);
+          if (serialized && serialized !== "{}") {
+            throw new Error(`API-Football error: ${serialized}`);
+          }
+        }
+
+        return {
+          response: payload.response,
+          planRestriction: null,
+        };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         if (attempt < this.maxRetries - 1) {

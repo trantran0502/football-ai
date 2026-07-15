@@ -2,7 +2,6 @@ import type { ApiFootballTeamStatisticsRecord } from "@/lib/providers/apiFootbal
 import {
   ApiFootballClient,
   getApiFootballClient,
-  getApiFootballCurrentSeason,
 } from "@/lib/providers/apiFootball/apiFootballClient";
 import {
   canMakeApiFootballRequest,
@@ -20,11 +19,19 @@ import {
   normalizeVerifiedMatchRecords,
   sortMatchesDesc,
 } from "@/lib/teamProfile/teamProfileNormalizer";
+import type { ApiFootballPlanSeasonRange } from "@/lib/providers/apiFootball/apiFootballPlanErrors";
+import {
+  buildHistoricalBaselineWarning,
+  computeStalenessYears,
+  filterVerifiedMatchesNewerThanSeason,
+} from "@/lib/teamProfile/teamProfileSeasonPolicy";
 import type {
   TeamProfileAdvancedStatsInput,
   TeamProfileFetchDiagnostics,
+  TeamProfileFallbackReason,
   TeamProfileIdentity,
   TeamProfileMatchInput,
+  TeamProfileSeasonMetadata,
 } from "@/lib/teamProfile/teamProfileTypes";
 
 export interface TeamProfileDataFetchResult {
@@ -33,9 +40,37 @@ export interface TeamProfileDataFetchResult {
   source: "api-football" | "match-records" | "incomplete";
   warnings: string[];
   diagnostics: TeamProfileFetchDiagnostics;
+  seasonMetadata: TeamProfileSeasonMetadata;
 }
 
 const TEAM_FORM_LAST = 15;
+
+function emptySeasonMetadata(requestedSeason: number | null): TeamProfileSeasonMetadata {
+  return {
+    requestedSeason,
+    dataSeason: null,
+    isHistoricalBaseline: false,
+    stalenessYears: null,
+    fallbackReason: null,
+  };
+}
+
+function applySeasonMetadataToDiagnostics(
+  diagnostics: TeamProfileFetchDiagnostics,
+  seasonMetadata: TeamProfileSeasonMetadata,
+  planSeasonRange: ApiFootballPlanSeasonRange | null
+): void {
+  diagnostics.requestedSeason = seasonMetadata.requestedSeason;
+  diagnostics.dataSeason = seasonMetadata.dataSeason;
+  diagnostics.isHistoricalBaseline = seasonMetadata.isHistoricalBaseline;
+  diagnostics.stalenessYears = seasonMetadata.stalenessYears;
+  diagnostics.fallbackReason = seasonMetadata.fallbackReason;
+  diagnostics.planSeasonRange = planSeasonRange;
+  diagnostics.normalizedMatchCount = Math.max(
+    diagnostics.normalizedMatchCount,
+    0
+  );
+}
 
 export async function fetchTeamProfileData(
   identity: TeamProfileIdentity,
@@ -64,7 +99,9 @@ export async function fetchTeamProfileData(
 
   if (allowApiFetch && !apiConfigured) {
     warnings.push("API-Football is not configured; team profile API fetch skipped.");
-    return finalizeWithoutApiMatches(identity, options, warnings, diagnostics);
+    const seasonMetadata = emptySeasonMetadata(identity.season);
+    applySeasonMetadataToDiagnostics(diagnostics, seasonMetadata, null);
+    return finalizeWithoutApiMatches(identity, options, warnings, diagnostics, seasonMetadata);
   }
 
   if (allowApiFetch && !quotaAvailableAtStart) {
@@ -91,19 +128,30 @@ export async function fetchTeamProfileData(
 
   if (allowApiFetch && canMakeApiFootballRequest()) {
     try {
-      const apiResult = await fetchTeamProfileDataFromApi(client, identity, warnings);
+      const apiResult = await fetchTeamProfileDataFromApi(client, identity, warnings, options);
       diagnostics = apiResult.diagnostics;
 
       if (apiResult.matches.length > 0) {
+        applySeasonMetadataToDiagnostics(
+          diagnostics,
+          apiResult.seasonMetadata,
+          apiResult.planSeasonRange
+        );
         return {
           matches: apiResult.matches,
           advancedStats: apiResult.advancedStats,
           source: "api-football",
           warnings,
           diagnostics,
+          seasonMetadata: apiResult.seasonMetadata,
         };
       }
 
+      applySeasonMetadataToDiagnostics(
+        diagnostics,
+        apiResult.seasonMetadata,
+        apiResult.planSeasonRange
+      );
       warnings.push(
         "API-Football returned no official completed matches after all fetch strategies."
       );
@@ -122,28 +170,44 @@ export async function fetchTeamProfileData(
     );
   }
 
-  return finalizeWithoutApiMatches(identity, options, warnings, diagnostics);
+  const seasonMetadata = emptySeasonMetadata(identity.season);
+  applySeasonMetadataToDiagnostics(diagnostics, seasonMetadata, null);
+  return finalizeWithoutApiMatches(identity, options, warnings, diagnostics, seasonMetadata);
 }
 
 export function mergeTeamProfileMatches(
   primary: TeamProfileMatchInput[],
   fallback: TeamProfileMatchInput[]
 ): TeamProfileMatchInput[] {
-  const merged = new Map<number, TeamProfileMatchInput>();
-  for (const match of [...primary, ...fallback]) {
-    merged.set(match.fixtureId, match);
+  return mergeTeamProfileMatchesDeduped([...primary, ...fallback]);
+}
+
+export function mergeTeamProfileMatchesDeduped(
+  matches: TeamProfileMatchInput[]
+): TeamProfileMatchInput[] {
+  const deduped = new Map<string, TeamProfileMatchInput>();
+  for (const match of sortMatchesDesc(matches)) {
+    const key = `${match.date}:${match.homeTeam.toLowerCase()}:${match.awayTeam.toLowerCase()}`;
+    if (!deduped.has(key)) {
+      deduped.set(key, match);
+    }
   }
-  return sortMatchesDesc([...merged.values()]);
+  return sortMatchesDesc([...deduped.values()]);
 }
 
 async function fetchTeamProfileDataFromApi(
   client: ApiFootballClient,
   identity: TeamProfileIdentity,
-  warnings: string[]
+  warnings: string[],
+  options: {
+    listVerifiedRecords?: () => Promise<HistoricalMatchRecord[]>;
+  }
 ): Promise<{
   matches: TeamProfileMatchInput[];
   advancedStats: TeamProfileAdvancedStatsInput | null;
   diagnostics: TeamProfileFetchDiagnostics;
+  seasonMetadata: TeamProfileSeasonMetadata;
+  planSeasonRange: ApiFootballPlanSeasonRange | null;
 }> {
   const diagnostics = createEmptyFetchDiagnostics({
     apiConfigured: client.isConfigured(),
@@ -151,10 +215,31 @@ async function fetchTeamProfileDataFromApi(
     quotaBlockReason: getApiFootballQuotaBlockReason(),
   });
 
-  const matches = await fetchTeamFixturesFromApi(client, identity, warnings, diagnostics);
-  const advancedStats = await fetchAdvancedStatsFromApi(client, identity, warnings, diagnostics);
+  const apiFetch = await fetchTeamFixturesFromApi(client, identity, warnings, diagnostics);
+  const advancedStats = await fetchAdvancedStatsFromApi(
+    client,
+    identity,
+    warnings,
+    diagnostics,
+    apiFetch.seasonMetadata.dataSeason
+  );
 
-  return { matches, advancedStats, diagnostics };
+  const fused = await fuseWithVerifiedRecords(
+    identity,
+    options,
+    apiFetch.matches,
+    apiFetch.seasonMetadata,
+    warnings,
+    diagnostics
+  );
+
+  return {
+    matches: fused.matches,
+    advancedStats,
+    diagnostics,
+    seasonMetadata: fused.seasonMetadata,
+    planSeasonRange: apiFetch.planSeasonRange,
+  };
 }
 
 async function fetchTeamFixturesFromApi(
@@ -162,123 +247,239 @@ async function fetchTeamFixturesFromApi(
   identity: TeamProfileIdentity,
   warnings: string[],
   diagnostics: TeamProfileFetchDiagnostics
-): Promise<TeamProfileMatchInput[]> {
-  const seasonCandidates = buildSeasonCandidates(identity.season);
+): Promise<{
+  matches: TeamProfileMatchInput[];
+  seasonMetadata: TeamProfileSeasonMetadata;
+  planSeasonRange: ApiFootballPlanSeasonRange | null;
+}> {
+  const requestedSeason = identity.season;
+  let planSeasonRange: ApiFootballPlanSeasonRange | null = null;
+  let dataSeason: number | null = null;
+  let fallbackReason: TeamProfileFallbackReason = null;
+  const triedSeasons = new Set<number>();
+  let matches: TeamProfileMatchInput[] = [];
 
-  if (identity.leagueId !== null) {
-    for (const season of seasonCandidates) {
-      if (!canMakeApiFootballRequest()) {
-        markQuotaExhausted(diagnostics, warnings, "league-scoped fixture fetch");
-        break;
-      }
+  const tryLeagueSeason = async (
+    season: number,
+    attemptFallbackReason: TeamProfileFallbackReason = null
+  ): Promise<{
+    matches: TeamProfileMatchInput[];
+    planRange: ApiFootballPlanSeasonRange | null;
+  }> => {
+    if (identity.leagueId === null || triedSeasons.has(season)) {
+      return { matches: [], planRange: planSeasonRange };
+    }
 
-      const form = await client.getTeamForm(identity.teamId, TEAM_FORM_LAST, {
+    triedSeasons.add(season);
+    if (!canMakeApiFootballRequest()) {
+      markQuotaExhausted(diagnostics, warnings, "league-scoped fixture fetch");
+      return { matches: [], planRange: planSeasonRange };
+    }
+
+    const form = await client.getTeamForm(identity.teamId, TEAM_FORM_LAST, {
+      leagueId: identity.leagueId,
+      season,
+      status: "FT",
+    });
+    const requestUrl =
+      form.meta?.requestPath ??
+      buildTeamFormPath(identity.teamId, {
         leagueId: identity.leagueId,
         season,
         status: "FT",
       });
-      const matches = normalizeApiFootballFixtures(form.fixtures);
-      recordApiAttempt(diagnostics, {
-        requestUrl: form.meta?.requestPath ?? buildTeamFormPath(identity.teamId, {
-          leagueId: identity.leagueId,
-          season,
-          status: "FT",
-        }),
-        rawResponseCount: form.meta?.rawResponseCount ?? 0,
-        afterGoalFilterCount: form.fixtures.length,
-        normalizedMatchCount: matches.length,
-      });
-      appendFixtureAttemptWarning(
-        warnings,
-        form.meta,
-        form.fixtures.length,
-        identity.leagueId,
-        season
-      );
+    const normalized = normalizeApiFootballFixtures(form.fixtures);
+    const planRestricted = Boolean(form.meta?.planRestriction);
+    let detectedPlanRange = planSeasonRange;
+
+    if (form.meta?.planRestriction) {
+      detectedPlanRange = {
+        minSeason: form.meta.planRestriction.minSeason,
+        maxSeason: form.meta.planRestriction.maxSeason,
+        message: form.meta.planRestriction.message,
+      };
+      planSeasonRange = detectedPlanRange;
+      fallbackReason = "plan_season_restricted";
       warnings.push(
-        `Normalizer: ${matches.length} official completed matches (league=${identity.leagueId}, season=${season}).`
+        `API plan restriction for season=${season}: ${form.meta.planRestriction.message}`
       );
-      if (matches.length > 0) {
-        return matches;
+    }
+
+    recordApiAttempt(diagnostics, {
+      requestUrl,
+      rawResponseCount: form.meta?.rawResponseCount ?? 0,
+      afterGoalFilterCount: form.fixtures.length,
+      normalizedMatchCount: normalized.length,
+      season,
+      planRestricted,
+      fallbackReason: planRestricted ? "plan_season_restricted" : attemptFallbackReason,
+    });
+    appendFixtureAttemptWarning(
+      warnings,
+      form.meta,
+      form.fixtures.length,
+      identity.leagueId,
+      season
+    );
+    warnings.push(
+      `Normalizer: ${normalized.length} official completed matches (league=${identity.leagueId}, season=${season}).`
+    );
+
+    return { matches: normalized, planRange: detectedPlanRange };
+  };
+
+  if (requestedSeason !== null && identity.leagueId !== null) {
+    const requestedAttempt = await tryLeagueSeason(requestedSeason);
+    matches = requestedAttempt.matches;
+    if (matches.length > 0) {
+      dataSeason = requestedSeason;
+    } else if (requestedAttempt.planRange) {
+      const historicalSeason = requestedAttempt.planRange.maxSeason;
+      if (!triedSeasons.has(historicalSeason)) {
+        const historicalAttempt = await tryLeagueSeason(
+          historicalSeason,
+          "historical_season_fallback"
+        );
+        matches = historicalAttempt.matches;
+        if (matches.length > 0) {
+          dataSeason = historicalSeason;
+          fallbackReason = "historical_season_fallback";
+          warnings.push(
+            buildHistoricalBaselineWarning(historicalSeason, requestedSeason)
+          );
+        }
+      }
+    } else {
+      const generalFallbackSeason = requestedSeason - 1;
+      if (!triedSeasons.has(generalFallbackSeason)) {
+        const fallbackAttempt = await tryLeagueSeason(generalFallbackSeason);
+        matches = fallbackAttempt.matches;
+        if (matches.length > 0) {
+          dataSeason = generalFallbackSeason;
+        }
       }
     }
   }
 
-  if (canMakeApiFootballRequest()) {
+  if (matches.length === 0 && canMakeApiFootballRequest()) {
     const form = await client.getTeamForm(identity.teamId, TEAM_FORM_LAST, {
       status: "FT",
     });
-    const matches = normalizeApiFootballFixtures(form.fixtures);
+    const normalized = normalizeApiFootballFixtures(form.fixtures);
     recordApiAttempt(diagnostics, {
       requestUrl: form.meta?.requestPath ?? buildTeamFormPath(identity.teamId, { status: "FT" }),
       rawResponseCount: form.meta?.rawResponseCount ?? 0,
       afterGoalFilterCount: form.fixtures.length,
-      normalizedMatchCount: matches.length,
+      normalizedMatchCount: normalized.length,
+      season: null,
     });
     appendFixtureAttemptWarning(warnings, form.meta, form.fixtures.length, null, null);
-    warnings.push(`Normalizer: ${matches.length} official completed matches (global FT).`);
-    if (matches.length > 0) {
-      return matches;
+    warnings.push(`Normalizer: ${normalized.length} official completed matches (global FT).`);
+    if (normalized.length > 0) {
+      matches = normalized;
+      dataSeason = normalized[0]?.date ? Number(normalized[0].date.slice(0, 4)) : dataSeason;
     }
-  } else {
+  } else if (matches.length === 0) {
     markQuotaExhausted(diagnostics, warnings, "global FT fixture fetch");
   }
 
-  if (canMakeApiFootballRequest()) {
-    const form = await client.getTeamForm(identity.teamId, TEAM_FORM_LAST);
-    const matches = normalizeApiFootballFixtures(form.fixtures);
-    recordApiAttempt(diagnostics, {
-      requestUrl: form.meta?.requestPath ?? buildTeamFormPath(identity.teamId, {}),
-      rawResponseCount: form.meta?.rawResponseCount ?? 0,
-      afterGoalFilterCount: form.fixtures.length,
-      normalizedMatchCount: matches.length,
-    });
-    appendFixtureAttemptWarning(warnings, form.meta, form.fixtures.length, null, null);
-    warnings.push(`Normalizer: ${matches.length} official completed matches (global last).`);
-    if (matches.length > 0) {
-      return matches;
-    }
-  } else {
-    markQuotaExhausted(diagnostics, warnings, "global last fixture fetch");
+  const isHistoricalBaseline =
+    requestedSeason !== null &&
+    dataSeason !== null &&
+    dataSeason !== requestedSeason;
+  const seasonMetadata: TeamProfileSeasonMetadata = {
+    requestedSeason,
+    dataSeason,
+    isHistoricalBaseline,
+    stalenessYears: computeStalenessYears(requestedSeason, dataSeason),
+    fallbackReason: isHistoricalBaseline ? fallbackReason ?? "historical_season_fallback" : fallbackReason,
+  };
+
+  if (isHistoricalBaseline && seasonMetadata.stalenessYears && seasonMetadata.stalenessYears > 0) {
+    warnings.push(
+      `Historical baseline staleness: ${seasonMetadata.stalenessYears} season(s) behind requested season ${requestedSeason}.`
+    );
   }
 
-  return [];
+  diagnostics.normalizedMatchCount = matches.length;
+  return { matches, seasonMetadata, planSeasonRange };
 }
 
 async function fetchAdvancedStatsFromApi(
   client: ApiFootballClient,
   identity: TeamProfileIdentity,
   warnings: string[],
-  diagnostics: TeamProfileFetchDiagnostics
+  diagnostics: TeamProfileFetchDiagnostics,
+  dataSeason: number | null
 ): Promise<TeamProfileAdvancedStatsInput | null> {
-  if (identity.leagueId === null) {
+  if (identity.leagueId === null || dataSeason === null) {
     return null;
   }
 
-  for (const season of buildSeasonCandidates(identity.season)) {
-    if (!canMakeApiFootballRequest()) {
-      markQuotaExhausted(diagnostics, warnings, "team statistics fetch");
-      break;
-    }
+  if (!canMakeApiFootballRequest()) {
+    markQuotaExhausted(diagnostics, warnings, "team statistics fetch");
+    return null;
+  }
 
-    const stats = await client.getTeamStatistics({
-      teamId: identity.teamId,
-      leagueId: identity.leagueId,
-      season,
-    });
-    const requestPath = `/teams/statistics?team=${identity.teamId}&league=${identity.leagueId}&season=${season}`;
-    warnings.push(
-      stats
-        ? `API ${requestPath} returned season stats (fixturesPlayed=${stats.fixturesPlayed ?? 0}).`
-        : `API ${requestPath} returned empty.`
-    );
+  const stats = await client.getTeamStatistics({
+    teamId: identity.teamId,
+    leagueId: identity.leagueId,
+    season: dataSeason,
+  });
+  const requestPath = `/teams/statistics?team=${identity.teamId}&league=${identity.leagueId}&season=${dataSeason}`;
+  warnings.push(
+    stats
+      ? `API ${requestPath} returned season stats (fixturesPlayed=${stats.fixturesPlayed ?? 0}).`
+      : `API ${requestPath} returned empty.`
+  );
 
-    if (stats && (stats.fixturesPlayed ?? 0) > 0) {
-      return mapSeasonStatistics(stats);
-    }
+  if (stats && (stats.fixturesPlayed ?? 0) > 0) {
+    return mapSeasonStatistics(stats);
   }
 
   return null;
+}
+
+async function fuseWithVerifiedRecords(
+  identity: TeamProfileIdentity,
+  options: {
+    listVerifiedRecords?: () => Promise<HistoricalMatchRecord[]>;
+  },
+  apiMatches: TeamProfileMatchInput[],
+  seasonMetadata: TeamProfileSeasonMetadata,
+  warnings: string[],
+  diagnostics: TeamProfileFetchDiagnostics
+): Promise<{
+  matches: TeamProfileMatchInput[];
+  seasonMetadata: TeamProfileSeasonMetadata;
+}> {
+  const verifiedRecords = options.listVerifiedRecords
+    ? await options.listVerifiedRecords()
+    : await loadVerifiedRecordsFallback(identity.teamName);
+
+  const verifiedMatches = normalizeVerifiedMatchRecords(
+    verifiedRecords,
+    identity.teamId,
+    identity.teamName
+  );
+  const newerVerified = filterVerifiedMatchesNewerThanSeason(
+    verifiedMatches,
+    seasonMetadata.dataSeason
+  );
+
+  if (newerVerified.length > 0) {
+    warnings.push(
+      `Merged ${newerVerified.length} newer VERIFIED match_records after API baseline.`
+    );
+  }
+
+  const merged = mergeTeamProfileMatches(newerVerified, apiMatches);
+  diagnostics.normalizedMatchCount = merged.length;
+
+  return {
+    matches: merged,
+    seasonMetadata,
+  };
 }
 
 async function finalizeWithoutApiMatches(
@@ -287,7 +488,8 @@ async function finalizeWithoutApiMatches(
     listVerifiedRecords?: () => Promise<HistoricalMatchRecord[]>;
   },
   warnings: string[],
-  diagnostics: TeamProfileFetchDiagnostics
+  diagnostics: TeamProfileFetchDiagnostics,
+  seasonMetadata: TeamProfileSeasonMetadata
 ): Promise<TeamProfileDataFetchResult> {
   const verifiedRecords = options.listVerifiedRecords
     ? await options.listVerifiedRecords()
@@ -307,6 +509,10 @@ async function finalizeWithoutApiMatches(
       source: "match-records",
       warnings,
       diagnostics,
+      seasonMetadata: {
+        ...seasonMetadata,
+        dataSeason: seasonMetadata.dataSeason ?? extractLatestSeasonYear(verifiedMatches),
+      },
     };
   }
 
@@ -317,23 +523,15 @@ async function finalizeWithoutApiMatches(
     source: "incomplete",
     warnings,
     diagnostics,
+    seasonMetadata,
   };
 }
 
-function buildSeasonCandidates(season: number | null): number[] {
-  const candidates: number[] = [];
-  const add = (value: number) => {
-    if (!candidates.includes(value)) {
-      candidates.push(value);
-    }
-  };
-
-  if (season !== null) {
-    add(season);
-    add(season - 1);
+function extractLatestSeasonYear(matches: TeamProfileMatchInput[]): number | null {
+  if (matches.length === 0) {
+    return null;
   }
-  add(getApiFootballCurrentSeason());
-  return candidates;
+  return Number(matches[0].date.slice(0, 4));
 }
 
 function appendFixtureAttemptWarning(

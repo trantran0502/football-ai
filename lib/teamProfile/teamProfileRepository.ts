@@ -38,9 +38,9 @@ export function listMemoryTeamProfilesForTests(): TeamProfile[] {
 function profileKey(
   teamId: number,
   leagueId: number | null,
-  season: number | null
+  requestedSeason: number | null
 ): string {
-  return `${teamId}:${storageLeagueId(leagueId)}:${storageSeason(season)}`;
+  return `${teamId}:${storageLeagueId(leagueId)}:requested:${storageSeason(requestedSeason)}`;
 }
 
 function storageLeagueId(leagueId: number | null): number {
@@ -62,10 +62,10 @@ function fromStorageSeason(season: number): number | null {
 export async function getTeamProfile(
   teamId: number,
   leagueId: number | null,
-  season: number | null
+  requestedSeason: number | null
 ): Promise<TeamProfile | null> {
   if (useMemoryStoreForTests) {
-    return memoryProfiles.get(profileKey(teamId, leagueId, season)) ?? null;
+    return memoryProfiles.get(profileKey(teamId, leagueId, requestedSeason)) ?? null;
   }
 
   try {
@@ -75,19 +75,32 @@ export async function getTeamProfile(
 
     const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
     const supabase = getSupabaseAdmin();
-    const result = await supabase
+    const requestedResult = await supabase
       .from(TABLE as "match_records")
       .select("*")
       .eq("team_id", teamId)
       .eq("league_id", storageLeagueId(leagueId))
-      .eq("season", storageSeason(season))
+      .eq("requested_season", storageSeason(requestedSeason))
       .maybeSingle();
 
-    if (result.error || !result.data) {
+    if (requestedResult.data) {
+      return mapRowToProfile(requestedResult.data as Record<string, unknown>);
+    }
+
+    const legacyResult = await supabase
+      .from(TABLE as "match_records")
+      .select("*")
+      .eq("team_id", teamId)
+      .eq("league_id", storageLeagueId(leagueId))
+      .eq("season", storageSeason(requestedSeason))
+      .is("requested_season", null)
+      .maybeSingle();
+
+    if (legacyResult.error || !legacyResult.data) {
       return null;
     }
 
-    return mapRowToProfile(result.data as Record<string, unknown>);
+    return mapRowToProfile(legacyResult.data as Record<string, unknown>);
   } catch {
     return null;
   }
@@ -106,7 +119,7 @@ export async function upsertTeamProfile(
       updatedAt: now,
     };
     memoryProfiles.set(
-      profileKey(profile.teamId, profile.leagueId, profile.season),
+      profileKey(profile.teamId, profile.leagueId, profile.requestedSeason),
       structuredClone(stored)
     );
     return { profile: stored, persisted: true };
@@ -126,7 +139,7 @@ export async function upsertTeamProfile(
     const existing = await getTeamProfile(
       profile.teamId,
       profile.leagueId,
-      profile.season
+      profile.requestedSeason
     );
     const row = mapProfileToRow({
       ...profile,
@@ -226,6 +239,9 @@ export async function markProfileRefreshFailure(
     leagueId: identity.leagueId,
     leagueName: identity.leagueName,
     season: identity.season,
+    requestedSeason: identity.season,
+    isHistoricalBaseline: false,
+    stalenessYears: null,
     sampleSize: 0,
     recent10Wins: null,
     recent10Draws: null,
@@ -309,6 +325,9 @@ function mapProfileToRow(profile: TeamProfile): Record<string, unknown> {
     league_id: storageLeagueId(profile.leagueId),
     league_name: profile.leagueName,
     season: storageSeason(profile.season),
+    requested_season: storageSeason(profile.requestedSeason),
+    is_historical_baseline: profile.isHistoricalBaseline,
+    staleness_years: profile.stalenessYears,
     sample_size: profile.sampleSize,
     recent10_wins: profile.recent10Wins,
     recent10_draws: profile.recent10Draws,
@@ -353,6 +372,12 @@ function mapRowToProfile(row: Record<string, unknown>): TeamProfile {
     leagueId: fromStorageLeagueId(Number(row.league_id)),
     leagueName: row.league_name === null ? null : String(row.league_name),
     season: fromStorageSeason(Number(row.season)),
+    requestedSeason:
+      row.requested_season === null || row.requested_season === undefined
+        ? fromStorageSeason(Number(row.season))
+        : fromStorageSeason(Number(row.requested_season)),
+    isHistoricalBaseline: Boolean(row.is_historical_baseline),
+    stalenessYears: nullableNumber(row.staleness_years),
     sampleSize: Number(row.sample_size ?? 0),
     recent10Wins: nullableNumber(row.recent10_wins),
     recent10Draws: nullableNumber(row.recent10_draws),

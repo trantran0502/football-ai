@@ -16,6 +16,7 @@ import type {
   TeamProfileIdentity,
   TeamProfileMatchInput,
   TeamProfileSource,
+  TeamProfileSeasonMetadata,
 } from "@/lib/teamProfile/teamProfileTypes";
 
 interface VenueMetrics {
@@ -31,6 +32,7 @@ export function calculateTeamProfile(input: {
   advancedStats?: TeamProfileAdvancedStatsInput | null;
   source: TeamProfileSource;
   calculatedAt?: string;
+  seasonMetadata?: TeamProfileSeasonMetadata;
 }): TeamProfile {
   const recent10 = input.matches.slice(0, 10);
   const sampleSize = recent10.length;
@@ -81,13 +83,19 @@ export function calculateTeamProfile(input: {
 
   const perMatchAdvanced = aggregatePerMatchAdvancedStats(recent10);
   const advanced = mergeAdvancedStats(perMatchAdvanced, input.advancedStats ?? null);
+  const seasonMetadata = input.seasonMetadata;
+  const requestedSeason = seasonMetadata?.requestedSeason ?? input.identity.season;
+  const dataSeason = seasonMetadata?.dataSeason ?? input.identity.season;
 
   const profile: TeamProfile = {
     teamId: input.identity.teamId,
     teamName: input.identity.teamName,
     leagueId: input.identity.leagueId,
     leagueName: input.identity.leagueName,
-    season: input.identity.season,
+    season: dataSeason,
+    requestedSeason,
+    isHistoricalBaseline: seasonMetadata?.isHistoricalBaseline ?? false,
+    stalenessYears: seasonMetadata?.stalenessYears ?? null,
     sampleSize,
     recent10Wins: sampleSize > 0 ? recentForm.wins : null,
     recent10Draws: sampleSize > 0 ? recentForm.draws : null,
@@ -171,7 +179,13 @@ export function calculateTeamProfileCompleteness(profile: TeamProfile): number {
 
   const essentialScore = (essentialPresent / essentialTotal) * 70;
   const advancedScore = (advancedPresent / advancedTotal) * 30;
-  return roundMetric(Math.min(100, essentialScore + advancedScore), 1);
+  let score = Math.min(100, essentialScore + advancedScore);
+
+  if (profile.isHistoricalBaseline && profile.stalenessYears && profile.stalenessYears > 0) {
+    score = Math.max(0, score - Math.min(35, profile.stalenessYears * 12));
+  }
+
+  return roundMetric(score, 1);
 }
 
 function buildVenueMetrics(

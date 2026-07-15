@@ -29,6 +29,7 @@ export function buildTeamProfileTeamDiagnostic(input: {
   matchLabel: string;
   fetchDiagnostics: TeamProfileFetchDiagnostics;
   skippedReason?: string;
+  fallbackReason?: TeamProfileTeamDiagnostic["fallbackReason"];
   source?: string;
   sampleSize?: number;
   warnings: string[];
@@ -48,10 +49,15 @@ export function buildTeamProfileTeamDiagnostic(input: {
     afterGoalFilterCount: lastAttempt?.afterGoalFilterCount ?? 0,
     normalizedMatchCount: input.fetchDiagnostics.normalizedMatchCount,
     skippedReason: input.skippedReason,
+    fallbackReason: input.fetchDiagnostics.fallbackReason ?? input.fallbackReason,
     quotaAvailable: input.quotaAvailable,
     apiConfigured: input.fetchDiagnostics.apiConfigured,
     quotaExhausted: input.fetchDiagnostics.quotaExhausted,
     quotaBlockReason: input.fetchDiagnostics.quotaBlockReason,
+    requestedSeason: input.fetchDiagnostics.requestedSeason,
+    dataSeason: input.fetchDiagnostics.dataSeason,
+    isHistoricalBaseline: input.fetchDiagnostics.isHistoricalBaseline,
+    stalenessYears: input.fetchDiagnostics.stalenessYears,
     source: input.source,
     sampleSize: input.sampleSize,
     warnings: input.warnings,
