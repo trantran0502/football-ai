@@ -50,6 +50,11 @@ function buildFixture(home: string, away: string): ProductionFixture {
   return {
     matchDate: MATCH_DATE,
     league: "Premier League",
+    leagueName: "Premier League",
+    leagueId: 39,
+    season: 2025,
+    fixtureId: 1000 + home.length + away.length,
+    kickoffTime: `${MATCH_DATE}T19:00:00.000Z`,
     homeTeam: home,
     awayTeam: away,
     rawOdds: SAMPLE_ODDS.replace("Arsenal", home).replace("Chelsea", away),

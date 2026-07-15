@@ -11,6 +11,11 @@ import type { RecommendationLevel } from "@/lib/recommendation/recommendationTyp
 export interface ProductionFixture {
   matchDate: string;
   league: string;
+  leagueName: string;
+  leagueId: number;
+  season: number | null;
+  fixtureId: number;
+  kickoffTime: string;
   homeTeam: string;
   awayTeam: string;
   rawOdds: string;

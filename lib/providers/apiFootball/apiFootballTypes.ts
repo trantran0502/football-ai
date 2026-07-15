@@ -24,6 +24,7 @@ export interface ApiFootballTeamRef {
 export interface ApiFootballFixtureRecord {
   fixtureId: number;
   date: string;
+  kickoffTime: string | null;
   league: string | null;
   leagueId: number | null;
   season: number | null;

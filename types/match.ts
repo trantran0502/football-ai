@@ -150,6 +150,10 @@ export interface UnknownMarket {
 
 export interface MatchData {
   league: string;
+  leagueId?: number | null;
+  season?: number | null;
+  fixtureId?: number | null;
+  kickoffTime?: string | null;
   homeTeam: string;
   awayTeam: string;
   /** Rules Engine 標準下注選項 */

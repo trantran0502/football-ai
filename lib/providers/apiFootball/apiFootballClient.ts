@@ -331,6 +331,7 @@ function mapFixtureRecord(item: Record<string, unknown>): ApiFootballFixtureReco
   return {
     fixtureId: fixture.id as number,
     date: String(fixture.date).split("T")[0],
+    kickoffTime: typeof fixture.date === "string" ? fixture.date : null,
     league: (league.name as string) ?? null,
     leagueId: (league.id as number) ?? null,
     season: (league.season as number) ?? null,

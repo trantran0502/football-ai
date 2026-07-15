@@ -22,6 +22,7 @@ export interface ReplayMatchInfo {
   matchId: string;
   fixtureId: number | null;
   league: string;
+  leagueId: number | null;
   season: number | null;
   matchTime: string;
   homeTeam: string;

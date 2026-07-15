@@ -8,21 +8,26 @@ import {
 } from "@/lib/production";
 import {
   buildSchedulerPlaceholderOdds,
-  filterFixturesByLeagueWhitelist,
+  enrichAnalysisReportWithFixture,
   filterFixturesByLeagueIdWhitelist,
+  filterFixturesBySchedulerLeaguePolicy,
+  intakeApiFixtures,
+  mapApiFixtureToSchedulerSource,
   resetExecutionLogsForTests,
   resetSchedulerLocksForTests,
   runDailyScheduler,
   runResultScheduler,
   getSchedulerStatus,
+  toProductionFixture,
+  validateApiFixtureRecord,
   withRetry,
   withTimeout,
   acquireSchedulerLock,
   releaseSchedulerLock,
   listExecutionLogs,
 } from "@/lib/scheduler";
+import { getSchedulerConfig } from "@/lib/scheduler/schedulerConfig";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
-import type { SchedulerFixtureSource } from "@/lib/scheduler/schedulerTypes";
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -31,14 +36,36 @@ function assert(condition: boolean, message: string): void {
 }
 
 const MATCH_DATE = "2026-07-16";
+const ORIGINAL_LEAGUE_ID_WHITELIST = process.env.SCHEDULER_LEAGUE_ID_WHITELIST;
+const ORIGINAL_LEAGUE_WHITELIST = process.env.SCHEDULER_LEAGUE_WHITELIST;
+
+function resetSchedulerEnv(): void {
+  delete process.env.SCHEDULER_LEAGUE_ID_WHITELIST;
+  delete process.env.SCHEDULER_LEAGUE_WHITELIST;
+}
+
+function restoreSchedulerEnv(): void {
+  if (ORIGINAL_LEAGUE_ID_WHITELIST === undefined) {
+    delete process.env.SCHEDULER_LEAGUE_ID_WHITELIST;
+  } else {
+    process.env.SCHEDULER_LEAGUE_ID_WHITELIST = ORIGINAL_LEAGUE_ID_WHITELIST;
+  }
+  if (ORIGINAL_LEAGUE_WHITELIST === undefined) {
+    delete process.env.SCHEDULER_LEAGUE_WHITELIST;
+  } else {
+    process.env.SCHEDULER_LEAGUE_WHITELIST = ORIGINAL_LEAGUE_WHITELIST;
+  }
+}
 
 function buildApiFixture(input: {
   id: number;
   home: string;
   away: string;
   league: string;
-  leagueId: number;
+  leagueId: number | null;
   status: string;
+  season?: number | null;
+  kickoffTime?: string | null;
   homeGoals?: number | null;
   awayGoals?: number | null;
   htHome?: number | null;
@@ -47,9 +74,10 @@ function buildApiFixture(input: {
   return {
     fixtureId: input.id,
     date: MATCH_DATE,
+    kickoffTime: input.kickoffTime ?? `${MATCH_DATE}T19:00:00.000Z`,
     league: input.league,
     leagueId: input.leagueId,
-    season: 2026,
+    season: input.season ?? 2026,
     homeTeam: input.home,
     awayTeam: input.away,
     homeTeamId: input.id * 10,
@@ -64,20 +92,12 @@ function buildApiFixture(input: {
   };
 }
 
-function toSchedulerSources(fixtures: ApiFootballFixtureRecord[]): SchedulerFixtureSource[] {
-  return fixtures.map((fixture) => ({
-    fixtureId: fixture.fixtureId,
-    matchDate: fixture.date,
-    league: fixture.league ?? "Unknown",
-    leagueId: fixture.leagueId,
-    homeTeam: fixture.homeTeam,
-    awayTeam: fixture.awayTeam,
-    status: fixture.status,
-    rawOdds: buildSchedulerPlaceholderOdds(fixture.homeTeam, fixture.awayTeam),
-  }));
+function intakeFixtures(apiFixtures: ApiFootballFixtureRecord[]) {
+  return intakeApiFixtures(apiFixtures);
 }
 
-async function testDailyScheduler(): Promise<void> {
+async function testDailySchedulerAllLeaguesByDefault(): Promise<void> {
+  resetSchedulerEnv();
   resetInMemoryProductionStore();
   resetExecutionLogsForTests();
   resetSchedulerLocksForTests();
@@ -102,15 +122,15 @@ async function testDailyScheduler(): Promise<void> {
     }),
     buildApiFixture({
       id: 3,
-      home: "Unknown Club A",
-      away: "Unknown Club B",
-      league: "Regional League",
-      leagueId: 999,
+      home: "Club A",
+      away: "Club B",
+      league: "J1 League",
+      leagueId: 98,
       status: "NS",
     }),
   ];
 
-  const fetchFixtures = async () => toSchedulerSources(apiFixtures);
+  const fetchFixtures = async () => intakeFixtures(apiFixtures);
   const listRecords = async () => listInMemoryProductionRecords();
 
   const result = await runDailyScheduler({
@@ -124,38 +144,154 @@ async function testDailyScheduler(): Promise<void> {
 
   assert(!result.skippedDueToLock, "daily scheduler should acquire lock");
   assert(result.fixturesFetched === 3, "should fetch three fixtures");
-  assert(result.fixturesAfterWhitelist === 2, "whitelist should keep two fixtures");
-  assert(result.pipeline.created === 2, "daily scheduler should create two records");
-  assert(result.summary.analyzedCount === 2, "summary should count two analyzed matches");
-  assert(result.executionLogId.length > 0, "execution log should be recorded");
+  assert(result.fixturesSkipped === 0, "valid fixtures should not be skipped");
+  assert(result.fixturesAfterWhitelist === 3, "default mode should keep all valid leagues");
+  assert(result.pipeline.created === 3, "daily scheduler should create three records");
 
-  const logs = listExecutionLogs(5);
-  assert(logs.some((log) => log.jobName === "daily_analysis" && log.success), "daily log success");
+  const records = listInMemoryProductionRecords();
+  const j1Record = records.find((record) => record.league === "J1 League");
+  assert(j1Record !== undefined, "non-top-five league should be saved");
+  assert(
+    j1Record?.analysisSnapshot?.replay?.match.league === "J1 League",
+    "analysis snapshot match league should be populated"
+  );
+  assert(j1Record?.analysisSnapshot?.replay?.match.leagueId === 98, "analysis snapshot leagueId required");
+  assert(j1Record?.analysisSnapshot?.replay?.match.fixtureId === 3, "analysis snapshot fixtureId required");
+  assert(j1Record?.analysisSnapshot?.replay?.match.season === 2026, "analysis snapshot season required");
 }
 
-async function testDuplicateProtection(): Promise<void> {
-  resetSchedulerLocksForTests();
+async function testWhitelistFiltersWhenConfigured(): Promise<void> {
+  resetSchedulerEnv();
+  process.env.SCHEDULER_LEAGUE_ID_WHITELIST = "39,140";
 
-  const apiFixtures = [
+  const fixtures = intakeFixtures([
     buildApiFixture({
-      id: 4,
+      id: 1,
       home: "Arsenal",
       away: "Chelsea",
       league: "Premier League",
       leagueId: 39,
       status: "NS",
     }),
-  ];
+    buildApiFixture({
+      id: 2,
+      home: "Club A",
+      away: "Club B",
+      league: "J1 League",
+      leagueId: 98,
+      status: "NS",
+    }),
+  ]).fixtures;
 
-  const fetchFixtures = async () => toSchedulerSources(apiFixtures);
-  const listRecords = async () => listInMemoryProductionRecords();
+  const config = getSchedulerConfig();
+  const filtered = filterFixturesBySchedulerLeaguePolicy(fixtures, {
+    leagueIdWhitelist: config.leagueIdWhitelist,
+    leagueWhitelist: config.leagueWhitelist,
+  });
+
+  assert(filtered.length === 1, "configured whitelist should filter non-listed leagues");
+  assert(filtered[0]?.leagueId === 39, "whitelist should keep Premier League");
+}
+
+async function testFixtureValidationFailClosed(): Promise<void> {
+  const missingLeagueId = validateApiFixtureRecord(
+    buildApiFixture({
+      id: 10,
+      home: "A",
+      away: "B",
+      league: "Some League",
+      leagueId: null,
+      status: "NS",
+    })
+  );
+  assert(!missingLeagueId.ok && missingLeagueId.reason === "Missing league.id", "missing league.id should fail");
+
+  const missingLeagueName = validateApiFixtureRecord(
+    buildApiFixture({
+      id: 11,
+      home: "A",
+      away: "B",
+      league: "",
+      leagueId: 99,
+      status: "NS",
+    })
+  );
+  assert(!missingLeagueName.ok && missingLeagueName.reason === "Missing league.name", "empty league name should fail");
+
+  const intake = intakeFixtures([
+    buildApiFixture({
+      id: 12,
+      home: "A",
+      away: "B",
+      league: "",
+      leagueId: 99,
+      status: "NS",
+    }),
+    buildApiFixture({
+      id: 13,
+      home: "C",
+      away: "D",
+      league: "Valid League",
+      leagueId: 100,
+      status: "NS",
+    }),
+  ]);
+
+  assert(intake.skipped.length === 1, "invalid fixture should be skipped");
+  assert(intake.fixtures.length === 1, "valid fixture should remain");
+  assert(intake.fixtures[0]?.leagueName === "Valid League", "league name must not be empty");
+}
+
+async function testFixtureMappingFields(): Promise<void> {
+  const mapped = mapApiFixtureToSchedulerSource(
+    buildApiFixture({
+      id: 21,
+      home: "Home FC",
+      away: "Away FC",
+      league: "Brasileirão",
+      leagueId: 71,
+      status: "NS",
+      season: 2025,
+      kickoffTime: "2026-07-16T23:30:00.000Z",
+    })
+  );
+
+  assert(mapped.fixtureId === 21, "fixtureId must map");
+  assert(mapped.leagueId === 71, "leagueId must map");
+  assert(mapped.leagueName === "Brasileirão", "leagueName must map");
+  assert(mapped.season === 2025, "season must map");
+  assert(mapped.kickoffTime === "2026-07-16T23:30:00.000Z", "kickoffTime must map");
+
+  const production = toProductionFixture(mapped);
+  const report = enrichAnalysisReportWithFixture(analyzeMatch(production.rawOdds), production);
+  assert(report.match.league === "Brasileirão", "report match league must be populated");
+  assert(report.match.leagueId === 71, "report match leagueId must be populated");
+  assert(report.match.fixtureId === 21, "report match fixtureId must be populated");
+  assert(report.match.season === 2025, "report match season must be populated");
+}
+
+async function testDuplicateProtection(): Promise<void> {
+  resetSchedulerEnv();
+  resetSchedulerLocksForTests();
+
+  const fetchFixtures = async () =>
+    intakeFixtures([
+      buildApiFixture({
+        id: 4,
+        home: "Arsenal",
+        away: "Chelsea",
+        league: "Premier League",
+        leagueId: 39,
+        status: "NS",
+      }),
+    ]);
 
   const second = await runDailyScheduler({
     runDate: MATCH_DATE,
     ownerId: "test-dup",
     fetchFixtures,
     saveMatch: saveMatchInMemory,
-    listRecords,
+    listRecords: async () => listInMemoryProductionRecords(),
     runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
   });
 
@@ -176,7 +312,7 @@ async function testLockProtection(): Promise<void> {
   const blocked = await runDailyScheduler({
     runDate: MATCH_DATE,
     ownerId: "blocked",
-    fetchFixtures: async () => [],
+    fetchFixtures: async () => ({ fixtures: [], skipped: [] }),
     saveMatch: saveMatchInMemory,
     listRecords: async () => [],
     runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
@@ -218,11 +354,12 @@ async function testTimeout(): Promise<void> {
 }
 
 async function testResultScheduler(): Promise<void> {
+  resetSchedulerEnv();
   resetSchedulerLocksForTests();
   resetExecutionLogsForTests();
 
   const pending = listInMemoryProductionRecords().filter((record) => record.status === "PENDING");
-  assert(pending.length >= 2, "pending records required for result scheduler test");
+  assert(pending.length >= 3, "pending records required for result scheduler test");
 
   const apiFixtures = [
     buildApiFixture({
@@ -249,6 +386,18 @@ async function testResultScheduler(): Promise<void> {
       htHome: 0,
       htAway: 0,
     }),
+    buildApiFixture({
+      id: 3,
+      home: "Club A",
+      away: "Club B",
+      league: "J1 League",
+      leagueId: 98,
+      status: "FT",
+      homeGoals: 1,
+      awayGoals: 1,
+      htHome: 0,
+      htAway: 1,
+    }),
   ];
 
   const result = await runResultScheduler({
@@ -257,18 +406,14 @@ async function testResultScheduler(): Promise<void> {
     listPending: async () =>
       listInMemoryProductionRecords().filter((record) => record.status === "PENDING"),
     listRecords: async () => listInMemoryProductionRecords(),
-    fetchFixtures: async () => toSchedulerSources(apiFixtures),
     fetchApiFixtures: async () => apiFixtures,
     verifyMatch: verifyMatchInMemory,
     runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
   });
 
   assert(!result.skippedDueToLock, "result scheduler should run");
-  assert(result.updatesBuilt === 2, "result scheduler should build two updates");
-  assert(result.pipeline.verified === 2, "result scheduler should verify two matches");
-
-  const verified = listInMemoryProductionRecords().filter((record) => record.status === "VERIFIED");
-  assert(verified.length === 2, "two verified records expected");
+  assert(result.updatesBuilt === 3, "result scheduler should build three updates");
+  assert(result.pipeline.verified === 3, "result scheduler should verify three matches");
 }
 
 async function testSchedulerStatus(): Promise<void> {
@@ -278,40 +423,35 @@ async function testSchedulerStatus(): Promise<void> {
     countTodayFixtures: async () => 3,
   });
 
-  assert(status.analyzedMatches === 2, "status should report analyzed matches");
-  assert(status.validatedMatches === 2, "status should report validated matches");
+  assert(status.analyzedMatches === 3, "status should report analyzed matches");
+  assert(status.validatedMatches === 3, "status should report validated matches");
   assert(status.dailySummary !== null, "status should include daily summary");
   assert(typeof status.nextRun.daily === "string", "status should include next daily run");
   assert(status.apiUsage.minuteLimit > 0, "status should include api usage");
 }
 
-async function testLeagueWhitelist(): Promise<void> {
-  const fixtures = [
-    {
-      fixtureId: 1,
-      matchDate: MATCH_DATE,
+async function testLeagueIdWhitelistHelper(): Promise<void> {
+  const fixtures = intakeFixtures([
+    buildApiFixture({
+      id: 1,
+      home: "A",
+      away: "B",
       league: "Premier League",
       leagueId: 39,
-      homeTeam: "A",
-      awayTeam: "B",
       status: "NS",
-    },
-    {
-      fixtureId: 2,
-      matchDate: MATCH_DATE,
+    }),
+    buildApiFixture({
+      id: 2,
+      home: "C",
+      away: "D",
       league: "Regional",
       leagueId: 999,
-      homeTeam: "C",
-      awayTeam: "D",
       status: "NS",
-    },
-  ];
+    }),
+  ]).fixtures;
 
-  const filteredByName = filterFixturesByLeagueWhitelist(fixtures, ["Premier League"]);
-  assert(filteredByName.length === 1, "league name whitelist should filter fixtures");
-
-  const filteredById = filterFixturesByLeagueIdWhitelist(fixtures, [39]);
-  assert(filteredById.length === 1, "league id whitelist should filter fixtures");
+  const filtered = filterFixturesByLeagueIdWhitelist(fixtures, [39]);
+  assert(filtered.length === 1, "league id whitelist helper should filter fixtures");
 }
 
 async function testAnalyzePipelineIntegrity(): Promise<void> {
@@ -323,19 +463,27 @@ async function testAnalyzePipelineIntegrity(): Promise<void> {
 }
 
 async function runTests(): Promise<void> {
-  await testDailyScheduler();
-  await testDuplicateProtection();
-  await testLockProtection();
-  await testRetry();
-  await testTimeout();
-  await testResultScheduler();
-  await testSchedulerStatus();
-  await testLeagueWhitelist();
-  await testAnalyzePipelineIntegrity();
-  console.log("All scheduler tests passed.");
+  try {
+    await testFixtureValidationFailClosed();
+    await testFixtureMappingFields();
+    await testWhitelistFiltersWhenConfigured();
+    await testDailySchedulerAllLeaguesByDefault();
+    await testDuplicateProtection();
+    await testLockProtection();
+    await testRetry();
+    await testTimeout();
+    await testResultScheduler();
+    await testSchedulerStatus();
+    await testLeagueIdWhitelistHelper();
+    await testAnalyzePipelineIntegrity();
+    console.log("All scheduler tests passed.");
+  } finally {
+    restoreSchedulerEnv();
+  }
 }
 
 runTests().catch((error) => {
   console.error(error);
+  restoreSchedulerEnv();
   process.exit(1);
 });

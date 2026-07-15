@@ -20,7 +20,8 @@ import {
   attachScoresToFinishedFixtures,
   buildResultUpdatesFromFinishedFixtures,
 } from "@/lib/scheduler/resultIntake";
-import { mapApiFixtureToSource } from "@/lib/scheduler/fixtureIntake";
+import { intakeApiFixtures } from "@/lib/scheduler/fixtureMapping";
+import type { SchedulerFixtureSource } from "@/lib/scheduler/schedulerTypes";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
 import { getApiFootballClient } from "@/lib/providers/apiFootball/apiFootballClient";
 
@@ -29,7 +30,7 @@ export interface ResultSchedulerDependencies {
   ownerId?: string;
   listPending?: () => Promise<HistoricalMatchRecord[]>;
   listRecords?: () => Promise<HistoricalMatchRecord[]>;
-  fetchFixtures?: (date: string) => Promise<ReturnType<typeof mapApiFixtureToSource>[]>;
+  fetchFixtures?: (date: string) => Promise<SchedulerFixtureSource[]>;
   fetchApiFixtures?: (date: string) => Promise<ApiFootballFixtureRecord[]>;
   verifyMatch?: NonNullable<ResultUpdatePipelineDependencies["verifyMatch"]>;
   runSummaryCron?: typeof runAdminDailyCron;
@@ -96,9 +97,9 @@ export async function runResultScheduler(
           delayMs: config.retryDelayMs,
         });
 
-        const finishedOnly = apiFixtures
-          .filter((fixture) => ["FT", "AET", "PEN"].includes(fixture.status))
-          .map(mapApiFixtureToSource);
+        const finishedOnly = intakeApiFixtures(
+          apiFixtures.filter((fixture) => ["FT", "AET", "PEN"].includes(fixture.status))
+        ).fixtures;
 
         if (dependencies.fetchFixtures) {
           const custom = await dependencies.fetchFixtures(runDate);

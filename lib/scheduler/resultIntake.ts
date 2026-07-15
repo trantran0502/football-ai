@@ -18,8 +18,8 @@ export async function fetchFinishedFixturesByDate(
     fetchFromApi?: (date: string) => Promise<ApiFootballFixtureRecord[]>;
   } = {}
 ): Promise<SchedulerFixtureSource[]> {
-  const fixtures = await fetchFixturesByDate(matchDate, options);
-  return fixtures.filter((fixture) => FINISHED_STATUSES.has(fixture.status));
+  const intake = await fetchFixturesByDate(matchDate, options);
+  return intake.fixtures.filter((fixture) => FINISHED_STATUSES.has(fixture.status));
 }
 
 export function buildResultUpdatesFromFinishedFixtures(

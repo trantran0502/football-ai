@@ -28,18 +28,23 @@ export {
 } from "@/lib/scheduler/executionLogStore";
 export {
   buildSchedulerPlaceholderOdds,
+} from "@/lib/scheduler/schedulerPlaceholderOdds";
+export {
   fetchFixturesByDate,
   filterAnalyzableFixtures,
+  filterFixturesByLeagueIdWhitelist,
   filterFixturesByLeagueWhitelist,
   filterFixturesBySchedulerLeaguePolicy,
   toProductionFixtures,
 } from "@/lib/scheduler/fixtureIntake";
 export {
-  DEFAULT_SCHEDULER_LEAGUE_IDS,
-  SCHEDULER_LEAGUE_ID_LABELS,
-  filterFixturesByLeagueIdWhitelist,
-  parseLeagueIdWhitelist,
-} from "@/lib/scheduler/leagueWhitelist";
+  enrichAnalysisReportWithFixture,
+  intakeApiFixtures,
+  mapApiFixtureToSchedulerSource,
+  validateApiFixtureRecord,
+  toProductionFixture,
+} from "@/lib/scheduler/fixtureMapping";
+export type { FixtureIntakeResult, FixtureMappingSkip } from "@/lib/scheduler/fixtureMapping";
 export { isSchedulerEnabled, requireSchedulerEnabled } from "@/lib/scheduler/schedulerEnabled";
 export {
   attachScoresToFinishedFixtures,

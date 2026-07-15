@@ -11,6 +11,7 @@ import {
   finishExecutionLog,
   startExecutionLog,
 } from "@/lib/scheduler/executionLogStore";
+import { enrichAnalysisReportWithFixture } from "@/lib/scheduler/fixtureMapping";
 import {
   fetchFixturesByDate,
   filterAnalyzableFixtures,
@@ -44,6 +45,18 @@ function todayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
+function formatIntakeWarning(
+  skip: { fixtureId: number | null; homeTeam: string | null; awayTeam: string | null; reason: string }
+): string {
+  const teams =
+    skip.homeTeam && skip.awayTeam
+      ? `${skip.homeTeam} vs ${skip.awayTeam}`
+      : "unknown fixture";
+  const fixtureLabel =
+    skip.fixtureId !== null ? `fixture ${skip.fixtureId}` : "fixture unknown";
+  return `Skipped ${fixtureLabel} (${teams}): ${skip.reason}`;
+}
+
 async function runScheduledDailyPipeline(
   fixtures: ProductionFixture[],
   runDate: string,
@@ -66,7 +79,10 @@ async function runScheduledDailyPipeline(
         async () =>
           withTimeout(
             (async () => {
-              const report = analyzeMatch(fixture.rawOdds);
+              const report = enrichAnalysisReportWithFixture(
+                analyzeMatch(fixture.rawOdds),
+                fixture
+              );
               return dependencies.saveMatch(fixture.rawOdds, report, fixture.matchDate);
             })(),
             dependencies.fixtureTimeoutMs,
@@ -136,6 +152,7 @@ export async function runDailyScheduler(
     return {
       runDate,
       fixturesFetched: 0,
+      fixturesSkipped: 0,
       fixturesAfterWhitelist: 0,
       pipeline: {
         runDate,
@@ -148,6 +165,7 @@ export async function runDailyScheduler(
       summary: buildSchedulerDailySummary(runDate, await listRecords()),
       executionLogId: "",
       skippedDueToLock: true,
+      intakeWarnings: [],
     };
   }
 
@@ -160,11 +178,21 @@ export async function runDailyScheduler(
   try {
     const pipelineResult = await withTimeout(
       (async () => {
-        const fetched = await withRetry(() => fetchFixtures(runDate), {
+        const intake = await withRetry(() => fetchFixtures(runDate), {
           maxRetries: config.maxRetries,
           delayMs: config.retryDelayMs,
         });
-        const analyzable = filterAnalyzableFixtures(fetched);
+        const intakeWarnings = intake.skipped.map(formatIntakeWarning);
+
+        for (const warning of intakeWarnings) {
+          logAdminError({
+            category: "scheduler",
+            message: warning,
+            context: { runDate, phase: "fixture_intake" },
+          });
+        }
+
+        const analyzable = filterAnalyzableFixtures(intake.fixtures);
         const whitelisted = filterFixturesBySchedulerLeaguePolicy(analyzable, {
           leagueIdWhitelist: config.leagueIdWhitelist,
           leagueWhitelist: config.leagueWhitelist,
@@ -196,11 +224,13 @@ export async function runDailyScheduler(
           id: execution.id,
           success: true,
           context: {
-            fixturesFetched: fetched.length,
+            fixturesFetched: intake.fixtures.length + intake.skipped.length,
+            fixturesSkipped: intake.skipped.length,
             fixturesAfterWhitelist: whitelisted.length,
             created: pipeline.created,
             duplicates: pipeline.duplicates,
             failed: pipeline.failed,
+            intakeWarnings,
           },
         });
 
@@ -215,10 +245,12 @@ export async function runDailyScheduler(
         });
 
         return {
-          fixturesFetched: fetched.length,
+          fixturesFetched: intake.fixtures.length + intake.skipped.length,
+          fixturesSkipped: intake.skipped.length,
           fixturesAfterWhitelist: whitelisted.length,
           pipeline,
           summary,
+          intakeWarnings,
         };
       })(),
       config.jobTimeoutMs,
@@ -228,11 +260,13 @@ export async function runDailyScheduler(
     return {
       runDate,
       fixturesFetched: pipelineResult.fixturesFetched,
+      fixturesSkipped: pipelineResult.fixturesSkipped,
       fixturesAfterWhitelist: pipelineResult.fixturesAfterWhitelist,
       pipeline: pipelineResult.pipeline,
       summary: pipelineResult.summary,
       executionLogId: execution.id,
       skippedDueToLock: false,
+      intakeWarnings: pipelineResult.intakeWarnings,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

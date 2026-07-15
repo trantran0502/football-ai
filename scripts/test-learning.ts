@@ -45,10 +45,20 @@ const SAMPLE_ODDS = `Arsenal vs Chelsea
 
 const MATCH_DATE = "2026-07-16";
 
+const LEAGUE_IDS: Record<string, number> = {
+  "Premier League": 39,
+  "La Liga": 140,
+};
+
 function buildFixture(home: string, away: string, league = "Premier League"): ProductionFixture {
   return {
     matchDate: MATCH_DATE,
     league,
+    leagueName: league,
+    leagueId: LEAGUE_IDS[league] ?? 999,
+    season: 2025,
+    fixtureId: 1000 + home.length + away.length + league.length,
+    kickoffTime: `${MATCH_DATE}T19:00:00.000Z`,
     homeTeam: home,
     awayTeam: away,
     rawOdds: SAMPLE_ODDS.replace("Arsenal", home).replace("Chelsea", away),

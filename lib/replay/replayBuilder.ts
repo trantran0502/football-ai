@@ -321,10 +321,11 @@ export function buildReplayMatchInfo(
 ): ReplayMatchInfo {
   return {
     matchId,
-    fixtureId: null,
+    fixtureId: report.match.fixtureId ?? null,
     league: report.match.league ?? "",
-    season: null,
-    matchTime: matchDate ?? new Date().toISOString().slice(0, 10),
+    leagueId: report.match.leagueId ?? null,
+    season: report.match.season ?? null,
+    matchTime: report.match.kickoffTime ?? matchDate ?? new Date().toISOString().slice(0, 10),
     homeTeam: report.match.homeTeam,
     awayTeam: report.match.awayTeam,
   };

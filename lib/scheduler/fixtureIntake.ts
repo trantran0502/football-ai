@@ -6,44 +6,20 @@ import {
 import { isLeagueAllowed } from "@/lib/scheduler/schedulerConfig";
 import { getApiFootballClient } from "@/lib/providers/apiFootball/apiFootballClient";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
+import {
+  intakeApiFixtures,
+  toProductionFixture,
+  type FixtureIntakeResult,
+} from "@/lib/scheduler/fixtureMapping";
+import { buildSchedulerPlaceholderOdds } from "@/lib/scheduler/schedulerPlaceholderOdds";
 
-const PLACEHOLDER_ODDS_TEMPLATE = `{home} vs {away}
-獨贏
-主 1.95
-和 3.40
-客 3.80
-全場讓分
-主-0.5 0.92
-客+0.5 0.98
-全場大小
-大(2.5) 0.90
-小(2.5) 0.96
-雙方進球
-是 0.82
-否 1.02`;
-
-export function buildSchedulerPlaceholderOdds(homeTeam: string, awayTeam: string): string {
-  return PLACEHOLDER_ODDS_TEMPLATE.replace("{home}", homeTeam).replace("{away}", awayTeam);
-}
-
-export function mapApiFixtureToSource(fixture: ApiFootballFixtureRecord): SchedulerFixtureSource {
-  return {
-    fixtureId: fixture.fixtureId,
-    matchDate: fixture.date,
-    league: fixture.league ?? "Unknown",
-    leagueId: fixture.leagueId,
-    homeTeam: fixture.homeTeam,
-    awayTeam: fixture.awayTeam,
-    status: fixture.status,
-    rawOdds: buildSchedulerPlaceholderOdds(fixture.homeTeam, fixture.awayTeam),
-  };
-}
+export { buildSchedulerPlaceholderOdds } from "@/lib/scheduler/schedulerPlaceholderOdds";
 
 export function filterFixturesByLeagueWhitelist(
   fixtures: SchedulerFixtureSource[],
   whitelist: string[]
 ): SchedulerFixtureSource[] {
-  return fixtures.filter((fixture) => isLeagueAllowed(fixture.league, whitelist));
+  return fixtures.filter((fixture) => isLeagueAllowed(fixture.leagueName, whitelist));
 }
 
 export function filterFixturesBySchedulerLeaguePolicy(
@@ -53,21 +29,25 @@ export function filterFixturesBySchedulerLeaguePolicy(
     leagueWhitelist: string[];
   }
 ): SchedulerFixtureSource[] {
+  let filtered = fixtures.filter(
+    (fixture) =>
+      typeof fixture.leagueId === "number" &&
+      Number.isInteger(fixture.leagueId) &&
+      fixture.leagueId > 0 &&
+      fixture.leagueName.trim().length > 0
+  );
+
   if (options.leagueIdWhitelist.length > 0) {
-    return filterFixturesByLeagueIdWhitelist(fixtures, options.leagueIdWhitelist);
+    filtered = filterFixturesByLeagueIdWhitelist(filtered, options.leagueIdWhitelist);
+  } else if (options.leagueWhitelist.length > 0) {
+    filtered = filterFixturesByLeagueWhitelist(filtered, options.leagueWhitelist);
   }
 
-  return filterFixturesByLeagueWhitelist(fixtures, options.leagueWhitelist);
+  return filtered;
 }
 
 export function toProductionFixtures(fixtures: SchedulerFixtureSource[]): ProductionFixture[] {
-  return fixtures.map((fixture) => ({
-    matchDate: fixture.matchDate,
-    league: fixture.league,
-    homeTeam: fixture.homeTeam,
-    awayTeam: fixture.awayTeam,
-    rawOdds: fixture.rawOdds ?? buildSchedulerPlaceholderOdds(fixture.homeTeam, fixture.awayTeam),
-  }));
+  return fixtures.map(toProductionFixture);
 }
 
 export async function fetchFixturesByDate(
@@ -75,7 +55,7 @@ export async function fetchFixturesByDate(
   options: {
     fetchFromApi?: (date: string) => Promise<ApiFootballFixtureRecord[]>;
   } = {}
-): Promise<SchedulerFixtureSource[]> {
+): Promise<FixtureIntakeResult> {
   const fetchFromApi =
     options.fetchFromApi ??
     (async (date: string) => {
@@ -86,10 +66,12 @@ export async function fetchFixturesByDate(
       return client.getFixturesByDate(date);
     });
 
-  const fixtures = await fetchFromApi(matchDate);
-  return fixtures
-    .filter((fixture) => fixture.status !== "CANC" && fixture.status !== "ABD")
-    .map(mapApiFixtureToSource);
+  const apiFixtures = await fetchFromApi(matchDate);
+  const activeFixtures = apiFixtures.filter(
+    (fixture) => fixture.status !== "CANC" && fixture.status !== "ABD"
+  );
+
+  return intakeApiFixtures(activeFixtures);
 }
 
 const FINISHED_OR_CANCELLED = new Set(["FT", "AET", "PEN", "CANC", "ABD", "AWD", "WO"]);
@@ -99,3 +81,8 @@ export function filterAnalyzableFixtures(
 ): SchedulerFixtureSource[] {
   return fixtures.filter((fixture) => !FINISHED_OR_CANCELLED.has(fixture.status));
 }
+
+export {
+  filterFixturesByLeagueIdWhitelist,
+  parseLeagueIdWhitelist,
+} from "@/lib/scheduler/leagueWhitelist";

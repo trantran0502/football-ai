@@ -231,6 +231,11 @@ async function runTests(): Promise<void> {
       {
         matchDate: MATCH_DATE,
         league: "Premier League",
+        leagueName: "Premier League",
+        leagueId: 39,
+        season: 2025,
+        fixtureId: 1001,
+        kickoffTime: `${MATCH_DATE}T19:00:00.000Z`,
         homeTeam: "Arsenal",
         awayTeam: "Chelsea",
         rawOdds: SAMPLE_ODDS,

@@ -1,33 +1,15 @@
-import {
-  DEFAULT_SCHEDULER_LEAGUE_IDS,
-  parseLeagueIdWhitelist,
-} from "@/lib/scheduler/leagueWhitelist";
 import type { SchedulerConfig } from "@/lib/scheduler/schedulerTypes";
-
-const DEFAULT_LEAGUES = [
-  "Premier League",
-  "La Liga",
-  "Serie A",
-  "Bundesliga",
-  "Ligue 1",
-  "UEFA Champions League",
-  "UEFA Europa League",
-];
+import { parseLeagueIdWhitelist } from "@/lib/scheduler/leagueWhitelist";
 
 export function getSchedulerConfig(): SchedulerConfig {
-  const leagueIdEnv = process.env.SCHEDULER_LEAGUE_ID_WHITELIST?.trim();
-  const parsedLeagueIds = parseLeagueIdWhitelist(leagueIdEnv);
-  const leagueIdWhitelist =
-    parsedLeagueIds.length > 0
-      ? parsedLeagueIds
-      : leagueIdEnv === ""
-        ? []
-        : [...DEFAULT_SCHEDULER_LEAGUE_IDS];
+  const leagueIdWhitelist = parseLeagueIdWhitelist(
+    process.env.SCHEDULER_LEAGUE_ID_WHITELIST?.trim()
+  );
 
   const whitelistEnv = process.env.SCHEDULER_LEAGUE_WHITELIST?.trim();
   const leagueWhitelist = whitelistEnv
     ? whitelistEnv.split(",").map((item) => item.trim()).filter(Boolean)
-    : DEFAULT_LEAGUES;
+    : [];
 
   return {
     leagueWhitelist,

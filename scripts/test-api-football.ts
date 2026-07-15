@@ -33,6 +33,7 @@ function assert(condition: boolean, message: string): void {
 const SAMPLE_FIXTURE = {
   fixtureId: 1001,
   date: "2026-07-10",
+  kickoffTime: "2026-07-10T15:00:00.000Z",
   league: "Premier League",
   leagueId: 39,
   season: 2025,

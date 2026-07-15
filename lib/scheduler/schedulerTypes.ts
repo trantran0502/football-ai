@@ -80,11 +80,13 @@ export interface SchedulerStatusResponse {
 export interface DailySchedulerResult {
   runDate: string;
   fixturesFetched: number;
+  fixturesSkipped: number;
   fixturesAfterWhitelist: number;
   pipeline: DailyPipelineResult;
   summary: SchedulerDailySummary;
   executionLogId: string;
   skippedDueToLock: boolean;
+  intakeWarnings: string[];
 }
 
 export interface ResultSchedulerResult {
@@ -113,7 +115,10 @@ export interface SchedulerFixtureSource {
   fixtureId: number;
   matchDate: string;
   league: string;
+  leagueName: string;
   leagueId: number | null;
+  season: number | null;
+  kickoffTime: string;
   homeTeam: string;
   awayTeam: string;
   status: string;
