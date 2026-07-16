@@ -3,6 +3,8 @@ export interface HistoricalBackfillCursor {
   minDate: string;
   status: "in_progress" | "completed";
   updatedAt: string;
+  planMinDate?: string | null;
+  planMaxDate?: string | null;
 }
 
 const CURSOR_STATE_KEY = "historical_match_backfill_cursor";

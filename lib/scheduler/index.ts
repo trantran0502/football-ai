@@ -101,5 +101,10 @@ export {
   filterEligibleHistoricalBackfillFixtures,
 } from "@/lib/scheduler/historicalBackfillIntake";
 export { getHistoricalBackfillConfig } from "@/lib/scheduler/historicalBackfillConfig";
+export {
+  defaultHistoricalBackfillStartDate,
+  resolveHistoricalBackfillMinDate,
+} from "@/lib/scheduler/historicalBackfillConfig";
+export { parseApiFootballPlanDateRestriction } from "@/lib/scheduler/historicalBackfillPlanErrors";
 export { getSchedulerStatus } from "@/lib/scheduler/schedulerService";
 export type { SchedulerStatusDependencies } from "@/lib/scheduler/schedulerService";

@@ -125,6 +125,8 @@ export interface HistoricalMatchBackfillResult {
     minDate: string;
     status: "in_progress" | "completed";
     updatedAt: string;
+    planMinDate?: string | null;
+    planMaxDate?: string | null;
   } | null;
   stats: {
     fetched: number;
@@ -136,6 +138,8 @@ export interface HistoricalMatchBackfillResult {
   };
   executionLogId: string;
   skippedDueToLock: boolean;
+  executionStatus?: "success" | "partial_success";
+  warnings?: string[];
   observabilityWarning?: string;
 }
 

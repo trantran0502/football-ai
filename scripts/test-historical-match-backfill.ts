@@ -11,7 +11,10 @@ import {
   listExecutionLogs,
   isEligibleHistoricalBackfillFixture,
   createInitialHistoricalBackfillCursor,
+  getHistoricalBackfillConfig,
+  defaultHistoricalBackfillStartDate,
 } from "@/lib/scheduler";
+import { parseApiFootballPlanDateRestriction } from "@/lib/scheduler/historicalBackfillPlanErrors";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
 import {
@@ -52,6 +55,27 @@ function buildFixture(
 }
 
 async function runTests(): Promise<void> {
+  const parsed = parseApiFootballPlanDateRestriction(
+    new Error(
+      'API-Football error: {"plan":"Free plans do not have access to this date, try from 2026-07-15 to 2026-07-17."}'
+    )
+  );
+  assert(parsed?.minDate === "2026-07-15", "plan date parser should read min date");
+  assert(parsed?.maxDate === "2026-07-17", "plan date parser should read max date");
+
+  delete process.env.HISTORICAL_BACKFILL_MIN_DATE;
+  delete process.env.HISTORICAL_BACKFILL_START_DATE;
+  const config = getHistoricalBackfillConfig(new Date("2026-07-16T12:00:00.000Z"));
+  assert(
+    config.minDate === "2026-07-13",
+    "default min date should be yesterday minus free-plan lookback"
+  );
+  assert(
+    defaultHistoricalBackfillStartDate(new Date("2026-07-16T12:00:00.000Z")) ===
+      "2026-07-15",
+    "default start date should be yesterday"
+  );
+
   process.env.HISTORICAL_BACKFILL_MAX_PER_RUN = "100";
   process.env.HISTORICAL_BACKFILL_START_DATE = MATCH_DATE;
   process.env.HISTORICAL_BACKFILL_MIN_DATE = "2026-07-08";
@@ -183,6 +207,56 @@ async function runTests(): Promise<void> {
   assert(Boolean(latest), "execution log should be recorded");
   assert(latest?.context?.inserted === 3, "execution log should record inserted count");
   assert(typeof latest?.context?.durationMs === "number", "execution log should record duration");
+
+  resetExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+
+  const planRestricted = await runHistoricalMatchBackfillScheduler({
+    fetchFixturesByDate: async (date) => {
+      if (date === "2026-07-10") {
+        throw new Error(
+          'API-Football error: {"plan":"Free plans do not have access to this date, try from 2026-07-15 to 2026-07-17."}'
+        );
+      }
+      if (date === "2026-07-15") {
+        return [buildFixture({ fixtureId: 3001, date: "2026-07-15" })];
+      }
+      return [];
+    },
+    loadCursor: async () =>
+      createInitialHistoricalBackfillCursor({
+        startDate: "2026-07-10",
+        minDate: "2026-07-08",
+      }),
+    saveCursor: async () => {},
+    loadDuplicateCheck: async () => ({
+      existingFixtureIds: new Set<number>(),
+      existingMatchKeys: new Set<string>(),
+    }),
+    insertRecord: async (record) => record,
+    loadMatchKeysForDate: async () => new Set<string>(),
+  });
+
+  assert(
+    planRestricted.executionStatus === "partial_success",
+    "plan date restriction should mark partial_success"
+  );
+  assert(
+    planRestricted.stats.inserted === 1,
+    "plan date restriction should continue on allowed date"
+  );
+  assert(
+    planRestricted.cursor?.currentDate === "2026-07-15" ||
+      planRestricted.cursor?.planMinDate === "2026-07-15",
+    "cursor should move to first allowed plan date"
+  );
+  const partialLog = listExecutionLogs().find(
+    (entry) => entry.jobName === "historical_match_backfill"
+  );
+  assert(
+    partialLog?.context?.status === "partial_success",
+    "execution log should record partial_success"
+  );
 
   disableHistoricalBackfillCursorStoreForTests();
   disableExecutionLogPersistStoreForTests();

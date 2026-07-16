@@ -18,10 +18,14 @@ import {
 } from "@/lib/scheduler/historicalBackfillCursorStore";
 import {
   getHistoricalBackfillConfig,
+  maxDateKey,
+  minDateKey,
+  resolveHistoricalBackfillMinDate,
   resolveHistoricalBackfillStartDate,
 } from "@/lib/scheduler/historicalBackfillConfig";
 import { filterEligibleHistoricalBackfillFixtures } from "@/lib/scheduler/historicalBackfillIntake";
-import { withRetry, withTimeout } from "@/lib/scheduler/retry";
+import { fetchHistoricalBackfillFixtures } from "@/lib/scheduler/historicalBackfillFetch";
+import { withTimeout } from "@/lib/scheduler/retry";
 import {
   acquireSchedulerLock,
   releaseSchedulerLock,
@@ -67,16 +71,73 @@ async function resolveCursor(
   dependencies: HistoricalMatchBackfillDependencies
 ): Promise<HistoricalBackfillCursor> {
   const config = getHistoricalBackfillConfig();
+  const startDate = resolveHistoricalBackfillStartDate(config);
   const loadCursor = dependencies.loadCursor ?? loadHistoricalBackfillCursor;
   const existing = await loadCursor();
+
   if (existing) {
-    return existing;
+    const minDate = resolveHistoricalBackfillMinDate(
+      config,
+      startDate,
+      existing.planMinDate
+    );
+    return {
+      ...existing,
+      minDate,
+      currentDate: minDateKey(maxDateKey(existing.currentDate, minDate), startDate),
+    };
   }
 
   return createInitialHistoricalBackfillCursor({
-    startDate: resolveHistoricalBackfillStartDate(config),
-    minDate: config.minDate,
+    startDate,
+    minDate: resolveHistoricalBackfillMinDate(config, startDate),
   });
+}
+
+function applyPlanDateRestriction(
+  cursor: HistoricalBackfillCursor,
+  config: ReturnType<typeof getHistoricalBackfillConfig>,
+  startDate: string,
+  restriction: { minDate: string; maxDate: string }
+): HistoricalBackfillCursor {
+  const minDate = resolveHistoricalBackfillMinDate(
+    config,
+    startDate,
+    restriction.minDate
+  );
+
+  let currentDate = cursor.currentDate;
+  if (compareDateKeys(currentDate, restriction.minDate) < 0) {
+    currentDate = restriction.minDate;
+  } else if (compareDateKeys(currentDate, restriction.maxDate) > 0) {
+    currentDate = restriction.maxDate;
+  }
+
+  currentDate = maxDateKey(currentDate, minDate);
+  if (compareDateKeys(startDate, restriction.minDate) >= 0) {
+    currentDate = minDateKey(currentDate, startDate);
+  }
+
+  return {
+    ...cursor,
+    currentDate,
+    minDate,
+    planMinDate: restriction.minDate,
+    planMaxDate: restriction.maxDate,
+  };
+}
+
+function isDateWithinPlanWindow(
+  cursor: HistoricalBackfillCursor,
+  dateKey: string
+): boolean {
+  if (cursor.planMinDate && compareDateKeys(dateKey, cursor.planMinDate) < 0) {
+    return false;
+  }
+  if (cursor.planMaxDate && compareDateKeys(dateKey, cursor.planMaxDate) > 0) {
+    return false;
+  }
+  return true;
 }
 
 function applyLeaguePolicy(
@@ -197,6 +258,7 @@ export async function runHistoricalMatchBackfillScheduler(
   try {
     const outcome = await withTimeout(
       (async () => {
+        const startDate = resolveHistoricalBackfillStartDate(config);
         let cursor = await resolveCursor(dependencies);
         const stats: HistoricalBackfillRunStats = {
           fetched: 0,
@@ -206,21 +268,61 @@ export async function runHistoricalMatchBackfillScheduler(
           apiRequests: 0,
           datesProcessed: 0,
         };
+        const warnings: string[] = [];
+        let hadPlanDateWarning = false;
 
         while (
           stats.inserted < config.maxPerRun &&
           cursor.status === "in_progress" &&
           compareDateKeys(cursor.currentDate, cursor.minDate) >= 0
         ) {
-          const fixtures = await withRetry(() => fetchFixturesByDate(cursor.currentDate), {
+          if (!isDateWithinPlanWindow(cursor, cursor.currentDate)) {
+            if (
+              cursor.planMinDate &&
+              compareDateKeys(cursor.currentDate, cursor.planMinDate) < 0
+            ) {
+              cursor = {
+                ...cursor,
+                status: "completed",
+              };
+            }
+            break;
+          }
+
+          const fetchOutcome = await fetchHistoricalBackfillFixtures({
+            date: cursor.currentDate,
+            fetchFixturesByDate,
             maxRetries: schedulerConfig.maxRetries,
-            delayMs: schedulerConfig.retryDelayMs,
+            retryDelayMs: schedulerConfig.retryDelayMs,
           });
           stats.apiRequests += 1;
+
+          if (fetchOutcome.kind === "plan_date_restricted") {
+            hadPlanDateWarning = true;
+            warnings.push(fetchOutcome.restriction.message);
+            logAdminError({
+              category: "scheduler",
+              message: "Historical backfill plan date restriction",
+              context: {
+                requestedDate: cursor.currentDate,
+                allowedMinDate: fetchOutcome.restriction.minDate,
+                allowedMaxDate: fetchOutcome.restriction.maxDate,
+                warning: fetchOutcome.restriction.message,
+              },
+            });
+            cursor = applyPlanDateRestriction(
+              cursor,
+              config,
+              startDate,
+              fetchOutcome.restriction
+            );
+            continue;
+          }
+
           stats.datesProcessed += 1;
 
           const eligible = applyLeaguePolicy(
-            filterEligibleHistoricalBackfillFixtures(fixtures)
+            filterEligibleHistoricalBackfillFixtures(fetchOutcome.fixtures)
           );
           stats.fetched += eligible.length;
 
@@ -307,13 +409,16 @@ export async function runHistoricalMatchBackfillScheduler(
           0,
           getApiFootballQuotaSnapshot().dailyCount - apiQuotaStart
         );
+        const executionStatus: "success" | "partial_success" = hadPlanDateWarning
+          ? "partial_success"
+          : "success";
 
         const persistResult = await completeExecutionLog({
           id: execution.id,
           success: true,
           context: buildExecutionLogContext({
             jobType: "historical_match_backfill",
-            status: "success",
+            status: executionStatus,
             fetched: stats.fetched,
             inserted: stats.inserted,
             duplicates: stats.duplicates,
@@ -323,6 +428,9 @@ export async function runHistoricalMatchBackfillScheduler(
             datesProcessed: stats.datesProcessed,
             cursorDate: cursor.currentDate,
             cursorStatus: cursor.status,
+            planMinDate: cursor.planMinDate ?? null,
+            planMaxDate: cursor.planMaxDate ?? null,
+            warnings,
           }),
         });
 
@@ -332,6 +440,8 @@ export async function runHistoricalMatchBackfillScheduler(
             ...stats,
             apiRequests: apiFootballRequestCount,
           },
+          executionStatus,
+          warnings,
           observabilityWarning: persistResult.persisted
             ? undefined
             : persistResult.persistError,
@@ -346,6 +456,8 @@ export async function runHistoricalMatchBackfillScheduler(
       stats: outcome.stats,
       executionLogId: execution.id,
       skippedDueToLock: false,
+      executionStatus: outcome.executionStatus,
+      warnings: outcome.warnings,
       observabilityWarning: outcome.observabilityWarning,
     };
   } catch (error) {
