@@ -114,6 +114,11 @@ export class HistoryRepository {
       candidates: structuredClone(candidates),
       status: input.status ?? "PENDING",
       verificationResult: null,
+      fixtureId: input.fixtureId ?? null,
+      leagueId: input.leagueId ?? null,
+      season: input.season ?? null,
+      homeTeamId: input.homeTeamId ?? null,
+      awayTeamId: input.awayTeamId ?? null,
       createdAt: now,
       updatedAt: now,
     });
@@ -143,6 +148,11 @@ export class HistoryRepository {
       analysis: snapshot,
       candidates: report.candidates,
       status: "PENDING",
+      fixtureId: report.match.fixtureId ?? null,
+      leagueId: report.match.leagueId ?? null,
+      season: report.match.season ?? null,
+      homeTeamId: report.match.homeTeamId ?? null,
+      awayTeamId: report.match.awayTeamId ?? null,
     });
   }
 

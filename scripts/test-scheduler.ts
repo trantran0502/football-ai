@@ -206,6 +206,15 @@ async function testDailySchedulerAllLeaguesByDefault(): Promise<void> {
   assert(j1Record?.analysisSnapshot?.replay?.match.leagueId === 98, "analysis snapshot leagueId required");
   assert(j1Record?.analysisSnapshot?.replay?.match.fixtureId === 3, "analysis snapshot fixtureId required");
   assert(j1Record?.analysisSnapshot?.replay?.match.season === 2026, "analysis snapshot season required");
+  assert(j1Record?.fixtureId === 3, "top-level fixtureId must be persisted");
+  assert(j1Record?.leagueId === 98, "top-level leagueId must be persisted");
+  assert(j1Record?.season === 2026, "top-level season must be persisted");
+  assert(j1Record?.homeTeamId === 30, "top-level homeTeamId must be persisted");
+  assert(j1Record?.awayTeamId === 31, "top-level awayTeamId must be persisted");
+  assert(
+    j1Record?.fixtureId === j1Record?.analysisSnapshot?.replay?.match.fixtureId,
+    "top-level fixtureId must match analysis snapshot replay fixtureId"
+  );
 }
 
 async function testWhitelistFiltersWhenConfigured(): Promise<void> {
@@ -316,6 +325,8 @@ async function testFixtureMappingFields(): Promise<void> {
   assert(report.match.leagueId === 71, "report match leagueId must be populated");
   assert(report.match.fixtureId === 21, "report match fixtureId must be populated");
   assert(report.match.season === 2025, "report match season must be populated");
+  assert(report.match.homeTeamId === 210, "report match homeTeamId must be populated");
+  assert(report.match.awayTeamId === 211, "report match awayTeamId must be populated");
 }
 
 async function testDuplicateProtection(): Promise<void> {

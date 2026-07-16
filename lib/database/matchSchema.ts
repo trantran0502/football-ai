@@ -114,6 +114,11 @@ export interface SaveMatchInput {
   analysis?: AnalysisEngineResult | AnalysisSnapshot | AnalysisReport | null;
   candidates?: AnalysisCandidate[];
   status?: MatchStatus;
+  fixtureId?: number | null;
+  leagueId?: number | null;
+  season?: number | null;
+  homeTeamId?: number | null;
+  awayTeamId?: number | null;
 }
 
 export type SaveMatchOutcome =

@@ -57,6 +57,11 @@ export async function saveMatchInMemory(
     candidates: structuredClone(report.candidates),
     status: "PENDING",
     verificationResult: null,
+    fixtureId: report.match.fixtureId ?? null,
+    leagueId: report.match.leagueId ?? null,
+    season: report.match.season ?? null,
+    homeTeamId: report.match.homeTeamId ?? null,
+    awayTeamId: report.match.awayTeamId ?? null,
     createdAt: now,
     updatedAt: now,
   });
@@ -95,6 +100,11 @@ export async function saveMatchIfNewInMemory(
     candidates: structuredClone(input.candidates ?? []),
     status: input.status ?? "PENDING",
     verificationResult: null,
+    fixtureId: input.fixtureId ?? null,
+    leagueId: input.leagueId ?? null,
+    season: input.season ?? null,
+    homeTeamId: input.homeTeamId ?? null,
+    awayTeamId: input.awayTeamId ?? null,
     createdAt: now,
     updatedAt: now,
   });

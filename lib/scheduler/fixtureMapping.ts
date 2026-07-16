@@ -138,6 +138,8 @@ export function enrichAnalysisReportWithFixture(
       season: fixture.season,
       fixtureId: fixture.fixtureId,
       kickoffTime: fixture.kickoffTime,
+      homeTeamId: fixture.homeTeamId,
+      awayTeamId: fixture.awayTeamId,
     },
   };
 }

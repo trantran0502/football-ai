@@ -156,6 +156,8 @@ export interface MatchData {
   kickoffTime?: string | null;
   homeTeam: string;
   awayTeam: string;
+  homeTeamId?: number | null;
+  awayTeamId?: number | null;
   /** Rules Engine 標準下注選項 */
   marketSelections: MarketSelection[];
   /** UI / 分析相容投影 */
