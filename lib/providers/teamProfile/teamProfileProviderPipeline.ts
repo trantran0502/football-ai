@@ -11,6 +11,7 @@ import {
 } from "@/lib/providers/registry";
 import { getProductionH2HResolution } from "@/lib/providers/h2h/productionH2HProvider";
 import { getProductionLeagueStrengthResolution } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
+import { getProductionSquadAvailabilityResolution } from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
 import type { ReplayDataSource } from "@/lib/replay/replayTypes";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import {
@@ -129,7 +130,14 @@ export function resolveAllProviderSnapshots(input: {
             request as ProviderRequestByKey["leagueStrength"]
           )
         : null;
-    const productionResolution = h2hResolution ?? leagueStrengthResolution;
+    const squadAvailabilityResolution =
+      providerKey === "squadAvailability"
+        ? getProductionSquadAvailabilityResolution(
+            request as ProviderRequestByKey["squadAvailability"]
+          )
+        : null;
+    const productionResolution =
+      h2hResolution ?? leagueStrengthResolution ?? squadAvailabilityResolution;
     return {
       key: providerKey,
       source,

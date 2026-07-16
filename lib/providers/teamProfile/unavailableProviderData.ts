@@ -86,6 +86,14 @@ export function buildUnavailableProviderData<K extends FeatureProviderKey>(
       return {
         home: { ...EMPTY_SQUAD_AVAILABILITY },
         away: { ...EMPTY_SQUAD_AVAILABILITY },
+        injuredCount: null,
+        suspendedCount: null,
+        doubtfulCount: null,
+        unavailableCount: null,
+        keyPlayersMissing: [],
+        impactScore: null,
+        dataFreshnessDays: null,
+        sampleSize: 0,
       } as unknown as ProviderDataByKey[K];
     case "matchContext":
       return {

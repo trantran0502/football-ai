@@ -426,6 +426,14 @@ export function mapSquadAvailabilitySnapshot(
   return {
     home: buildTeam(bundle.homeTeam.id),
     away: buildTeam(bundle.awayTeam.id),
+    injuredCount: countInjuries(bundle.homeTeam.id) + countInjuries(bundle.awayTeam.id),
+    suspendedCount: null,
+    doubtfulCount: null,
+    unavailableCount: null,
+    keyPlayersMissing: [],
+    impactScore: null,
+    dataFreshnessDays: null,
+    sampleSize: bundle.injuries.length,
   };
 }
 

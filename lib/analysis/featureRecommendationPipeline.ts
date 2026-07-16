@@ -30,6 +30,12 @@ import {
   type ProductionLeagueStrengthContext,
 } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
 import { clearProductionLeagueStrengthCacheForTests } from "@/lib/providers/leagueStrength/leagueStrengthCache";
+import {
+  prepareProductionSquadAvailabilityContext,
+  resetProductionSquadAvailabilityContext,
+  type ProductionSquadAvailabilityContext,
+} from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
+import { clearProductionSquadAvailabilityCacheForTests } from "@/lib/providers/squadAvailability/squadAvailabilityCache";
 import { resetFeatureProviderRegistryForTests } from "@/lib/providers/registry";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type { MarketSelection, MatchData } from "@/types/match";
@@ -56,6 +62,7 @@ export interface FeatureRecommendationPipelineOptions {
   matchDate?: string;
   h2hContext?: ProductionH2HContext | null;
   leagueStrengthContext?: ProductionLeagueStrengthContext | null;
+  squadAvailabilityContext?: ProductionSquadAvailabilityContext | null;
 }
 
 export function runFeatureRecommendationPipeline(
@@ -82,6 +89,7 @@ export function runFeatureRecommendationPipeline(
   prepareTeamProfileProviderContext(options.teamProfiles ?? null);
   prepareProductionH2HContext(options.h2hContext ?? null);
   prepareProductionLeagueStrengthContext(options.leagueStrengthContext ?? null);
+  prepareProductionSquadAvailabilityContext(options.squadAvailabilityContext ?? null);
 
   try {
     const providerSnapshots = resolveAllProviderSnapshots({
@@ -148,6 +156,7 @@ export function runFeatureRecommendationPipeline(
     resetTeamProfileProviderContext();
     resetProductionH2HContext();
     resetProductionLeagueStrengthContext();
+    resetProductionSquadAvailabilityContext();
   }
 }
 
@@ -156,7 +165,9 @@ export function resetFeatureRecommendationPipelineForTests(): void {
   resetTeamProfileProviderContext();
   resetProductionH2HContext();
   resetProductionLeagueStrengthContext();
+  resetProductionSquadAvailabilityContext();
   clearProductionH2HCacheForTests();
   clearProductionLeagueStrengthCacheForTests();
+  clearProductionSquadAvailabilityCacheForTests();
   resetFeatureProviderRegistryForTests();
 }

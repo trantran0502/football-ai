@@ -22,6 +22,7 @@
     "test:scoring-pattern": "tsx scripts/test-scoring-pattern-feature.ts",
     "test:h2h": "tsx scripts/test-h2h-feature.ts",
     "test:production-league-strength": "tsx scripts/test-production-league-strength.ts",
+    "test:production-squad-availability": "tsx scripts/test-production-squad-availability.ts",
     "test:squad-availability": "tsx scripts/test-squad-availability-feature.ts",
     "test:match-context": "tsx scripts/test-match-context-feature.ts",
     "test:feature-fusion": "tsx scripts/test-feature-fusion.ts",

@@ -12,6 +12,7 @@ import { validateCrossMarkets } from "@/lib/analysis/crossMarketValidator";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type { ProductionH2HContext } from "@/lib/providers/h2h/productionH2HProvider";
 import type { ProductionLeagueStrengthContext } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
+import type { ProductionSquadAvailabilityContext } from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import { parseOdds } from "@/lib/parser/parser";
 import { normalizeMarketSelections } from "@/lib/parser/normalizeMarketSelections";
@@ -27,6 +28,7 @@ export function analyzeMatch(
     matchDate?: string;
     h2hContext?: ProductionH2HContext | null;
     leagueStrengthContext?: ProductionLeagueStrengthContext | null;
+    squadAvailabilityContext?: ProductionSquadAvailabilityContext | null;
   } = {}
 ): AnalysisReport {
   const match = parseOdds(rawText);
@@ -53,6 +55,7 @@ export function analyzeMatch(
       matchDate: options.matchDate,
       h2hContext: options.h2hContext ?? null,
       leagueStrengthContext: options.leagueStrengthContext ?? null,
+      squadAvailabilityContext: options.squadAvailabilityContext ?? null,
     }
   );
   const bettingIntelligence = buildBettingIntelligence({

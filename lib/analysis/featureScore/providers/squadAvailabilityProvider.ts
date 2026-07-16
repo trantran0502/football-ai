@@ -21,6 +21,14 @@ export interface TeamSquadAvailability {
 export interface SquadAvailabilitySnapshot {
   home: TeamSquadAvailability;
   away: TeamSquadAvailability;
+  injuredCount?: number | null;
+  suspendedCount?: number | null;
+  doubtfulCount?: number | null;
+  unavailableCount?: number | null;
+  keyPlayersMissing?: string[];
+  impactScore?: number | null;
+  dataFreshnessDays?: number | null;
+  sampleSize?: number;
 }
 
 export interface SquadAvailabilityProviderRequest {
@@ -255,6 +263,14 @@ export function createMockSquadAvailabilityProvider(): SquadAvailabilityProvider
       return {
         home: resolveHomeProfile(request.homeTeam),
         away: resolveAwayProfile(request.awayTeam),
+        injuredCount: null,
+        suspendedCount: null,
+        doubtfulCount: null,
+        unavailableCount: null,
+        keyPlayersMissing: [],
+        impactScore: null,
+        dataFreshnessDays: 7,
+        sampleSize: 12,
       };
     },
   };
@@ -286,5 +302,13 @@ export function buildPartialSquadAvailabilitySnapshot(partial: {
   return {
     home: buildAvailability(partial.home ?? {}),
     away: buildAvailability(partial.away ?? {}),
+    injuredCount: null,
+    suspendedCount: null,
+    doubtfulCount: null,
+    unavailableCount: null,
+    keyPlayersMissing: [],
+    impactScore: null,
+    dataFreshnessDays: null,
+    sampleSize: 0,
   };
 }

@@ -197,6 +197,14 @@ export function extractProviderDataFromContext<K extends FeatureProviderKey>(
           daysSinceLastMatch: null,
           daysUntilNextMatch: null,
         },
+        injuredCount: homeCount + awayCount,
+        suspendedCount: null,
+        doubtfulCount: null,
+        unavailableCount: null,
+        keyPlayersMissing: [],
+        impactScore: null,
+        dataFreshnessDays: null,
+        sampleSize: injuries.length,
       };
       return snapshot as ProviderDataByKey[K];
     }

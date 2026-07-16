@@ -20,6 +20,10 @@ import {
   prepareProductionLeagueStrengthContext,
   resetProductionLeagueStrengthContext,
 } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
+import {
+  prepareProductionSquadAvailabilityContext,
+  resetProductionSquadAvailabilityContext,
+} from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
 import type { FeatureProviderKey } from "@/lib/providers/registry/types";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type {
@@ -97,6 +101,11 @@ function captureProviderSnapshots(input: {
         }
       : null
   );
+  prepareProductionSquadAvailabilityContext({
+    homeTeam: input.homeTeam,
+    awayTeam: input.awayTeam,
+    matchDate: input.matchDate,
+  });
   try {
     const snapshots = resolveAllProviderSnapshots({
       homeTeam: input.homeTeam,
@@ -120,6 +129,7 @@ function captureProviderSnapshots(input: {
   } finally {
     resetTeamProfileProviderContext();
     resetProductionLeagueStrengthContext();
+    resetProductionSquadAvailabilityContext();
   }
 }
 
@@ -129,6 +139,11 @@ function captureFeatureSnapshots(
 ): ReplayFeatureSnapshot[] {
   ensureReplayFeatureCollectorsRegistered();
   prepareTeamProfileProviderContext(report.teamProfiles ?? null);
+  prepareProductionSquadAvailabilityContext({
+    homeTeam: report.match.homeTeam,
+    awayTeam: report.match.awayTeam,
+    matchDate,
+  });
   try {
     const audit = auditProviderResolution(
       resolveAllProviderSnapshots({
@@ -165,6 +180,7 @@ function captureFeatureSnapshots(
   } finally {
     resetTeamProfileProviderContext();
     resetProductionLeagueStrengthContext();
+    resetProductionSquadAvailabilityContext();
   }
 }
 
