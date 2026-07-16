@@ -138,7 +138,9 @@ export function runFeatureRecommendationPipeline(
     }
 
     const fusion = fuseFeatureScores(annotatedFeatures);
-    const recommendation = generateRecommendations(fusion, markets);
+    const recommendation = generateRecommendations(fusion, markets, {
+      providerAudit,
+    });
     const guarded = applyRecommendationProviderGuard({
       fusion,
       recommendation,

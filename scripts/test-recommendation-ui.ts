@@ -12,7 +12,10 @@ import {
   getRecommendationMessage,
   sortRecommendationCandidates,
 } from "@/lib/recommendation/recommendationPresentation";
-import type { RecommendationCandidate } from "@/lib/recommendation/recommendationTypes";
+import {
+  createEmptyRecommendationResult,
+  type RecommendationCandidate,
+} from "@/lib/recommendation/recommendationTypes";
 import type { MarketSelection } from "@/types/match";
 
 function assert(condition: boolean, message: string): void {
@@ -201,11 +204,13 @@ function runTests(): void {
     },
   ];
   assert(
-    getRecommendationMessage({
-      candidates: passOnlyCandidates,
-      globalPass: true,
-      passReason: "Too many warnings",
-    }) === "Too many warnings",
+    getRecommendationMessage(
+      createEmptyRecommendationResult({
+        candidates: passOnlyCandidates,
+        globalPass: true,
+        passReason: "Too many warnings",
+      })
+    ) === "Too many warnings",
     "global pass message should surface pass reason"
   );
 

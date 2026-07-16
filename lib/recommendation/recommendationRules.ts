@@ -1,7 +1,12 @@
 import { clampConfidence, clampScore, convertRawOddsToImpliedProbability } from "@/lib/analysis/featureScore/oddsConversion";
 import type { FeatureFusionResult, FusionFactorSummary, FusionSourceCategory } from "@/lib/analysis/featureScore/fusion/fusionTypes";
+import type { FeatureProviderKey } from "@/lib/providers/registry/types";
+import { FEATURE_PROVIDER_KEYS } from "@/lib/providers/registry/types";
 import type { MarketSelection } from "@/types/match";
 import type { RecommendationLevel } from "@/lib/recommendation/recommendationTypes";
+import {
+  PROVIDER_TO_FUSION_CATEGORY,
+} from "@/lib/recommendation/providerWeights";
 
 export const MIN_OVERALL_CONFIDENCE = 0.45;
 export const MAX_WARNINGS_BEFORE_PASS = 3;
@@ -107,6 +112,23 @@ export function getCategoryConfidence(
   category: FusionSourceCategory
 ): number {
   return fusion.categoryScores.find((item) => item.category === category)?.confidence ?? 0;
+}
+
+export function weightedProviderCategoryScore(
+  fusion: FeatureFusionResult,
+  normalizedWeights: Partial<Record<FeatureProviderKey, number>>,
+  providerKeys: readonly FeatureProviderKey[] = FEATURE_PROVIDER_KEYS
+): number {
+  let score = 0;
+  for (const providerKey of providerKeys) {
+    const weight = normalizedWeights[providerKey];
+    if (!weight || weight <= 0) {
+      continue;
+    }
+    const category = PROVIDER_TO_FUSION_CATEGORY[providerKey];
+    score += getCategoryWeightedScore(fusion, category) * weight;
+  }
+  return score;
 }
 
 export function findFactor(
@@ -247,15 +269,27 @@ export function directionalMultiplier(
 
 export function scoreMoneyline(
   fusion: FeatureFusionResult,
-  direction: number
+  direction: number,
+  normalizedWeights: Partial<Record<FeatureProviderKey, number>> | null = null
 ): { score: number; supportingFeatures: string[]; reasons: string[] } {
-  const categoryScore =
-    direction *
-    (MONEYLINE_WEIGHTS.overall * fusion.overallScore +
-      MONEYLINE_WEIGHTS.marketOdds * getCategoryWeightedScore(fusion, "marketOdds") +
-      MONEYLINE_WEIGHTS.recentForm * getCategoryWeightedScore(fusion, "recentForm") +
-      MONEYLINE_WEIGHTS.homeAway * getCategoryWeightedScore(fusion, "homeAway") +
-      MONEYLINE_WEIGHTS.goalsXg * getCategoryWeightedScore(fusion, "goalsXg"));
+  const categoryScore = normalizedWeights
+    ? direction *
+      (weightedProviderCategoryScore(fusion, normalizedWeights, [
+        "recentForm",
+        "homeAway",
+        "goalsXg",
+        "leagueStrength",
+        "h2h",
+        "squadAvailability",
+        "matchContext",
+      ]) +
+        0.12 * getCategoryWeightedScore(fusion, "marketOdds"))
+    : direction *
+      (MONEYLINE_WEIGHTS.overall * fusion.overallScore +
+        MONEYLINE_WEIGHTS.marketOdds * getCategoryWeightedScore(fusion, "marketOdds") +
+        MONEYLINE_WEIGHTS.recentForm * getCategoryWeightedScore(fusion, "recentForm") +
+        MONEYLINE_WEIGHTS.homeAway * getCategoryWeightedScore(fusion, "homeAway") +
+        MONEYLINE_WEIGHTS.goalsXg * getCategoryWeightedScore(fusion, "goalsXg"));
 
   const factorIds = [
     "market_odds",
@@ -301,19 +335,31 @@ export function scoreMoneyline(
 
 export function scoreHandicap(
   fusion: FeatureFusionResult,
-  direction: number
+  direction: number,
+  normalizedWeights: Partial<Record<FeatureProviderKey, number>> | null = null
 ): { score: number; supportingFeatures: string[]; reasons: string[] } {
-  const base = scoreMoneyline(fusion, direction);
+  const base = scoreMoneyline(fusion, direction, normalizedWeights);
   const goalDifference = direction * findFactorScore(fusion, "recent_form.goal_difference");
   const homeAdvantage = direction * findFactorScore(fusion, "home_away.home_advantage");
-  const leagueStrength = direction * getCategoryWeightedScore(fusion, "leagueStrength");
+  const leagueStrength = normalizedWeights
+    ? direction *
+      (normalizedWeights.leagueStrength ?? 0) *
+      getCategoryWeightedScore(fusion, "leagueStrength")
+    : direction * getCategoryWeightedScore(fusion, "leagueStrength");
 
-  const score = clampScore(
-    base.score * 0.7 +
-      goalDifference * HANDICAP_WEIGHTS.goalDifference +
-      homeAdvantage * HANDICAP_WEIGHTS.homeAdvantage +
-      leagueStrength * HANDICAP_WEIGHTS.leagueStrength
-  );
+  const score = normalizedWeights
+    ? clampScore(
+        base.score * 0.75 +
+          goalDifference * 0.12 +
+          homeAdvantage * 0.08 +
+          leagueStrength
+      )
+    : clampScore(
+        base.score * 0.7 +
+          goalDifference * HANDICAP_WEIGHTS.goalDifference +
+          homeAdvantage * HANDICAP_WEIGHTS.homeAdvantage +
+          leagueStrength * HANDICAP_WEIGHTS.leagueStrength
+      );
 
   const supportingFeatures = [...base.supportingFeatures];
   const reasons = [...base.reasons];
@@ -336,22 +382,40 @@ export function scoreHandicap(
 
 export function scoreTotalGoals(
   fusion: FeatureFusionResult,
-  direction: number
+  direction: number,
+  normalizedWeights: Partial<Record<FeatureProviderKey, number>> | null = null
 ): { score: number; supportingFeatures: string[]; reasons: string[] } {
+  const score = normalizedWeights
+    ? clampScore(
+        direction *
+          (weightedProviderCategoryScore(fusion, normalizedWeights, [
+            "goalsXg",
+            "scoringPattern",
+            "matchContext",
+            "recentForm",
+          ]) +
+            0.08 * getCategoryWeightedScore(fusion, "marketOdds"))
+      )
+    : clampScore(
+        direction * getCategoryWeightedScore(fusion, "goalsXg") * TOTAL_GOALS_WEIGHTS.goalsXg +
+          direction *
+            getCategoryWeightedScore(fusion, "scoringPattern") *
+            TOTAL_GOALS_WEIGHTS.scoringPattern +
+          direction *
+            findFactorScore(fusion, "scoring_pattern.average_total_goals") *
+            TOTAL_GOALS_WEIGHTS.averageGoals +
+          direction *
+            getCategoryWeightedScore(fusion, "matchContext") *
+            TOTAL_GOALS_WEIGHTS.matchContext +
+          direction * fusion.overallScore * TOTAL_GOALS_WEIGHTS.overall +
+          direction * findFactorScore(fusion, "scoring_pattern.combined_over_25") * 0.1
+      );
+
   const goalsXg = direction * getCategoryWeightedScore(fusion, "goalsXg");
   const scoringPattern = direction * getCategoryWeightedScore(fusion, "scoringPattern");
   const matchContext = direction * getCategoryWeightedScore(fusion, "matchContext");
   const averageGoals = direction * findFactorScore(fusion, "scoring_pattern.average_total_goals");
   const combinedOver = direction * findFactorScore(fusion, "scoring_pattern.combined_over_25");
-
-  const score = clampScore(
-    goalsXg * TOTAL_GOALS_WEIGHTS.goalsXg +
-      scoringPattern * TOTAL_GOALS_WEIGHTS.scoringPattern +
-      averageGoals * TOTAL_GOALS_WEIGHTS.averageGoals +
-      matchContext * TOTAL_GOALS_WEIGHTS.matchContext +
-      direction * fusion.overallScore * TOTAL_GOALS_WEIGHTS.overall +
-      combinedOver * 0.1
-  );
 
   const supportingFeatures: string[] = [];
   const reasons: string[] = [];
@@ -378,7 +442,8 @@ export function scoreTotalGoals(
 
 export function scoreBtts(
   fusion: FeatureFusionResult,
-  direction: number
+  direction: number,
+  normalizedWeights: Partial<Record<FeatureProviderKey, number>> | null = null
 ): { score: number; supportingFeatures: string[]; reasons: string[] } {
   const btts = direction * findFactorScore(fusion, "scoring_pattern.combined_btts");
   const failedToScore = direction * -findFactorScore(fusion, "scoring_pattern.failed_to_score_risk");
@@ -386,13 +451,22 @@ export function scoreBtts(
   const goalsXg = direction * getCategoryWeightedScore(fusion, "goalsXg");
   const scoringPattern = direction * getCategoryWeightedScore(fusion, "scoringPattern");
 
-  const score = clampScore(
-    btts * BTTS_WEIGHTS.btts +
-      failedToScore * BTTS_WEIGHTS.failedToScore +
-      cleanSheet * BTTS_WEIGHTS.cleanSheet +
-      goalsXg * BTTS_WEIGHTS.goalsXg +
-      scoringPattern * BTTS_WEIGHTS.scoringPattern
-  );
+  const score = normalizedWeights
+    ? clampScore(
+        direction *
+          weightedProviderCategoryScore(fusion, normalizedWeights, [
+            "scoringPattern",
+            "goalsXg",
+            "recentForm",
+          ])
+      )
+    : clampScore(
+        btts * BTTS_WEIGHTS.btts +
+          failedToScore * BTTS_WEIGHTS.failedToScore +
+          cleanSheet * BTTS_WEIGHTS.cleanSheet +
+          goalsXg * BTTS_WEIGHTS.goalsXg +
+          scoringPattern * BTTS_WEIGHTS.scoringPattern
+      );
 
   const supportingFeatures: string[] = [];
   const reasons: string[] = [];

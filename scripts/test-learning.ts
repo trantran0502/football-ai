@@ -17,7 +17,7 @@ import {
   listPendingProductionMatches,
 } from "@/lib/production";
 import type { ProductionFixture } from "@/lib/production/productionTypes";
-import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
+import { createEmptyRecommendationResult, type RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import { validateMatchRecommendations } from "@/lib/validation";
 import { buildMatchResult } from "@/lib/database/matchSchema";
 import { DEFAULT_LEARNING_ENGINE_CONFIG } from "@/lib/learning/learningTypes";
@@ -153,9 +153,8 @@ async function testFeatureStatsShape(): Promise<void> {
   const winCase = SETTLEMENT_TEST_CASES.find((item) => item.expected === "WIN");
   assert(Boolean(winCase), "settlement fixture required");
 
-  const syntheticRecommendation: RecommendationEngineResult = {
+  const syntheticRecommendation: RecommendationEngineResult = createEmptyRecommendationResult({
     globalPass: false,
-    passReason: null,
     candidates: [
       {
         marketType: winCase!.selection.marketType,
@@ -168,7 +167,7 @@ async function testFeatureStatsShape(): Promise<void> {
         supportingFeatures: ["Win Rate", "Recent Form"],
       },
     ],
-  };
+  });
 
   const syntheticEntries = validateMatchRecommendations({
     matchId: "synthetic-learning",

@@ -20,7 +20,7 @@ import {
   buildMatchResult,
   normalizeHistoricalMatchRecord,
 } from "@/lib/database/matchSchema";
-import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
+import { createEmptyRecommendationResult, type RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import { validateMatchRecommendations } from "@/lib/validation";
 import { runProductionH2HTests } from "@/scripts/test-production-h2h";
 
@@ -136,9 +136,8 @@ async function runTests(): Promise<void> {
 
   const winCase = SETTLEMENT_TEST_CASES.find((item) => item.expected === "WIN");
   assert(Boolean(winCase), "settlement fixture required");
-  const syntheticRecommendation: RecommendationEngineResult = {
+  const syntheticRecommendation: RecommendationEngineResult = createEmptyRecommendationResult({
     globalPass: false,
-    passReason: null,
     candidates: [
       {
         marketType: winCase!.selection.marketType,
@@ -151,7 +150,7 @@ async function runTests(): Promise<void> {
         supportingFeatures: ["Win Rate", "Recent Form"],
       },
     ],
-  };
+  });
 
   const syntheticEntries = validateMatchRecommendations({
     matchId: "synthetic",

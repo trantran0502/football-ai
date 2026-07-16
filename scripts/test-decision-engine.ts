@@ -5,7 +5,10 @@ import { buildBettingIntelligence } from "@/lib/betting/intelligenceEngine";
 import { buildDecision } from "@/lib/decision/decisionEngine";
 import { resolveDecisionScoreTier } from "@/lib/decision/decisionScoring";
 import type { FeatureFusionResult } from "@/lib/analysis/featureScore/fusion/fusionTypes";
-import type { RecommendationCandidate } from "@/lib/recommendation/recommendationTypes";
+import {
+  createEmptyRecommendationResult,
+  type RecommendationCandidate,
+} from "@/lib/recommendation/recommendationTypes";
 import type { MarketSelection } from "@/types/match";
 
 function assert(condition: boolean, message: string): void {
@@ -105,11 +108,10 @@ function runTests(): void {
     fusion,
     bettingIntelligence: intelligence,
     recommendationCandidates: [],
-    recommendationResult: {
-      candidates: [],
+    recommendationResult: createEmptyRecommendationResult({
       globalPass: true,
       passReason: "Insufficient confidence",
-    },
+    }),
   });
   assert(passDecision.decision === "PASS", "global pass should yield PASS");
 
@@ -120,11 +122,10 @@ function runTests(): void {
     fusion: buildFusion(10, 0.3),
     bettingIntelligence: intelligence,
     recommendationCandidates: lowValueCandidates,
-    recommendationResult: {
+    recommendationResult: createEmptyRecommendationResult({
       candidates: lowValueCandidates,
       globalPass: false,
-      passReason: null,
-    },
+    }),
   });
   assert(
     lowValueDecision.decision === "PASS" || lowValueDecision.decision === "WATCH",
@@ -145,11 +146,10 @@ function runTests(): void {
     fusion: highFusion,
     bettingIntelligence: highIntelligence,
     recommendationCandidates: highValueCandidates,
-    recommendationResult: {
+    recommendationResult: createEmptyRecommendationResult({
       candidates: highValueCandidates,
       globalPass: false,
-      passReason: null,
-    },
+    }),
   });
   assert(
     ["SMALL BET", "NORMAL BET", "STRONG BET", "WATCH"].includes(highValueDecision.decision),
@@ -175,11 +175,10 @@ function runTests(): void {
     fusion: conflictFusion,
     bettingIntelligence: intelligence,
     recommendationCandidates: highValueCandidates,
-    recommendationResult: {
+    recommendationResult: createEmptyRecommendationResult({
       candidates: highValueCandidates,
       globalPass: false,
-      passReason: null,
-    },
+    }),
   });
   assert(highRiskDecision.riskScore > 0, "conflict fusion should increase risk score");
   assert(highRiskDecision.objections.length > 0, "risk should produce objections");
@@ -218,11 +217,10 @@ function runTests(): void {
     fusion: highFusion,
     bettingIntelligence: divergentIntelligence,
     recommendationCandidates: highValueCandidates,
-    recommendationResult: {
+    recommendationResult: createEmptyRecommendationResult({
       candidates: highValueCandidates,
       globalPass: false,
-      passReason: null,
-    },
+    }),
   });
   assert(
     marketConflictDecision.objections.some((item) => item.includes("分歧") || item.includes("diverg")),

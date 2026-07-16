@@ -2,6 +2,7 @@ import { registerAllFeatureCollectors } from "@/lib/analysis/featureScore/regist
 import { buildFeatureScores } from "@/lib/analysis/featureScore/featureScoreEngine";
 import { buildReplayDecisionSnapshot } from "@/lib/decision/decisionEngine";
 import type { AnalysisReport } from "@/lib/analysis/types";
+import type { ProviderRecommendationDiagnostic } from "@/lib/recommendation/providerWeightEngine";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import {
   buildGoogleSearchCacheKey,
@@ -237,6 +238,18 @@ function buildFeatureViews(
   return views;
 }
 
+function mapProviderDiagnostics(
+  diagnostics: ProviderRecommendationDiagnostic[]
+): ReplayRecommendationSnapshot["providerDiagnostics"] {
+  return diagnostics.map((entry) => ({
+    providerKey: entry.providerKey as ReplayProviderKey,
+    providerWeight: entry.providerWeight,
+    providerContribution: entry.providerContribution,
+    providerSource: toReplayDataSource(entry.providerSource, entry.providerKey),
+    providerConfidence: entry.providerConfidence,
+  }));
+}
+
 function buildRecommendationSnapshot(
   report: AnalysisReport,
   features: ReplayFeatureSnapshot[]
@@ -249,6 +262,12 @@ function buildRecommendationSnapshot(
           passReason: section.result?.passReason ?? section.message,
           message: section.message,
           candidates: [],
+          usableProviderCount: section.result?.usableProviderCount ?? 0,
+          unavailableProviderCount: section.result?.unavailableProviderCount ?? 0,
+          providerOverallConfidence: section.result?.providerOverallConfidence ?? null,
+          providerDiagnostics: mapProviderDiagnostics(
+            section.result?.providerDiagnostics ?? []
+          ),
         }
       : null;
   }
@@ -258,6 +277,10 @@ function buildRecommendationSnapshot(
     globalPass: result.globalPass,
     passReason: result.passReason,
     message: section.message,
+    usableProviderCount: result.usableProviderCount,
+    unavailableProviderCount: result.unavailableProviderCount,
+    providerOverallConfidence: result.providerOverallConfidence,
+    providerDiagnostics: mapProviderDiagnostics(result.providerDiagnostics),
     candidates: result.candidates.map((candidate) => ({
       marketType: candidate.marketType,
       selectionLabel: `${candidate.selection.title} ${candidate.selection.side}`,

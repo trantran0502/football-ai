@@ -90,11 +90,23 @@ export interface ReplayCandidateSnapshot {
   opposingFeatures: ReplayRecommendationFeatureView[];
 }
 
+export interface ReplayProviderRecommendationDiagnostic {
+  providerKey: ReplayProviderKey;
+  providerWeight: number;
+  providerContribution: number;
+  providerSource: ReplayDataSource;
+  providerConfidence: number;
+}
+
 export interface ReplayRecommendationSnapshot {
   globalPass: boolean;
   passReason: string | null;
   message: string;
   candidates: ReplayCandidateSnapshot[];
+  usableProviderCount: number;
+  unavailableProviderCount: number;
+  providerOverallConfidence: number | null;
+  providerDiagnostics: ReplayProviderRecommendationDiagnostic[];
 }
 
 export interface ReplayValidationSnapshot {

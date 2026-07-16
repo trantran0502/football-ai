@@ -8,7 +8,7 @@ import {
   validateMatchRecommendations,
 } from "@/lib/validation";
 import { runMatchVerification } from "@/lib/database/matchVerification";
-import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
+import { createEmptyRecommendationResult, type RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 
 function assert(condition: boolean, message: string): void {
@@ -22,9 +22,8 @@ function makeRecommendation(
   confidence: "low" | "medium" | "high",
   score: number
 ): RecommendationEngineResult {
-  return {
+  return createEmptyRecommendationResult({
     globalPass: false,
-    passReason: null,
     candidates: [
       {
         marketType: selection.marketType,
@@ -37,7 +36,7 @@ function makeRecommendation(
         supportingFeatures: ["Win Rate"],
       },
     ],
-  };
+  });
 }
 
 function runTests(): void {
@@ -95,7 +94,7 @@ function runTests(): void {
     "half lose recommendation should settle as HALF_LOSE"
   );
 
-  const passRecommendation: RecommendationEngineResult = {
+  const passRecommendation: RecommendationEngineResult = createEmptyRecommendationResult({
     globalPass: true,
     passReason: "Too few features",
     candidates: [
@@ -110,7 +109,7 @@ function runTests(): void {
         supportingFeatures: [],
       },
     ],
-  };
+  });
 
   const passEntries = validateMatchRecommendations({
     matchId: "match-pass",

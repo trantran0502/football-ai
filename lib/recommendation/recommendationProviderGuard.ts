@@ -71,6 +71,10 @@ export function applyRecommendationProviderGuard(input: {
               ...candidate,
               confidence: "low",
             })),
+            usableProviderCount: input.recommendation.usableProviderCount,
+            unavailableProviderCount: input.recommendation.unavailableProviderCount,
+            providerDiagnostics: input.recommendation.providerDiagnostics,
+            providerOverallConfidence: input.recommendation.providerOverallConfidence,
           }
         : null,
       forcedPass: true,

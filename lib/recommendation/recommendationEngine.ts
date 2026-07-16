@@ -1,5 +1,12 @@
 import type { FeatureFusionResult } from "@/lib/analysis/featureScore/fusion/fusionTypes";
 import { clampScore } from "@/lib/analysis/featureScore/oddsConversion";
+import type { FeatureProviderKey } from "@/lib/providers/registry/types";
+import type { ProviderResolutionAudit } from "@/lib/providers/teamProfile/teamProfileProviderPipeline";
+import {
+  applyProviderWeightingToFusion,
+  computeProviderWeighting,
+  type ProviderWeightingResult,
+} from "@/lib/recommendation/providerWeightEngine";
 import {
   buildFusionWarnings,
   computeExpectedValue,
@@ -46,21 +53,41 @@ export class RecommendationEngine {
 export function generateRecommendations(
   fusion: FeatureFusionResult,
   marketSelections: MarketSelection[],
-  _options: RecommendationEngineOptions = {}
+  options: RecommendationEngineOptions & {
+    providerAudit?: ProviderResolutionAudit | null;
+  } = {}
 ): RecommendationEngineResult {
-  const passGate = evaluateGlobalPass(fusion, marketSelections);
-  const fusionWarnings = buildFusionWarnings(fusion);
+  const weighting = options.providerAudit
+    ? computeProviderWeighting(fusion, options.providerAudit)
+    : null;
+  const effectiveFusion = weighting
+    ? applyProviderWeightingToFusion(fusion, weighting)
+    : fusion;
+
+  const passGate = evaluateGlobalPass(effectiveFusion, marketSelections);
+  const fusionWarnings = buildFusionWarnings(effectiveFusion);
 
   const candidates = marketSelections
     .filter((selection) => isSupportedSelection(selection))
     .map((selection) =>
-      buildCandidate(selection, fusion, passGate.pass, fusionWarnings, passGate.reason)
+      buildCandidate(
+        selection,
+        effectiveFusion,
+        weighting,
+        passGate.pass,
+        fusionWarnings,
+        passGate.reason
+      )
     );
 
   return {
     candidates,
     globalPass: passGate.pass,
     passReason: passGate.reason,
+    usableProviderCount: weighting?.usableProviderCount ?? 0,
+    unavailableProviderCount: weighting?.unavailableProviderCount ?? 0,
+    providerDiagnostics: weighting?.diagnostics ?? [],
+    providerOverallConfidence: weighting?.overallConfidence ?? null,
   };
 }
 
@@ -83,12 +110,13 @@ function isSupportedSelection(selection: MarketSelection): boolean {
 function buildCandidate(
   selection: MarketSelection,
   fusion: FeatureFusionResult,
+  weighting: ProviderWeightingResult | null,
   globalPass: boolean,
   fusionWarnings: string[],
   passReason: string | null
 ): RecommendationCandidate {
   const direction = directionalMultiplier(selection.side, selection.marketType);
-  const scored = scoreSelection(selection, fusion, direction);
+  const scored = scoreSelection(selection, fusion, direction, weighting?.normalizedWeights ?? null);
   const level = scoreToLevel(scored.score, fusion.overallConfidence, globalPass);
   const expectedValue = globalPass || level === "pass" ? 0 : computeExpectedValue(selection, scored.score);
 
@@ -121,7 +149,8 @@ function buildCandidate(
 function scoreSelection(
   selection: MarketSelection,
   fusion: FeatureFusionResult,
-  direction: number
+  direction: number,
+  normalizedWeights: Partial<Record<FeatureProviderKey, number>> | null
 ): { score: number; supportingFeatures: string[]; reasons: string[] } {
   if (direction === 0) {
     return scoreDraw(fusion);
@@ -129,13 +158,13 @@ function scoreSelection(
 
   switch (selection.marketType) {
     case "moneyline":
-      return scoreMoneyline(fusion, direction);
+      return scoreMoneyline(fusion, direction, normalizedWeights);
     case "handicap":
-      return scoreHandicap(fusion, direction);
+      return scoreHandicap(fusion, direction, normalizedWeights);
     case "totalGoals":
-      return scoreTotalGoals(fusion, direction);
+      return scoreTotalGoals(fusion, direction, normalizedWeights);
     case "btts":
-      return scoreBtts(fusion, direction);
+      return scoreBtts(fusion, direction, normalizedWeights);
     default:
       return { score: 0, supportingFeatures: [], reasons: [] };
   }
