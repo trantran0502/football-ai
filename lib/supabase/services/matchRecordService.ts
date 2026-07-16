@@ -216,7 +216,14 @@ export async function verifyMatchInSupabase(
       })
     );
 
-    return updateMatchRecordInSupabase(verified);
+    const saved = await updateMatchRecordInSupabase(verified);
+    if (saved?.status === "VERIFIED") {
+      const { persistRecommendationLearningForVerifiedMatch } = await import(
+        "@/lib/recommendation/recommendationLearningPersistence"
+      );
+      await persistRecommendationLearningForVerifiedMatch(saved);
+    }
+    return saved;
   } catch {
     const failed = normalizeHistoricalMatchRecord({
       ...existing,

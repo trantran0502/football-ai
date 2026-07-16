@@ -30,6 +30,7 @@
     "test:recommendation": "tsx scripts/test-recommendation-engine.ts",
     "test:provider-weighting": "tsx scripts/test-provider-weighting.ts",
     "test:recommendation-validation-dashboard": "tsx scripts/test-recommendation-validation-dashboard.ts",
+    "test:recommendation-learning": "tsx scripts/test-recommendation-learning.ts",
     "test:recommendation-ui": "tsx scripts/test-recommendation-ui.ts",
     "test:providers": "tsx scripts/test-provider-registry.ts",
     "test:api-football": "tsx scripts/test-api-football.ts",

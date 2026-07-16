@@ -15,6 +15,12 @@ import type {
 import type { TeamDataPackage } from "@/lib/providers/free/types";
 import type { AnalysisCandidate } from "@/lib/analysis/types";
 import type { MarketSelection } from "@/types/match";
+import type {
+  RecommendationLearningMarketOutcome,
+  RecommendationLearningRecord,
+} from "@/lib/recommendation/recommendationLearningTypes";
+import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
+import type { ReplayProviderRecommendationDiagnostic } from "@/lib/replay/replayTypes";
 
 export interface MatchRecordRow {
   id: string;
@@ -137,6 +143,52 @@ export interface BetaRollingReportInsert {
   created_at?: string;
 }
 
+export interface RecommendationLearningRow {
+  id: string;
+  match_record_id: string;
+  fixture_id: number | null;
+  recommendation: RecommendationEngineResult | null;
+  actual_result: MatchResult;
+  hit: boolean;
+  provider_diagnostics: ReplayProviderRecommendationDiagnostic[];
+  provider_overall_confidence: number | null;
+  market_outcomes: RecommendationLearningMarketOutcome[];
+  total_profit: number;
+  total_stake: number;
+  verified_at: string;
+  match_date: string;
+  league: string;
+  home_team: string;
+  away_team: string;
+  source: string;
+  schema_version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecommendationLearningInsert {
+  id: string;
+  match_record_id: string;
+  fixture_id?: number | null;
+  recommendation?: RecommendationEngineResult | null;
+  actual_result: MatchResult;
+  hit: boolean;
+  provider_diagnostics?: ReplayProviderRecommendationDiagnostic[];
+  provider_overall_confidence?: number | null;
+  market_outcomes?: RecommendationLearningMarketOutcome[];
+  total_profit?: number;
+  total_stake?: number;
+  verified_at: string;
+  match_date: string;
+  league: string;
+  home_team: string;
+  away_team: string;
+  source: string;
+  schema_version: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -165,6 +217,20 @@ export type Database = {
         Insert: BetaRollingReportInsert;
         Update: Partial<BetaRollingReportInsert>;
         Relationships: [];
+      };
+      recommendation_learning: {
+        Row: RecommendationLearningRow;
+        Insert: RecommendationLearningInsert;
+        Update: Partial<RecommendationLearningInsert>;
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_learning_match_record_id_fkey";
+            columns: ["match_record_id"];
+            isOneToOne: true;
+            referencedRelation: "match_records";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;

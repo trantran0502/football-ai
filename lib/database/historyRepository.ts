@@ -3,6 +3,7 @@ import {
   type MatchDatabase,
 } from "@/lib/database/database";
 import { runMatchVerification } from "@/lib/database/matchVerification";
+import { persistRecommendationLearningLocally } from "@/lib/recommendation/recommendationLearningPersistence";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import {
   buildMatchHistoryStats,
@@ -205,6 +206,9 @@ export class HistoryRepository {
       );
 
       const saved = this.database.update(verified);
+      if (saved) {
+        persistRecommendationLearningLocally(verified);
+      }
       return saved ? cloneRecord(verified) : null;
     } catch {
       const failed = normalizeHistoricalMatchRecord({
