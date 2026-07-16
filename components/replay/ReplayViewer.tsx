@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { RecommendationValidationDashboard } from "@/components/recommendation/RecommendationValidationDashboard";
 import type {
   ReplayDataSource,
   ReplayFeatureRemovalSimulation,
@@ -266,6 +267,12 @@ export function ReplayViewer(props: { replay: ReplayResponse }) {
       <StepSection step={5} title="Recommendation">
         {recommendation ? (
           <div className="space-y-4">
+            <RecommendationValidationDashboard
+              usableProviderCount={recommendation.usableProviderCount}
+              unavailableProviderCount={recommendation.unavailableProviderCount}
+              providerOverallConfidence={recommendation.providerOverallConfidence}
+              providerDiagnostics={recommendation.providerDiagnostics}
+            />
             <p className="text-sm">
               Global PASS:{" "}
               <strong>{recommendation.globalPass ? "PASS" : "有候選"}</strong>

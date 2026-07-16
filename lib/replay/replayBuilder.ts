@@ -3,6 +3,7 @@ import { buildFeatureScores } from "@/lib/analysis/featureScore/featureScoreEngi
 import { buildReplayDecisionSnapshot } from "@/lib/decision/decisionEngine";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import type { ProviderRecommendationDiagnostic } from "@/lib/recommendation/providerWeightEngine";
+import { mapEngineProviderDiagnostics } from "@/lib/recommendation/recommendationValidationDashboard";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import {
   buildGoogleSearchCacheKey,
@@ -241,13 +242,7 @@ function buildFeatureViews(
 function mapProviderDiagnostics(
   diagnostics: ProviderRecommendationDiagnostic[]
 ): ReplayRecommendationSnapshot["providerDiagnostics"] {
-  return diagnostics.map((entry) => ({
-    providerKey: entry.providerKey as ReplayProviderKey,
-    providerWeight: entry.providerWeight,
-    providerContribution: entry.providerContribution,
-    providerSource: toReplayDataSource(entry.providerSource, entry.providerKey),
-    providerConfidence: entry.providerConfidence,
-  }));
+  return mapEngineProviderDiagnostics(diagnostics);
 }
 
 function buildRecommendationSnapshot(
