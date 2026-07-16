@@ -85,6 +85,17 @@ export type {
 } from "@/lib/scheduler/dailyAnalysisQueueStore";
 export { runResultScheduler } from "@/lib/scheduler/resultScheduler";
 export type { ResultSchedulerDependencies } from "@/lib/scheduler/resultScheduler";
+export {
+  buildResultUpdateFixturesByDateCacheKey,
+  readResultUpdateFixturesByDateCache,
+  writeResultUpdateFixturesByDateCache,
+} from "@/lib/scheduler/resultUpdateFixtureCache";
+export {
+  fetchResultUpdateFixturesByDate,
+  isApiFootballQuotaExceededError,
+  RESULT_UPDATE_QUOTA_WARNING,
+} from "@/lib/scheduler/resultUpdateFixtureFetch";
+export type { ResultUpdateFixtureFetchOutcome } from "@/lib/scheduler/resultUpdateFixtureFetch";
 export { runHistoricalMatchBackfillScheduler } from "@/lib/scheduler/historicalMatchBackfillScheduler";
 export type { HistoricalMatchBackfillDependencies } from "@/lib/scheduler/historicalMatchBackfillScheduler";
 export {

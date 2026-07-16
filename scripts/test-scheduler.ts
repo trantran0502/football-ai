@@ -10,7 +10,9 @@ import { seedSystemSnapshotForTests, resetAdminDashboardStoreForTests } from "@/
 import {
   recordApiFootballRequest,
   resetApiFootballQuotaForTests,
+  setApiFootballQuotaForTests,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
+import { resetApiFootballCacheStoreForTests } from "@/lib/providers/apiFootball/apiFootballCache";
 import { setApiFootballClientForTests } from "@/lib/providers/apiFootball/apiFootballClient";
 import {
   enableTeamProfileMemoryStoreForTests,
@@ -37,6 +39,7 @@ import {
   setExecutionLogPersistFailureForTests,
   toProductionFixture,
   validateApiFixtureRecord,
+  writeResultUpdateFixturesByDateCache,
   withRetry,
   withTimeout,
   acquireSchedulerLock,
@@ -505,6 +508,239 @@ async function testResultScheduler(): Promise<void> {
   assert(!result.skippedDueToLock, "result scheduler should run");
   assert(result.updatesBuilt === 3, "result scheduler should build three updates");
   assert(result.pipeline.verified === 3, "result scheduler should verify three matches");
+}
+
+async function seedSinglePendingMatch(): Promise<void> {
+  resetSchedulerEnv();
+  resetInMemoryProductionStore();
+  resetSchedulerLocksForTests();
+  resetExecutionLogsForTests();
+  resetDailyAnalysisQueueStoreForTests();
+  resetApiFootballCacheStoreForTests();
+  resetApiFootballQuotaForTests();
+  process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = "10";
+
+  await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "result-cache-seed",
+    fetchFixtures: async () =>
+      intakeFixtures([
+        buildApiFixture({
+          id: 101,
+          home: "Arsenal",
+          away: "Chelsea",
+          league: "Premier League",
+          leagueId: 39,
+          status: "NS",
+        }),
+      ]),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+}
+
+async function testResultUpdateFixtureCacheHitSkipsApi(): Promise<void> {
+  await seedSinglePendingMatch();
+
+  let apiCalls = 0;
+  setApiFootballClientForTests({
+    isConfigured: () => true,
+    getFixturesByDate: async () => {
+      apiCalls += 1;
+      throw new Error("API should not be called on cache hit.");
+    },
+  } as never);
+
+  setApiFootballQuotaForTests({ dailyCount: 100 });
+
+  writeResultUpdateFixturesByDateCache(MATCH_DATE, [
+    buildApiFixture({
+      id: 101,
+      home: "Arsenal",
+      away: "Chelsea",
+      league: "Premier League",
+      leagueId: 39,
+      status: "FT",
+      homeGoals: 2,
+      awayGoals: 1,
+      htHome: 1,
+      htAway: 0,
+    }),
+  ]);
+
+  const result = await runResultScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "result-cache-hit",
+    listPending: async () =>
+      listInMemoryProductionRecords().filter((record) => record.status === "PENDING"),
+    listRecords: async () => listInMemoryProductionRecords(),
+    verifyMatch: verifyMatchInMemory,
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  assert(apiCalls === 0, "cache hit should not call API");
+  assert(result.executionStatus === "success", "cache hit should succeed");
+  assert(result.pipeline.verified === 1, "cache hit should verify pending match");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testResultUpdateFixtureCacheMissCallsApiOnce(): Promise<void> {
+  await seedSinglePendingMatch();
+
+  let apiCalls = 0;
+  setApiFootballClientForTests({
+    isConfigured: () => true,
+    getFixturesByDate: async () => {
+      apiCalls += 1;
+      return [
+        buildApiFixture({
+          id: 101,
+          home: "Arsenal",
+          away: "Chelsea",
+          league: "Premier League",
+          leagueId: 39,
+          status: "FT",
+          homeGoals: 2,
+          awayGoals: 1,
+          htHome: 1,
+          htAway: 0,
+        }),
+      ];
+    },
+  } as never);
+
+  resetApiFootballQuotaForTests();
+
+  const result = await runResultScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "result-cache-miss",
+    listPending: async () =>
+      listInMemoryProductionRecords().filter((record) => record.status === "PENDING"),
+    listRecords: async () => listInMemoryProductionRecords(),
+    verifyMatch: verifyMatchInMemory,
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  assert(apiCalls === 1, "cache miss should call API once");
+  assert(result.executionStatus === "success", "cache miss with API should succeed");
+  assert(result.pipeline.verified === 1, "API fixtures should verify pending match");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testResultUpdateQuotaExceededNoRetry(): Promise<void> {
+  await seedSinglePendingMatch();
+
+  let apiCalls = 0;
+  setApiFootballClientForTests({
+    isConfigured: () => true,
+    getFixturesByDate: async () => {
+      apiCalls += 1;
+      throw new Error("API-Football quota exceeded.");
+    },
+  } as never);
+
+  resetApiFootballQuotaForTests();
+
+  await runResultScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "result-quota-no-retry",
+    listPending: async () =>
+      listInMemoryProductionRecords().filter((record) => record.status === "PENDING"),
+    listRecords: async () => listInMemoryProductionRecords(),
+    verifyMatch: verifyMatchInMemory,
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  assert(apiCalls === 1, "quota exceeded should not retry API fetch");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testResultUpdateQuotaExceededPartialSuccess(): Promise<void> {
+  await seedSinglePendingMatch();
+
+  setApiFootballClientForTests({
+    isConfigured: () => true,
+    getFixturesByDate: async () => {
+      throw new Error("API-Football quota exceeded.");
+    },
+  } as never);
+
+  resetApiFootballQuotaForTests();
+
+  const result = await runResultScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "result-quota-partial",
+    listPending: async () =>
+      listInMemoryProductionRecords().filter((record) => record.status === "PENDING"),
+    listRecords: async () => listInMemoryProductionRecords(),
+    verifyMatch: verifyMatchInMemory,
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  assert(result.executionStatus === "partial_success", "quota exceeded should be partial_success");
+  assert(result.pipeline.verified === 0, "quota exceeded without cache should verify zero");
+  assert(result.pendingCount === 1, "pending count should be preserved");
+
+  const latestResultLog = listExecutionLogs().find((entry) => entry.jobName === "result_update");
+  assert(Boolean(latestResultLog), "result_update execution log should exist");
+  assert(latestResultLog!.success, "partial_success should not mark execution as failed");
+  assert(
+    latestResultLog!.context?.status === "partial_success",
+    "execution log should record partial_success"
+  );
+  assert(latestResultLog!.context?.quotaSkipped === true, "execution log should record quotaSkipped");
+  assert(latestResultLog!.context?.pendingCount === 1, "execution log should record pendingCount");
+  assert(latestResultLog!.context?.verifiedCount === 0, "execution log should record verifiedCount");
+  assert(typeof latestResultLog!.context?.warning === "string", "execution log should record warning");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testResultUpdateCachedFixturesVerifyPending(): Promise<void> {
+  await seedSinglePendingMatch();
+
+  setApiFootballQuotaForTests({ dailyCount: 100 });
+  setApiFootballClientForTests({
+    isConfigured: () => true,
+    getFixturesByDate: async () => {
+      throw new Error("API should not be called when cache can verify pending matches.");
+    },
+  } as never);
+
+  writeResultUpdateFixturesByDateCache(MATCH_DATE, [
+    buildApiFixture({
+      id: 101,
+      home: "Arsenal",
+      away: "Chelsea",
+      league: "Premier League",
+      leagueId: 39,
+      status: "FT",
+      homeGoals: 1,
+      awayGoals: 0,
+      htHome: 1,
+      htAway: 0,
+    }),
+  ]);
+
+  const result = await runResultScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "result-cache-verify",
+    listPending: async () =>
+      listInMemoryProductionRecords().filter((record) => record.status === "PENDING"),
+    listRecords: async () => listInMemoryProductionRecords(),
+    verifyMatch: verifyMatchInMemory,
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  assert(result.pipeline.verified === 1, "cached fixtures should verify pending match");
+  const verified = listInMemoryProductionRecords().filter((record) => record.status === "VERIFIED");
+  assert(verified.length === 1, "pending match should become verified from cache");
+
+  setApiFootballClientForTests(null);
 }
 
 async function testSchedulerStatus(): Promise<void> {
@@ -1228,6 +1464,11 @@ async function runTests(): Promise<void> {
     await testTimeout();
     await testResultScheduler();
     await testSchedulerStatus();
+    await testResultUpdateFixtureCacheHitSkipsApi();
+    await testResultUpdateFixtureCacheMissCallsApiOnce();
+    await testResultUpdateQuotaExceededNoRetry();
+    await testResultUpdateQuotaExceededPartialSuccess();
+    await testResultUpdateCachedFixturesVerifyPending();
     await testSchedulerObservabilityColdStart();
     await testSchedulerApiUsageFromSnapshot();
     await testExecutionLogPersistFailureWarning();

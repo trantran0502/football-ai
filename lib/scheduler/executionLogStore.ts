@@ -21,6 +21,12 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   teamProfileWarnings?: string[];
   teamProfileDiagnostics?: unknown[];
   filterStats?: Record<string, unknown>;
+  quotaSkipped?: boolean;
+  pendingCount?: number;
+  verifiedCount?: number;
+  warning?: string;
+  cacheHit?: boolean;
+  fixtureSource?: string;
 }
 
 export interface CompleteExecutionLogResult {

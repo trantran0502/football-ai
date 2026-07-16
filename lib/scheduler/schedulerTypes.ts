@@ -117,6 +117,7 @@ export interface ResultSchedulerResult {
   executionLogId: string;
   skippedDueToLock: boolean;
   observabilityWarning?: string;
+  executionStatus?: "success" | "partial_success" | "failed" | "skipped";
 }
 
 export interface HistoricalMatchBackfillResult {

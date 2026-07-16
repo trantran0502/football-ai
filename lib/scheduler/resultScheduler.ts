@@ -25,7 +25,10 @@ import {
 import { intakeApiFixtures } from "@/lib/scheduler/fixtureMapping";
 import type { SchedulerFixtureSource } from "@/lib/scheduler/schedulerTypes";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
-import { getApiFootballClient } from "@/lib/providers/apiFootball/apiFootballClient";
+import {
+  fetchResultUpdateFixturesByDate,
+  RESULT_UPDATE_QUOTA_WARNING,
+} from "@/lib/scheduler/resultUpdateFixtureFetch";
 
 export interface ResultSchedulerDependencies {
   runDate?: string;
@@ -55,15 +58,6 @@ export async function runResultScheduler(
       return records.filter((record) => record.status === "PENDING");
     });
   const listRecords = dependencies.listRecords ?? (async () => [] as HistoricalMatchRecord[]);
-  const fetchApiFixtures =
-    dependencies.fetchApiFixtures ??
-    (async (date: string) => {
-      const client = getApiFootballClient();
-      if (!client.isConfigured()) {
-        return [];
-      }
-      return client.getFixturesByDate(date);
-    });
   const runSummaryCron = dependencies.runSummaryCron ?? runAdminDailyCron;
 
   const lock = acquireSchedulerLock({
@@ -125,10 +119,75 @@ export async function runResultScheduler(
     const outcome = await withTimeout(
       (async () => {
         const pending = await listPending();
-        const apiFixtures = await withRetry(() => fetchApiFixtures(runDate), {
-          maxRetries: config.maxRetries,
-          delayMs: config.retryDelayMs,
-        });
+
+        const fetchOutcome = dependencies.fetchApiFixtures
+          ? {
+              fixtures: await withRetry(() => dependencies.fetchApiFixtures!(runDate), {
+                maxRetries: config.maxRetries,
+                delayMs: config.retryDelayMs,
+              }),
+              source: "api" as const,
+              cacheHit: false,
+              quotaSkipped: false,
+            }
+          : await fetchResultUpdateFixturesByDate(runDate);
+
+        const apiFootballRequestCount = Math.max(
+          0,
+          getApiFootballQuotaSnapshot().dailyCount - apiQuotaStart
+        );
+
+        if (fetchOutcome.quotaSkipped) {
+          await withRetry(() => runSummaryCron(runDate), {
+            maxRetries: config.maxRetries,
+            delayMs: config.retryDelayMs,
+          });
+
+          const records = await listRecords();
+          buildSchedulerDailySummary(runDate, records);
+
+          const warning = fetchOutcome.warning ?? RESULT_UPDATE_QUOTA_WARNING;
+          const persistResult = await completeExecutionLog({
+            id: execution.id,
+            success: true,
+            context: buildExecutionLogContext({
+              jobType: "result_update",
+              status: "partial_success",
+              quotaSkipped: true,
+              pendingCount: pending.length,
+              verifiedCount: 0,
+              warning,
+              fixturesFetched: 0,
+              analyzedCount: 0,
+              skippedCount: pending.length,
+              errorCount: 0,
+              apiFootballRequestCount,
+              updatesBuilt: 0,
+              verified: 0,
+              failed: 0,
+              cacheHit: false,
+            }),
+          });
+
+          logAdminError({
+            category: "scheduler",
+            message: warning,
+            context: { runDate, pendingCount: pending.length },
+          });
+
+          return {
+            pendingCount: pending.length,
+            updatesBuilt: 0,
+            pipeline: emptyResultPipeline(),
+            summarySynced: true,
+            executionStatus: "partial_success" as const,
+            observabilityWarning: persistResult.persisted
+              ? undefined
+              : persistResult.persistError,
+          };
+        }
+
+        const apiFixtures = fetchOutcome.fixtures;
 
         const finishedOnly = intakeApiFixtures(
           apiFixtures.filter((fixture) => ["FT", "AET", "PEN"].includes(fixture.status))
@@ -180,11 +239,6 @@ export async function runResultScheduler(
         const records = await listRecords();
         buildSchedulerDailySummary(runDate, records);
 
-        const apiFootballRequestCount = Math.max(
-          0,
-          getApiFootballQuotaSnapshot().dailyCount - apiQuotaStart
-        );
-
         const persistResult = await completeExecutionLog({
           id: execution.id,
           success: true,
@@ -200,6 +254,8 @@ export async function runResultScheduler(
             updatesBuilt: updates.length,
             verified: pipeline.verified,
             failed: pipeline.failed,
+            cacheHit: fetchOutcome.cacheHit,
+            fixtureSource: fetchOutcome.source,
           }),
         });
 
@@ -208,6 +264,7 @@ export async function runResultScheduler(
           updatesBuilt: updates.length,
           pipeline,
           summarySynced: true,
+          executionStatus: "success" as const,
           observabilityWarning: persistResult.persisted
             ? undefined
             : persistResult.persistError,
@@ -225,6 +282,7 @@ export async function runResultScheduler(
       summarySynced: outcome.summarySynced,
       executionLogId: execution.id,
       skippedDueToLock: false,
+      executionStatus: outcome.executionStatus,
       observabilityWarning: outcome.observabilityWarning,
     };
   } catch (error) {
