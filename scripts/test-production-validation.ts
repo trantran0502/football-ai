@@ -22,6 +22,7 @@ import {
 } from "@/lib/database/matchSchema";
 import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import { validateMatchRecommendations } from "@/lib/validation";
+import { runProductionH2HTests } from "@/scripts/test-production-h2h";
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -266,6 +267,7 @@ async function runTests(): Promise<void> {
   );
 
   console.log("Production validation tests passed.");
+  await runProductionH2HTests();
 }
 
 runTests().catch((error) => {

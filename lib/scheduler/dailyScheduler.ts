@@ -21,6 +21,7 @@ import {
   type DailyAnalysisQueueState,
 } from "@/lib/scheduler/dailyAnalysisQueueStore";
 import { getApiFootballQuotaSnapshot } from "@/lib/providers/apiFootball/apiFootballQuota";
+import { prefetchProductionH2H, loadProductionH2HMatchRecords } from "@/lib/providers/h2h/productionH2HProvider";
 import {
   fetchFixturesByDate,
   buildFixtureFilterStats,
@@ -271,11 +272,28 @@ async function runBatchedDailyPipeline(
                 );
               }
 
+              const matchRecordsForH2H = await loadProductionH2HMatchRecords();
+              await prefetchProductionH2H({
+                homeTeam: fixture.homeTeam,
+                awayTeam: fixture.awayTeam,
+                matchDate: fixture.matchDate,
+                homeTeamId: fixture.homeTeamId,
+                awayTeamId: fixture.awayTeamId,
+                matchRecords: matchRecordsForH2H,
+              });
+
               const report = attachTeamProfilesToReport(
                 enrichAnalysisReportWithFixture(
                   analyzeMatch(fixture.rawOdds, {
                     teamProfiles: profileSnapshot,
                     matchDate: fixture.matchDate,
+                    h2hContext: {
+                      homeTeam: fixture.homeTeam,
+                      awayTeam: fixture.awayTeam,
+                      matchDate: fixture.matchDate,
+                      homeTeamId: fixture.homeTeamId,
+                      awayTeamId: fixture.awayTeamId,
+                    },
                   }),
                   fixture
                 ),

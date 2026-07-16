@@ -9,6 +9,7 @@ import {
   getFeatureProviderRegistry,
   resolveEffectiveProviderSource,
 } from "@/lib/providers/registry";
+import { getProductionH2HResolution } from "@/lib/providers/h2h/productionH2HProvider";
 import type { ReplayDataSource } from "@/lib/replay/replayTypes";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import {
@@ -55,12 +56,17 @@ const FEATURE_PREFIX_TO_PROVIDER: Array<{
   { prefix: "match_context.", providerKey: "matchContext" },
 ];
 
-export function toReplayDataSource(source: ProviderDataSource): ReplayDataSource {
+export function toReplayDataSource(
+  source: ProviderDataSource,
+  providerKey?: FeatureProviderKey
+): ReplayDataSource {
   switch (source) {
     case "teamProfile":
       return "team-profile";
+    case "matchRecords":
+      return "match-records";
     case "apiFootball":
-      return "api";
+      return providerKey === "h2h" ? "api-football" : "api";
     case "googleSearch":
       return "google";
     case "cache":
@@ -109,12 +115,26 @@ export function resolveAllProviderSnapshots(input: {
     const request = buildProviderRequest(providerKey, input);
     const response = registry.resolveSync(providerKey, request);
     const source = resolveEffectiveProviderSource(response);
+    const h2hResolution =
+      providerKey === "h2h"
+        ? getProductionH2HResolution(
+            request as ProviderRequestByKey["h2h"]
+          )
+        : null;
     return {
       key: providerKey,
       source,
-      sourceDetail: source === "teamProfile" ? "team_profiles" : null,
-      confidence: response.confidence,
-      warnings: response.warnings,
+      sourceDetail:
+        source === "teamProfile"
+          ? "team_profiles"
+          : h2hResolution
+            ? JSON.stringify(h2hResolution.diagnostics)
+            : null,
+      confidence: h2hResolution?.confidence ?? response.confidence,
+      warnings: [
+        ...response.warnings,
+        ...(h2hResolution?.diagnostics.warnings ?? []),
+      ],
       data: response.data,
       available: source !== "unavailable" && source !== "mock",
     };
@@ -178,7 +198,7 @@ export function annotateFeatureProviderSources(
         ...(feature.metadata ?? {}),
         providerSource: source ?? "unknown",
         sourceDetail: snapshot?.sourceDetail ?? null,
-        replaySource: source ? toReplayDataSource(source) : "unknown",
+        replaySource: source ? toReplayDataSource(source, providerKey) : "unknown",
       },
     };
   });

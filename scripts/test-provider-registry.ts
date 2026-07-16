@@ -25,7 +25,7 @@ function assert(condition: boolean, message: string): void {
 function assertResponseShape<T>(response: ProviderResponse<T>): void {
   assert(response.data !== undefined, "response.data should exist");
   assert(
-    ["cache", "teamProfile", "apiFootball", "googleSearch", "mock", "unavailable"].includes(
+    ["cache", "teamProfile", "matchRecords", "apiFootball", "googleSearch", "mock", "unavailable"].includes(
       response.source
     ),
     "response.source should be valid"

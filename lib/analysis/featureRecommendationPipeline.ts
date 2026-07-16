@@ -18,6 +18,12 @@ import {
   resolveAllProviderSnapshots,
   type ProviderResolutionAudit,
 } from "@/lib/providers/teamProfile/teamProfileProviderPipeline";
+import {
+  prepareProductionH2HContext,
+  resetProductionH2HContext,
+  type ProductionH2HContext,
+} from "@/lib/providers/h2h/productionH2HProvider";
+import { clearProductionH2HCacheForTests } from "@/lib/providers/h2h/h2hCache";
 import { resetFeatureProviderRegistryForTests } from "@/lib/providers/registry";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type { MarketSelection, MatchData } from "@/types/match";
@@ -42,6 +48,7 @@ export interface FeatureRecommendationPipelineResult {
 export interface FeatureRecommendationPipelineOptions {
   teamProfiles?: MatchTeamProfilesSnapshot | null;
   matchDate?: string;
+  h2hContext?: ProductionH2HContext | null;
 }
 
 export function runFeatureRecommendationPipeline(
@@ -66,6 +73,7 @@ export function runFeatureRecommendationPipeline(
   }
 
   prepareTeamProfileProviderContext(options.teamProfiles ?? null);
+  prepareProductionH2HContext(options.h2hContext ?? null);
 
   try {
     const providerSnapshots = resolveAllProviderSnapshots({
@@ -130,11 +138,14 @@ export function runFeatureRecommendationPipeline(
     };
   } finally {
     resetTeamProfileProviderContext();
+    resetProductionH2HContext();
   }
 }
 
 export function resetFeatureRecommendationPipelineForTests(): void {
   collectorsBootstrapped = false;
   resetTeamProfileProviderContext();
+  resetProductionH2HContext();
+  clearProductionH2HCacheForTests();
   resetFeatureProviderRegistryForTests();
 }

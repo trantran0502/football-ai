@@ -10,11 +10,13 @@ import type { MatchResult } from "@/lib/database/matchSchema";
 
 export type ReplayDataSource =
   | "api"
+  | "api-football"
   | "google"
   | "cache"
   | "mock"
   | "hybrid"
   | "team-profile"
+  | "match-records"
   | "unavailable"
   | "unknown";
 

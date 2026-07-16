@@ -78,6 +78,15 @@ export function resetApiFootballQuotaForTests(): void {
   quotaState = createWindow();
 }
 
+export function setApiFootballQuotaForTests(input: {
+  dailyCount?: number;
+  minuteCount?: number;
+}): void {
+  refreshWindow(Date.now());
+  quotaState.dailyCount = input.dailyCount ?? quotaState.dailyCount;
+  quotaState.minuteCount = input.minuteCount ?? quotaState.minuteCount;
+}
+
 function createWindow(now = Date.now()): QuotaWindow {
   return {
     dayKey: toDayKey(now),

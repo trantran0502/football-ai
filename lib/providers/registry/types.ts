@@ -11,6 +11,7 @@ export type FeatureProviderKey =
 export type ProviderDataSource =
   | "cache"
   | "teamProfile"
+  | "matchRecords"
   | "apiFootball"
   | "googleSearch"
   | "hybrid"
@@ -101,6 +102,7 @@ export const DEFAULT_SOURCE_CONFIDENCE: Record<
   number
 > = {
   teamProfile: 0.82,
+  matchRecords: 0.84,
   apiFootball: 0.85,
   googleSearch: 0.65,
   hybrid: 0.9,

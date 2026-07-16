@@ -16,6 +16,7 @@ import {
   resolveAllProviderSnapshots,
   toReplayDataSource,
 } from "@/lib/providers/teamProfile/teamProfileProviderPipeline";
+import type { FeatureProviderKey } from "@/lib/providers/registry/types";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type {
   ReplayDataSource,
@@ -95,7 +96,7 @@ function captureProviderSnapshots(input: {
     return snapshots.map((snapshot) => ({
       key: snapshot.key as ReplayProviderKey,
       label: PROVIDER_LABELS[snapshot.key as ReplayProviderKey],
-      source: toReplayDataSource(snapshot.source),
+      source: toReplayDataSource(snapshot.source, snapshot.key as FeatureProviderKey),
       fetchedAt: new Date().toISOString(),
       confidence: snapshot.confidence,
       data: snapshot.data,

@@ -18,6 +18,16 @@ export interface H2HSnapshot {
   matches: H2HMatchRecord[];
   sampleSize: number;
   dataFreshnessDays: number | null;
+  homeWinRate?: number | null;
+  awayWinRate?: number | null;
+  drawRate?: number | null;
+  averageGoals?: number | null;
+  goalDifference?: number | null;
+  bttsRate?: number | null;
+  over25Rate?: number | null;
+  venueRelevantSampleSize?: number | null;
+  venueRelevantHomeWinRate?: number | null;
+  diagnostics?: Record<string, unknown> | null;
 }
 
 export interface H2HProviderRequest {

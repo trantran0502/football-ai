@@ -9,11 +9,13 @@ import type {
 
 const SOURCE_LABELS: Record<ReplayDataSource, string> = {
   api: "API",
+  "api-football": "API-Football",
   google: "Google",
   cache: "Cache",
   mock: "Mock",
   hybrid: "Hybrid",
   "team-profile": "Team Profile",
+  "match-records": "Match Records",
   unavailable: "Unavailable",
   unknown: "Unknown",
 };
@@ -21,11 +23,13 @@ const SOURCE_LABELS: Record<ReplayDataSource, string> = {
 function SourceBadge(props: { source: ReplayDataSource }) {
   const colors: Record<ReplayDataSource, string> = {
     api: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
+    "api-football": "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
     google: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
     cache: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
     mock: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200",
     hybrid: "bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200",
     "team-profile": "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
+    "match-records": "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200",
     unavailable: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
     unknown: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
   };

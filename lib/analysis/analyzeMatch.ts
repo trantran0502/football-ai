@@ -10,6 +10,7 @@ import { interpretMarkets } from "@/lib/analysis/marketInterpreter";
 import { buildAnalysisFeatures } from "@/lib/analysis/featureBuilder";
 import { validateCrossMarkets } from "@/lib/analysis/crossMarketValidator";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
+import type { ProductionH2HContext } from "@/lib/providers/h2h/productionH2HProvider";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import { parseOdds } from "@/lib/parser/parser";
 import { normalizeMarketSelections } from "@/lib/parser/normalizeMarketSelections";
@@ -23,6 +24,7 @@ export function analyzeMatch(
   options: {
     teamProfiles?: MatchTeamProfilesSnapshot | null;
     matchDate?: string;
+    h2hContext?: ProductionH2HContext | null;
   } = {}
 ): AnalysisReport {
   const match = parseOdds(rawText);
@@ -47,6 +49,7 @@ export function analyzeMatch(
     {
       teamProfiles: options.teamProfiles ?? null,
       matchDate: options.matchDate,
+      h2hContext: options.h2hContext ?? null,
     }
   );
   const bettingIntelligence = buildBettingIntelligence({

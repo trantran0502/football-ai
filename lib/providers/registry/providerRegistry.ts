@@ -9,6 +9,10 @@ import { fetchGoogleSearchSourceData } from "@/lib/providers/registry/sources/go
 import { fetchMockSourceData } from "@/lib/providers/registry/sources/mockSourceHandlers";
 import { allowMockProviderFallback } from "@/lib/providers/teamProfile/providerMode";
 import { fetchTeamProfileSourceData } from "@/lib/providers/teamProfile/teamProfileProviderSource";
+import {
+  fetchProductionH2HSourceData,
+  getProductionH2HResolution,
+} from "@/lib/providers/h2h/productionH2HProvider";
 import { buildUnavailableProviderData } from "@/lib/providers/teamProfile/unavailableProviderData";
 import {
   extractProviderDataFromContext,
@@ -59,6 +63,17 @@ export class FeatureProviderRegistry {
       warnings: string[];
     }> = [
       {
+        source: "matchRecords",
+        fetch: () =>
+          providerKey === "h2h"
+            ? (fetchProductionH2HSourceData(
+                request as ProviderRequestByKey["h2h"],
+                "matchRecords"
+              ) as ProviderDataByKey[K] | null)
+            : null,
+        warnings: [],
+      },
+      {
         source: "teamProfile",
         fetch: () =>
           this.resolveSource("teamProfile", providerKey, request),
@@ -66,8 +81,15 @@ export class FeatureProviderRegistry {
       },
       {
         source: "apiFootball",
-        fetch: () =>
-          this.resolveSource("apiFootball", providerKey, request),
+        fetch: () => {
+          if (providerKey === "h2h") {
+            return fetchProductionH2HSourceData(
+              request as ProviderRequestByKey["h2h"],
+              "apiFootball"
+            ) as ProviderDataByKey[K] | null;
+          }
+          return this.resolveSource("apiFootball", providerKey, request);
+        },
         warnings: [],
       },
       {
@@ -97,6 +119,18 @@ export class FeatureProviderRegistry {
         attempt.source,
         attempt.warnings
       );
+      if (providerKey === "h2h") {
+        const resolution = getProductionH2HResolution(
+          request as ProviderRequestByKey["h2h"]
+        );
+        if (resolution) {
+          response.confidence = resolution.confidence;
+          response.warnings = [
+            ...response.warnings,
+            ...resolution.diagnostics.warnings,
+          ];
+        }
+      }
       this.cacheManager.remember(cacheKey, response, attempt.source);
       return response;
     }
