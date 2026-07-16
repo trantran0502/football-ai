@@ -9,6 +9,17 @@ import {
   EMPTY_RECOMMENDATION_MESSAGE,
   getRecommendationMessage,
 } from "@/lib/recommendation/recommendationPresentation";
+import { applyRecommendationProviderGuard } from "@/lib/recommendation/recommendationProviderGuard";
+import {
+  annotateFeatureProviderSources,
+  auditProviderResolution,
+  prepareTeamProfileProviderContext,
+  resetTeamProfileProviderContext,
+  resolveAllProviderSnapshots,
+  type ProviderResolutionAudit,
+} from "@/lib/providers/teamProfile/teamProfileProviderPipeline";
+import { resetFeatureProviderRegistryForTests } from "@/lib/providers/registry";
+import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type { MarketSelection, MatchData } from "@/types/match";
 
 let collectorsBootstrapped = false;
@@ -25,11 +36,18 @@ export interface FeatureRecommendationPipelineResult {
   fusion: FeatureFusionResult | null;
   recommendation: RecommendationEngineResult | null;
   section: RecommendationSection;
+  providerAudit: ProviderResolutionAudit | null;
+}
+
+export interface FeatureRecommendationPipelineOptions {
+  teamProfiles?: MatchTeamProfilesSnapshot | null;
+  matchDate?: string;
 }
 
 export function runFeatureRecommendationPipeline(
   match: MatchData,
-  markets: MarketSelection[]
+  markets: MarketSelection[],
+  options: FeatureRecommendationPipelineOptions = {}
 ): FeatureRecommendationPipelineResult {
   ensureFeatureCollectorsRegistered();
 
@@ -43,44 +61,80 @@ export function runFeatureRecommendationPipeline(
         result: null,
         message: EMPTY_RECOMMENDATION_MESSAGE,
       },
+      providerAudit: null,
     };
   }
 
-  const featureResult = buildFeatureScores({
-    marketSelections: markets,
-    metadata: {
+  prepareTeamProfileProviderContext(options.teamProfiles ?? null);
+
+  try {
+    const providerSnapshots = resolveAllProviderSnapshots({
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
+      matchDate: options.matchDate,
       league: match.league,
-    },
-  });
+    });
+    const providerAudit = auditProviderResolution(providerSnapshots);
 
-  if (featureResult.features.length === 0) {
-    return {
-      fusion: null,
-      recommendation: null,
-      section: {
-        enabled: true,
-        fusion: null,
-        result: null,
-        message: EMPTY_RECOMMENDATION_MESSAGE,
+    const featureResult = buildFeatureScores({
+      marketSelections: markets,
+      metadata: {
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        league: match.league,
+        providerAudit,
       },
+    });
+
+    const annotatedFeatures = annotateFeatureProviderSources(
+      featureResult.features,
+      providerAudit
+    );
+
+    if (annotatedFeatures.length === 0) {
+      return {
+        fusion: null,
+        recommendation: null,
+        section: {
+          enabled: true,
+          fusion: null,
+          result: null,
+          message: EMPTY_RECOMMENDATION_MESSAGE,
+        },
+        providerAudit,
+      };
+    }
+
+    const fusion = fuseFeatureScores(annotatedFeatures);
+    const recommendation = generateRecommendations(fusion, markets);
+    const guarded = applyRecommendationProviderGuard({
+      fusion,
+      recommendation,
+      audit: providerAudit,
+    });
+
+    const section: RecommendationSection = {
+      enabled: true,
+      fusion: guarded.fusion,
+      result: guarded.recommendation,
+      message: guarded.forcedPass
+        ? guarded.passReason ?? EMPTY_RECOMMENDATION_MESSAGE
+        : getRecommendationMessage(guarded.recommendation),
     };
+
+    return {
+      fusion: guarded.fusion,
+      recommendation: guarded.recommendation,
+      section,
+      providerAudit,
+    };
+  } finally {
+    resetTeamProfileProviderContext();
   }
-
-  const fusion = fuseFeatureScores(featureResult.features);
-  const recommendation = generateRecommendations(fusion, markets);
-
-  const section: RecommendationSection = {
-    enabled: true,
-    fusion,
-    result: recommendation,
-    message: getRecommendationMessage(recommendation),
-  };
-
-  return { fusion, recommendation, section };
 }
 
 export function resetFeatureRecommendationPipelineForTests(): void {
   collectorsBootstrapped = false;
+  resetTeamProfileProviderContext();
+  resetFeatureProviderRegistryForTests();
 }

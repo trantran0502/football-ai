@@ -1,3 +1,4 @@
+import { runTeamProfileRecommendationPipelineTests } from "./test-team-profile-recommendation-pipeline";
 import { createAnalysisSnapshotFromReport } from "@/lib/database/matchSchema";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import {
@@ -1796,6 +1797,7 @@ async function runTests(): Promise<void> {
     await testVerifiedRecordsFusion();
     await testEmptyProfileDedupeRetry();
     testAnalysisSnapshotTeamProfiles();
+    await runTeamProfileRecommendationPipelineTests();
     console.log("All team profile tests passed.");
   } finally {
     disableTeamProfileMemoryStoreForTests();

@@ -1,3 +1,4 @@
+import { registerAllFeatureCollectors } from "@/lib/analysis/featureScore/registerAllFeatureCollectors";
 import { buildFeatureScores } from "@/lib/analysis/featureScore/featureScoreEngine";
 import { buildReplayDecisionSnapshot } from "@/lib/decision/decisionEngine";
 import type { AnalysisReport } from "@/lib/analysis/types";
@@ -8,10 +9,14 @@ import {
 } from "@/lib/providers/googleSearch/googleSearchCache";
 import { TEAM_CONTEXT_QUERY } from "@/lib/providers/googleSearch/googleSearchService";
 import {
-  getFeatureProviderRegistry,
-  type FeatureProviderKey,
-  type ProviderDataSource,
-} from "@/lib/providers/registry";
+  annotateFeatureProviderSources,
+  auditProviderResolution,
+  prepareTeamProfileProviderContext,
+  resetTeamProfileProviderContext,
+  resolveAllProviderSnapshots,
+  toReplayDataSource,
+} from "@/lib/providers/teamProfile/teamProfileProviderPipeline";
+import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type {
   ReplayDataSource,
   ReplayMarketSnapshot,
@@ -40,52 +45,14 @@ const PROVIDER_LABELS: Record<ReplayProviderKey, string> = {
   matchContext: "Match Context",
 };
 
-function mapProviderSource(source: ProviderDataSource | undefined): ReplayDataSource {
-  switch (source) {
-    case "apiFootball":
-      return "api";
-    case "googleSearch":
-      return "google";
-    case "cache":
-      return "cache";
-    case "mock":
-      return "mock";
-    case "hybrid":
-      return "hybrid";
-    default:
-      return "unknown";
-  }
-}
+let replayCollectorsBootstrapped = false;
 
-function inferFeatureSource(featureId: string): ReplayDataSource {
-  if (featureId.startsWith("recent_form.")) {
-    return "api";
+function ensureReplayFeatureCollectorsRegistered(): void {
+  if (replayCollectorsBootstrapped) {
+    return;
   }
-  if (featureId.startsWith("league_strength.")) {
-    return "api";
-  }
-  if (featureId.startsWith("home_away.")) {
-    return "api";
-  }
-  if (featureId.startsWith("goals_xg.")) {
-    return "api";
-  }
-  if (featureId.startsWith("scoring_pattern.")) {
-    return "api";
-  }
-  if (featureId.startsWith("h2h.")) {
-    return "api";
-  }
-  if (featureId.startsWith("squad_availability.")) {
-    return "api";
-  }
-  if (featureId.startsWith("match_context.")) {
-    return "google";
-  }
-  if (featureId.startsWith("market_odds")) {
-    return "cache";
-  }
-  return "unknown";
+  registerAllFeatureCollectors();
+  replayCollectorsBootstrapped = true;
 }
 
 function captureRawSources(input: {
@@ -114,69 +81,76 @@ function captureProviderSnapshots(input: {
   awayTeam: string;
   matchDate?: string;
   league?: string;
+  teamProfiles?: MatchTeamProfilesSnapshot | null;
 }): ReplayProviderSnapshot[] {
-  const registry = getFeatureProviderRegistry();
-  const keys: FeatureProviderKey[] = [
-    "recentForm",
-    "leagueStrength",
-    "homeAway",
-    "goalsXg",
-    "scoringPattern",
-    "h2h",
-    "squadAvailability",
-    "matchContext",
-  ];
+  prepareTeamProfileProviderContext(input.teamProfiles ?? null);
+  try {
+    const snapshots = resolveAllProviderSnapshots({
+      homeTeam: input.homeTeam,
+      awayTeam: input.awayTeam,
+      matchDate: input.matchDate,
+      league: input.league,
+    });
 
-  return keys.map((key) => {
-    const request =
-      key === "leagueStrength"
-        ? { leagueName: input.league ?? "Unknown" }
-        : {
-            homeTeam: input.homeTeam,
-            awayTeam: input.awayTeam,
-            matchDate: input.matchDate,
-          };
-
-    const response = registry.resolveSync(key, request as never);
-    return {
-      key: key as ReplayProviderKey,
-      label: PROVIDER_LABELS[key as ReplayProviderKey],
-      source: mapProviderSource(response.source),
-      fetchedAt: response.fetchedAt,
-      confidence: response.confidence,
-      data: response.data,
+    return snapshots.map((snapshot) => ({
+      key: snapshot.key as ReplayProviderKey,
+      label: PROVIDER_LABELS[snapshot.key as ReplayProviderKey],
+      source: toReplayDataSource(snapshot.source),
+      fetchedAt: new Date().toISOString(),
+      confidence: snapshot.confidence,
+      data: snapshot.data,
       citations:
-        key !== "leagueStrength" && response.source === "googleSearch"
+        snapshot.key !== "leagueStrength" && snapshot.source === "googleSearch"
           ? captureRawSources(input).citations
           : [],
-    };
-  });
+    }));
+  } finally {
+    resetTeamProfileProviderContext();
+  }
 }
 
 function captureFeatureSnapshots(
   report: AnalysisReport,
   matchDate?: string
 ): ReplayFeatureSnapshot[] {
-  const featureResult = buildFeatureScores({
-    marketSelections: report.markets,
-    metadata: {
-      homeTeam: report.match.homeTeam,
-      awayTeam: report.match.awayTeam,
-      league: report.match.league,
-      matchDate,
-    },
-  });
+  ensureReplayFeatureCollectorsRegistered();
+  prepareTeamProfileProviderContext(report.teamProfiles ?? null);
+  try {
+    const audit = auditProviderResolution(
+      resolveAllProviderSnapshots({
+        homeTeam: report.match.homeTeam,
+        awayTeam: report.match.awayTeam,
+        matchDate,
+        league: report.match.league,
+      })
+    );
+    const featureResult = buildFeatureScores({
+      marketSelections: report.markets,
+      metadata: {
+        homeTeam: report.match.homeTeam,
+        awayTeam: report.match.awayTeam,
+        league: report.match.league,
+        matchDate,
+        providerAudit: audit,
+      },
+    });
+    const annotated = annotateFeatureProviderSources(featureResult.features, audit);
 
-  return featureResult.features.map((feature) => ({
-    id: feature.id,
-    category: feature.category,
-    score: feature.score,
-    confidence: feature.confidence,
-    weight: feature.weight,
-    explanation: feature.reason,
-    source: inferFeatureSource(feature.id),
-    metadata: feature.metadata ?? null,
-  }));
+    return annotated.map((feature) => ({
+      id: feature.id,
+      category: feature.category,
+      score: feature.score,
+      confidence: feature.confidence,
+      weight: feature.weight,
+      explanation: feature.reason,
+      source:
+        (feature.metadata?.replaySource as ReplayDataSource | undefined) ??
+        "unknown",
+      metadata: feature.metadata ?? null,
+    }));
+  } finally {
+    resetTeamProfileProviderContext();
+  }
 }
 
 function buildFeatureViews(
@@ -353,6 +327,7 @@ export function buildReplaySnapshotFromReport(
     awayTeam: report.match.awayTeam,
     matchDate,
     league: report.match.league,
+    teamProfiles: report.teamProfiles ?? null,
   });
   const features = captureFeatureSnapshots(report, matchDate);
   const decisionReplay = report.decision

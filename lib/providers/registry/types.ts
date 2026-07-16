@@ -10,18 +10,31 @@ export type FeatureProviderKey =
 
 export type ProviderDataSource =
   | "cache"
+  | "teamProfile"
   | "apiFootball"
   | "googleSearch"
   | "hybrid"
-  | "mock";
+  | "mock"
+  | "unavailable";
 
 export interface ProviderResponse<T> {
   data: T;
   source: ProviderDataSource;
+  /** Original resolver source when `source` is `cache`. */
+  originSource?: Exclude<ProviderDataSource, "cache">;
   fetchedAt: string;
   expiresAt: string;
   confidence: number;
   warnings: string[];
+}
+
+export function resolveEffectiveProviderSource(
+  response: ProviderResponse<unknown>
+): ProviderDataSource {
+  if (response.source === "cache" && response.originSource) {
+    return response.originSource;
+  }
+  return response.source;
 }
 
 export interface CachedProviderPayload<T> {
@@ -87,10 +100,12 @@ export const DEFAULT_SOURCE_CONFIDENCE: Record<
   Exclude<ProviderDataSource, "cache">,
   number
 > = {
+  teamProfile: 0.82,
   apiFootball: 0.85,
   googleSearch: 0.65,
   hybrid: 0.9,
-  mock: 0.45,
+  mock: 0.2,
+  unavailable: 0.1,
 };
 
 export const DEFAULT_MEMORY_TTL_MS = 5 * 60 * 1000;

@@ -7,6 +7,9 @@ import { fetchApiFootballSourceData } from "@/lib/providers/registry/sources/api
 import { fetchApiFootballSourceDataAsync } from "@/lib/providers/apiFootball/apiFootballService";
 import { fetchGoogleSearchSourceData } from "@/lib/providers/registry/sources/googleSearchSource";
 import { fetchMockSourceData } from "@/lib/providers/registry/sources/mockSourceHandlers";
+import { allowMockProviderFallback } from "@/lib/providers/teamProfile/providerMode";
+import { fetchTeamProfileSourceData } from "@/lib/providers/teamProfile/teamProfileProviderSource";
+import { buildUnavailableProviderData } from "@/lib/providers/teamProfile/unavailableProviderData";
 import {
   extractProviderDataFromContext,
   resolveHybridData,
@@ -56,6 +59,12 @@ export class FeatureProviderRegistry {
       warnings: string[];
     }> = [
       {
+        source: "teamProfile",
+        fetch: () =>
+          this.resolveSource("teamProfile", providerKey, request),
+        warnings: [],
+      },
+      {
         source: "apiFootball",
         fetch: () =>
           this.resolveSource("apiFootball", providerKey, request),
@@ -67,12 +76,15 @@ export class FeatureProviderRegistry {
           this.resolveSource("googleSearch", providerKey, request),
         warnings: [],
       },
-      {
+    ];
+
+    if (allowMockProviderFallback()) {
+      chain.push({
         source: "mock",
         fetch: () => this.resolveSource("mock", providerKey, request),
         warnings: ["Data sourced from mock provider fallback."],
-      },
-    ];
+      });
+    }
 
     for (const attempt of chain) {
       const data = attempt.fetch();
@@ -89,7 +101,12 @@ export class FeatureProviderRegistry {
       return response;
     }
 
-    throw new Error(`Unable to resolve provider data for ${providerKey}.`);
+    const unavailableData = buildUnavailableProviderData(providerKey, request);
+    const response = this.buildResponse(unavailableData, "unavailable", [
+      `Provider ${providerKey} unavailable in current resolution chain.`,
+    ]);
+    this.cacheManager.remember(cacheKey, response, "unavailable");
+    return response;
   }
 
   async resolveAsync<K extends FeatureProviderKey>(
@@ -178,6 +195,9 @@ export class FeatureProviderRegistry {
 
     if (source === "apiFootball") {
       return fetchApiFootballSourceData(providerKey, request);
+    }
+    if (source === "teamProfile") {
+      return fetchTeamProfileSourceData(providerKey, request);
     }
     if (source === "googleSearch") {
       return fetchGoogleSearchSourceData(providerKey, request);

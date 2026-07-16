@@ -25,7 +25,9 @@ function assert(condition: boolean, message: string): void {
 function assertResponseShape<T>(response: ProviderResponse<T>): void {
   assert(response.data !== undefined, "response.data should exist");
   assert(
-    ["cache", "apiFootball", "googleSearch", "mock"].includes(response.source),
+    ["cache", "teamProfile", "apiFootball", "googleSearch", "mock", "unavailable"].includes(
+      response.source
+    ),
     "response.source should be valid"
   );
   assert(Boolean(response.fetchedAt), "response.fetchedAt should exist");
@@ -60,7 +62,7 @@ function runTests(): void {
   const first = registry.resolveSync("recentForm", request);
   assertResponseShape(first);
   assert(first.source === "mock", "first resolve should fall back to mock");
-  assert(first.confidence === 0.45, "mock confidence should be 0.45");
+  assert(first.confidence === 0.2, "mock confidence should be 0.2");
   assert(
     first.warnings.includes("Data sourced from mock provider fallback."),
     "mock fallback should include warning"

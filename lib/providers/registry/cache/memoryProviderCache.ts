@@ -16,6 +16,7 @@ export class MemoryProviderCache {
     return {
       data: entry.data as T,
       source: "cache",
+      originSource: entry.source,
       fetchedAt: entry.fetchedAt,
       expiresAt: entry.expiresAt,
       confidence: entry.confidence,

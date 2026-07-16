@@ -40,6 +40,7 @@ export class SupabaseProviderCache {
       return {
         data: row.payload.data as T,
         source: "cache",
+        originSource: row.payload.source,
         fetchedAt: row.payload.fetchedAt,
         expiresAt: row.expires_at,
         confidence: row.payload.confidence,

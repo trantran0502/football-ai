@@ -14,6 +14,7 @@ export {
   DEFAULT_SOURCE_CONFIDENCE,
   DEFAULT_SUPABASE_TTL_MS,
   FEATURE_PROVIDER_KEYS,
+  resolveEffectiveProviderSource,
 } from "@/lib/providers/registry/types";
 
 export {

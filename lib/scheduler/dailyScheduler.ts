@@ -273,7 +273,10 @@ async function runBatchedDailyPipeline(
 
               const report = attachTeamProfilesToReport(
                 enrichAnalysisReportWithFixture(
-                  analyzeMatch(fixture.rawOdds),
+                  analyzeMatch(fixture.rawOdds, {
+                    teamProfiles: profileSnapshot,
+                    matchDate: fixture.matchDate,
+                  }),
                   fixture
                 ),
                 profileSnapshot

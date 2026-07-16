@@ -9,6 +9,7 @@ import { isBetaRecommendationModeEnabled } from "@/lib/beta/config";
 import { interpretMarkets } from "@/lib/analysis/marketInterpreter";
 import { buildAnalysisFeatures } from "@/lib/analysis/featureBuilder";
 import { validateCrossMarkets } from "@/lib/analysis/crossMarketValidator";
+import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import { parseOdds } from "@/lib/parser/parser";
 import { normalizeMarketSelections } from "@/lib/parser/normalizeMarketSelections";
@@ -17,7 +18,13 @@ import { normalizeMarketSelections } from "@/lib/parser/normalizeMarketSelection
  * 端到端分析流程：
  * 貼上盤口 → Parser → normalize → Analysis Engine → Feature Fusion → Recommendation → AnalysisReport
  */
-export function analyzeMatch(rawText: string): AnalysisReport {
+export function analyzeMatch(
+  rawText: string,
+  options: {
+    teamProfiles?: MatchTeamProfilesSnapshot | null;
+    matchDate?: string;
+  } = {}
+): AnalysisReport {
   const match = parseOdds(rawText);
   const markets = normalizeMarketSelections(match.marketSelections);
 
@@ -36,7 +43,11 @@ export function analyzeMatch(rawText: string): AnalysisReport {
       ...match,
       marketSelections: markets,
     },
-    markets
+    markets,
+    {
+      teamProfiles: options.teamProfiles ?? null,
+      matchDate: options.matchDate,
+    }
   );
   const bettingIntelligence = buildBettingIntelligence({
     marketSelections: markets,
@@ -67,6 +78,7 @@ export function analyzeMatch(rawText: string): AnalysisReport {
     recommendation,
     bettingIntelligence,
     decision,
+    teamProfiles: options.teamProfiles ?? null,
   };
 }
 

@@ -14,6 +14,8 @@ export type ReplayDataSource =
   | "cache"
   | "mock"
   | "hybrid"
+  | "team-profile"
+  | "unavailable"
   | "unknown";
 
 export const REPLAY_SNAPSHOT_VERSION = "3" as const;

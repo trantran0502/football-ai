@@ -13,6 +13,8 @@ const SOURCE_LABELS: Record<ReplayDataSource, string> = {
   cache: "Cache",
   mock: "Mock",
   hybrid: "Hybrid",
+  "team-profile": "Team Profile",
+  unavailable: "Unavailable",
   unknown: "Unknown",
 };
 
@@ -23,6 +25,8 @@ function SourceBadge(props: { source: ReplayDataSource }) {
     cache: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
     mock: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200",
     hybrid: "bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200",
+    "team-profile": "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
+    unavailable: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
     unknown: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
   };
 
