@@ -162,6 +162,8 @@ function runTests(): void {
         defenseStrength: null,
         averageGoals: 2.4,
         averageGoalsConceded: null,
+        sampleSize: 0,
+        dataFreshnessDays: null,
       };
     },
   };

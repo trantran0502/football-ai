@@ -23,6 +23,10 @@ import {
 import { getApiFootballQuotaSnapshot } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { prefetchProductionH2H, loadProductionH2HMatchRecords } from "@/lib/providers/h2h/productionH2HProvider";
 import {
+  loadProductionLeagueStrengthMatchRecords,
+  prefetchProductionLeagueStrength,
+} from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
+import {
   fetchFixturesByDate,
   buildFixtureFilterStats,
   filterAnalyzableFixtures,
@@ -281,6 +285,11 @@ async function runBatchedDailyPipeline(
                 awayTeamId: fixture.awayTeamId,
                 matchRecords: matchRecordsForH2H,
               });
+              await prefetchProductionLeagueStrength({
+                leagueName: fixture.league,
+                matchDate: fixture.matchDate,
+                matchRecords: matchRecordsForH2H,
+              });
 
               const report = attachTeamProfilesToReport(
                 enrichAnalysisReportWithFixture(
@@ -293,6 +302,11 @@ async function runBatchedDailyPipeline(
                       matchDate: fixture.matchDate,
                       homeTeamId: fixture.homeTeamId,
                       awayTeamId: fixture.awayTeamId,
+                    },
+                    leagueStrengthContext: {
+                      leagueName: fixture.league,
+                      matchDate: fixture.matchDate,
+                      matchRecords: matchRecordsForH2H,
                     },
                   }),
                   fixture

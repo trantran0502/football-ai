@@ -16,6 +16,10 @@ import {
   resolveAllProviderSnapshots,
   toReplayDataSource,
 } from "@/lib/providers/teamProfile/teamProfileProviderPipeline";
+import {
+  prepareProductionLeagueStrengthContext,
+  resetProductionLeagueStrengthContext,
+} from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
 import type { FeatureProviderKey } from "@/lib/providers/registry/types";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type {
@@ -85,6 +89,14 @@ function captureProviderSnapshots(input: {
   teamProfiles?: MatchTeamProfilesSnapshot | null;
 }): ReplayProviderSnapshot[] {
   prepareTeamProfileProviderContext(input.teamProfiles ?? null);
+  prepareProductionLeagueStrengthContext(
+    input.league
+      ? {
+          leagueName: input.league,
+          matchDate: input.matchDate,
+        }
+      : null
+  );
   try {
     const snapshots = resolveAllProviderSnapshots({
       homeTeam: input.homeTeam,
@@ -107,6 +119,7 @@ function captureProviderSnapshots(input: {
     }));
   } finally {
     resetTeamProfileProviderContext();
+    resetProductionLeagueStrengthContext();
   }
 }
 
@@ -151,6 +164,7 @@ function captureFeatureSnapshots(
     }));
   } finally {
     resetTeamProfileProviderContext();
+    resetProductionLeagueStrengthContext();
   }
 }
 

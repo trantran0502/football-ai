@@ -216,6 +216,8 @@ export function mapLeagueStrengthSnapshot(
       defenseStrength: null,
       averageGoals: null,
       averageGoalsConceded: null,
+      sampleSize: 0,
+      dataFreshnessDays: null,
     };
   }
 
@@ -235,6 +237,8 @@ export function mapLeagueStrengthSnapshot(
     defenseStrength: normalizeStrength(3 - averageGoalsConceded, 3),
     averageGoals: roundRate(averageGoals),
     averageGoalsConceded: roundRate(averageGoalsConceded),
+    sampleSize: standings.reduce((sum, row) => sum + row.played, 0),
+    dataFreshnessDays: null,
   };
 }
 

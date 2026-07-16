@@ -72,6 +72,8 @@ export function buildUnavailableProviderData<K extends FeatureProviderKey>(
         defenseStrength: null,
         averageGoals: null,
         averageGoalsConceded: null,
+        sampleSize: 0,
+        dataFreshnessDays: null,
       } as unknown as ProviderDataByKey[K];
     }
     case "h2h":

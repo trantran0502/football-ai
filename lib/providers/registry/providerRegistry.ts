@@ -13,6 +13,10 @@ import {
   fetchProductionH2HSourceData,
   getProductionH2HResolution,
 } from "@/lib/providers/h2h/productionH2HProvider";
+import {
+  fetchProductionLeagueStrengthSourceData,
+  getProductionLeagueStrengthResolution,
+} from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
 import { buildUnavailableProviderData } from "@/lib/providers/teamProfile/unavailableProviderData";
 import {
   extractProviderDataFromContext,
@@ -64,13 +68,20 @@ export class FeatureProviderRegistry {
     }> = [
       {
         source: "matchRecords",
-        fetch: () =>
-          providerKey === "h2h"
-            ? (fetchProductionH2HSourceData(
-                request as ProviderRequestByKey["h2h"],
-                "matchRecords"
-              ) as ProviderDataByKey[K] | null)
-            : null,
+        fetch: () => {
+          if (providerKey === "h2h") {
+            return fetchProductionH2HSourceData(
+              request as ProviderRequestByKey["h2h"],
+              "matchRecords"
+            ) as ProviderDataByKey[K] | null;
+          }
+          if (providerKey === "leagueStrength") {
+            return fetchProductionLeagueStrengthSourceData(
+              request as ProviderRequestByKey["leagueStrength"]
+            ) as ProviderDataByKey[K] | null;
+          }
+          return null;
+        },
         warnings: [],
       },
       {
@@ -122,6 +133,18 @@ export class FeatureProviderRegistry {
       if (providerKey === "h2h") {
         const resolution = getProductionH2HResolution(
           request as ProviderRequestByKey["h2h"]
+        );
+        if (resolution) {
+          response.confidence = resolution.confidence;
+          response.warnings = [
+            ...response.warnings,
+            ...resolution.diagnostics.warnings,
+          ];
+        }
+      }
+      if (providerKey === "leagueStrength") {
+        const resolution = getProductionLeagueStrengthResolution(
+          request as ProviderRequestByKey["leagueStrength"]
         );
         if (resolution) {
           response.confidence = resolution.confidence;

@@ -155,6 +155,8 @@ export function extractProviderDataFromContext<K extends FeatureProviderKey>(
             : null,
         averageGoals,
         averageGoalsConceded,
+        sampleSize: standings.reduce((sum, row) => sum + (row.played ?? 0), 0),
+        dataFreshnessDays: null,
       };
       return snapshot as ProviderDataByKey[K];
     }

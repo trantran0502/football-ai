@@ -15,10 +15,13 @@ export interface LeagueStrengthSnapshot {
   defenseStrength: number | null;
   averageGoals: number | null;
   averageGoalsConceded: number | null;
+  sampleSize: number;
+  dataFreshnessDays: number | null;
 }
 
 export interface LeagueStrengthProviderRequest {
   leagueName: string;
+  matchDate?: string;
 }
 
 export interface LeagueStrengthProvider {
@@ -122,6 +125,8 @@ function buildSnapshot(
     defenseStrength: roundMetric(profile.defenseStrength),
     averageGoals: roundMetric(profile.averageGoals),
     averageGoalsConceded: roundMetric(profile.averageGoalsConceded),
+    sampleSize: 30,
+    dataFreshnessDays: 7,
   };
 }
 

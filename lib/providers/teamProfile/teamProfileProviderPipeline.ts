@@ -10,6 +10,7 @@ import {
   resolveEffectiveProviderSource,
 } from "@/lib/providers/registry";
 import { getProductionH2HResolution } from "@/lib/providers/h2h/productionH2HProvider";
+import { getProductionLeagueStrengthResolution } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
 import type { ReplayDataSource } from "@/lib/replay/replayTypes";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import {
@@ -94,6 +95,7 @@ function buildProviderRequest<K extends FeatureProviderKey>(
   if (providerKey === "leagueStrength") {
     return {
       leagueName: input.league ?? "Unknown",
+      matchDate: input.matchDate,
     } as ProviderRequestByKey[K];
   }
 
@@ -121,19 +123,26 @@ export function resolveAllProviderSnapshots(input: {
             request as ProviderRequestByKey["h2h"]
           )
         : null;
+    const leagueStrengthResolution =
+      providerKey === "leagueStrength"
+        ? getProductionLeagueStrengthResolution(
+            request as ProviderRequestByKey["leagueStrength"]
+          )
+        : null;
+    const productionResolution = h2hResolution ?? leagueStrengthResolution;
     return {
       key: providerKey,
       source,
       sourceDetail:
         source === "teamProfile"
           ? "team_profiles"
-          : h2hResolution
-            ? JSON.stringify(h2hResolution.diagnostics)
+          : productionResolution
+            ? JSON.stringify(productionResolution.diagnostics)
             : null,
-      confidence: h2hResolution?.confidence ?? response.confidence,
+      confidence: productionResolution?.confidence ?? response.confidence,
       warnings: [
         ...response.warnings,
-        ...(h2hResolution?.diagnostics.warnings ?? []),
+        ...(productionResolution?.diagnostics.warnings ?? []),
       ],
       data: response.data,
       available: source !== "unavailable" && source !== "mock",
