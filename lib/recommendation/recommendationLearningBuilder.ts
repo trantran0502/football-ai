@@ -24,32 +24,44 @@ function toLearningMarketKey(marketKey: ValidationMarketKey): RecommendationLear
   }
 }
 
+function isFiniteProviderConfidence(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 function resolveProviderDiagnostics(record: HistoricalMatchRecord) {
   const replayRecommendation = record.analysisSnapshot?.replay?.recommendation;
-  if (replayRecommendation?.providerDiagnostics) {
-    return {
-      providerDiagnostics: replayRecommendation.providerDiagnostics,
-      providerOverallConfidence: replayRecommendation.providerOverallConfidence ?? null,
-      usableProviderCount: replayRecommendation.usableProviderCount ?? 0,
-      unavailableProviderCount: replayRecommendation.unavailableProviderCount ?? 0,
-    };
-  }
+  const result = record.analysisSnapshot?.recommendation?.result ?? null;
 
-  const result = record.analysisSnapshot?.recommendation?.result;
-  if (!result) {
-    return {
-      providerDiagnostics: [],
-      providerOverallConfidence: null,
-      usableProviderCount: 0,
-      unavailableProviderCount: 0,
-    };
-  }
+  const replayDiagnostics = replayRecommendation?.providerDiagnostics ?? [];
+  const resultDiagnostics = result
+    ? mapEngineProviderDiagnostics(result.providerDiagnostics ?? [])
+    : [];
+
+  const providerOverallConfidence = isFiniteProviderConfidence(
+    replayRecommendation?.providerOverallConfidence
+  )
+    ? replayRecommendation.providerOverallConfidence
+    : isFiniteProviderConfidence(result?.providerOverallConfidence)
+      ? result.providerOverallConfidence
+      : null;
+
+  const providerDiagnostics =
+    replayDiagnostics.length > 0 ? replayDiagnostics : resultDiagnostics;
+
+  const metaSource =
+    replayDiagnostics.length > 0
+      ? replayRecommendation
+      : resultDiagnostics.length > 0
+        ? result
+        : isFiniteProviderConfidence(replayRecommendation?.providerOverallConfidence)
+          ? replayRecommendation
+          : result;
 
   return {
-    providerDiagnostics: mapEngineProviderDiagnostics(result.providerDiagnostics ?? []),
-    providerOverallConfidence: result.providerOverallConfidence ?? null,
-    usableProviderCount: result.usableProviderCount ?? 0,
-    unavailableProviderCount: result.unavailableProviderCount ?? 0,
+    providerDiagnostics,
+    providerOverallConfidence,
+    usableProviderCount: metaSource?.usableProviderCount ?? 0,
+    unavailableProviderCount: metaSource?.unavailableProviderCount ?? 0,
   };
 }
 

@@ -12,9 +12,11 @@ import {
 } from "@/lib/recommendation/recommendationLearningMemoryStore";
 import { persistRecommendationLearningLocally } from "@/lib/recommendation/recommendationLearningPersistence";
 import { enrichRecordWithReplayValidation } from "@/lib/replay/replayBuilder";
+import type { ProviderRecommendationDiagnostic } from "@/lib/recommendation/providerWeightEngine";
 import { createEmptyRecommendationResult } from "@/lib/recommendation/recommendationTypes";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import type { ReplayProviderRecommendationDiagnostic } from "@/lib/replay/replayTypes";
+import type { ReplayRecommendationSnapshot } from "@/lib/replay/replayTypes";
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -132,8 +134,239 @@ function buildVerifiedRecord(input: {
   });
 }
 
+function buildMinimalVerifiedRecord(input: {
+  id: string;
+  replayRecommendation: ReplayRecommendationSnapshot | null;
+  resultRecommendation: ReturnType<typeof createEmptyRecommendationResult> | null;
+}): HistoricalMatchRecord {
+  const winCase = SETTLEMENT_TEST_CASES.find(
+    (item) => item.expected === "WIN" && item.selection.marketType === "moneyline"
+  );
+  assert(Boolean(winCase), "settlement fixture should include WIN case");
+
+  const base: HistoricalMatchRecord = {
+    id: input.id,
+    date: "2026-07-16",
+    matchDate: "2026-07-16",
+    league: "Premier League",
+    homeTeam: "Arsenal",
+    awayTeam: "Chelsea",
+    rawOdds: "test",
+    marketSelections: [],
+    result: winCase!.result,
+    analysisSnapshot: {
+      features: [],
+      interpretations: [],
+      marketAnalysis: {} as HistoricalMatchRecord["analysisSnapshot"] extends infer T
+        ? T extends { marketAnalysis: infer M }
+          ? M
+          : never
+        : never,
+      combinedAnalysis: {} as HistoricalMatchRecord["analysisSnapshot"] extends infer T
+        ? T extends { combinedAnalysis: infer M }
+          ? M
+          : never
+        : never,
+      candidates: [],
+      recommendation: {
+        enabled: true,
+        fusion: null,
+        result: input.resultRecommendation,
+        message: "",
+      },
+      replay: input.replayRecommendation
+        ? {
+            version: "3",
+            capturedAt: new Date().toISOString(),
+            match: {
+              matchId: input.id,
+              fixtureId: 9001,
+              league: "Premier League",
+              leagueId: 39,
+              season: 2026,
+              matchTime: "2026-07-16",
+              homeTeam: "Arsenal",
+              awayTeam: "Chelsea",
+            },
+            raw: {
+              apiFootballRaw: null,
+              googleGroundingRaw: null,
+              citations: [],
+              cacheSource: null,
+            },
+            providers: [],
+            features: [],
+            fusion: null,
+            recommendation: input.replayRecommendation,
+            marketReplay: null,
+            decisionReplay: null,
+            validation: null,
+          }
+        : null,
+      bettingIntelligence: null,
+      decision: null,
+      capturedAt: new Date().toISOString(),
+    },
+    candidates: [],
+    status: "VERIFIED",
+    verificationResult: {
+      verifiedAt: new Date().toISOString(),
+      backtest: {} as HistoricalMatchRecord["verificationResult"] extends infer T
+        ? T extends { backtest: infer B }
+          ? B
+          : never
+        : never,
+      ruleValidation: {} as HistoricalMatchRecord["verificationResult"] extends infer T
+        ? T extends { ruleValidation: infer R }
+          ? R
+          : never
+        : never,
+      recommendationValidation: { entries: [], report: {} as never },
+    },
+    fixtureId: 9001,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  return base;
+}
+
+function engineDiagnostic(
+  entry: ReplayProviderRecommendationDiagnostic
+): ProviderRecommendationDiagnostic {
+  return {
+    providerKey: entry.providerKey,
+    providerWeight: entry.providerWeight,
+    providerContribution: entry.providerContribution,
+    providerSource:
+      entry.providerSource === "match-records"
+        ? "matchRecords"
+        : entry.providerSource === "google"
+          ? "googleSearch"
+          : entry.providerSource === "team-profile"
+            ? "teamProfile"
+            : "unavailable",
+    providerConfidence: entry.providerConfidence,
+  };
+}
+
+function testProviderSnapshotFallback(): void {
+  const resultDiagnostics: ReplayProviderRecommendationDiagnostic[] = [
+    {
+      providerKey: "recentForm",
+      providerWeight: 0.5,
+      providerContribution: 40,
+      providerSource: "match-records",
+      providerConfidence: 0.8,
+    },
+  ];
+
+  const fallbackRecord = buildMinimalVerifiedRecord({
+    id: "33333333-3333-3333-3333-333333333333",
+    replayRecommendation: {
+      globalPass: false,
+      passReason: null,
+      message: "",
+      candidates: [],
+      usableProviderCount: 0,
+      unavailableProviderCount: 0,
+      providerOverallConfidence: null,
+      providerDiagnostics: [],
+    },
+    resultRecommendation: createEmptyRecommendationResult({
+      globalPass: false,
+      providerOverallConfidence: 0.75,
+      providerDiagnostics: resultDiagnostics.map(engineDiagnostic),
+      usableProviderCount: 1,
+      unavailableProviderCount: 0,
+    }),
+  });
+
+  const fallbackLearning = buildRecommendationLearningRecord(fallbackRecord);
+  assert(Boolean(fallbackLearning), "fallback record should produce learning record");
+  assert(
+    fallbackLearning!.providerOverallConfidence === 0.75,
+    "should fallback to result providerOverallConfidence when replay is null"
+  );
+  assert(
+    fallbackLearning!.providerDiagnostics.length === 1,
+    "should fallback to result providerDiagnostics when replay is empty"
+  );
+  assert(
+    fallbackLearning!.providerDiagnostics[0].providerKey === "recentForm",
+    "fallback diagnostics should come from result"
+  );
+
+  const replayDiagnostic: ReplayProviderRecommendationDiagnostic = {
+    providerKey: "h2h",
+    providerWeight: 0.3,
+    providerContribution: 25,
+    providerSource: "google",
+    providerConfidence: 0.7,
+  };
+
+  const replayPreferred = buildMinimalVerifiedRecord({
+    id: "44444444-4444-4444-4444-444444444444",
+    replayRecommendation: {
+      globalPass: false,
+      passReason: null,
+      message: "",
+      candidates: [],
+      usableProviderCount: 1,
+      unavailableProviderCount: 0,
+      providerOverallConfidence: 0.82,
+      providerDiagnostics: [replayDiagnostic],
+    },
+    resultRecommendation: createEmptyRecommendationResult({
+      globalPass: false,
+      providerOverallConfidence: 0.75,
+      providerDiagnostics: resultDiagnostics.map(engineDiagnostic),
+      usableProviderCount: 1,
+      unavailableProviderCount: 0,
+    }),
+  });
+
+  const replayLearning = buildRecommendationLearningRecord(replayPreferred);
+  assert(Boolean(replayLearning), "replay-preferred record should produce learning record");
+  assert(
+    replayLearning!.providerOverallConfidence === 0.82,
+    "should prefer replay providerOverallConfidence when present"
+  );
+  assert(
+    replayLearning!.providerDiagnostics[0].providerKey === "h2h",
+    "should prefer replay providerDiagnostics when non-empty"
+  );
+
+  const emptyRecord = buildMinimalVerifiedRecord({
+    id: "55555555-5555-5555-5555-555555555555",
+    replayRecommendation: {
+      globalPass: true,
+      passReason: "No data",
+      message: "",
+      candidates: [],
+      usableProviderCount: 0,
+      unavailableProviderCount: 0,
+      providerOverallConfidence: null,
+      providerDiagnostics: [],
+    },
+    resultRecommendation: createEmptyRecommendationResult({
+      globalPass: true,
+      providerOverallConfidence: null,
+      providerDiagnostics: [],
+      usableProviderCount: 0,
+      unavailableProviderCount: 0,
+    }),
+  });
+
+  const emptyLearning = buildRecommendationLearningRecord(emptyRecord);
+  assert(Boolean(emptyLearning), "empty record should produce learning record");
+  assert(emptyLearning!.providerOverallConfidence === null, "both missing confidence should be null");
+  assert(emptyLearning!.providerDiagnostics.length === 0, "both missing diagnostics should be []");
+}
+
 function runTests(): void {
   clearRecommendationLearningMemory();
+  testProviderSnapshotFallback();
 
   const diagnostics: ReplayProviderRecommendationDiagnostic[] = [
     {
