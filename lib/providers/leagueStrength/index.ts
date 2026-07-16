@@ -53,4 +53,5 @@ export {
   prepareProductionLeagueStrengthContext,
   readCachedProductionLeagueStrength,
   resetProductionLeagueStrengthContext,
+  usesProductionLeagueStrengthOnlyPath,
 } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";

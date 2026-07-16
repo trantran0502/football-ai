@@ -23,6 +23,11 @@ import {
   type ProductionLeagueStrengthResolution,
 } from "@/lib/providers/leagueStrength/leagueStrengthTypes";
 import type { ProviderDataByKey } from "@/lib/providers/registry/types";
+import { isProductionRecommendationMode } from "@/lib/providers/teamProfile/providerMode";
+
+export function usesProductionLeagueStrengthOnlyPath(): boolean {
+  return isProductionRecommendationMode();
+}
 
 function toProductionRequest(
   request: LeagueStrengthProviderRequest
@@ -50,14 +55,36 @@ export function readCachedProductionLeagueStrength(
   };
 }
 
+function resolveUsableLeagueStrengthFromContext(
+  request: LeagueStrengthProviderRequest
+): ProductionLeagueStrengthResolution | null {
+  const context = getActiveProductionLeagueStrengthContext();
+  const records = context?.matchRecords;
+  if (!records || records.length === 0) {
+    return null;
+  }
+
+  return resolveLeagueStrengthFromMatchRecords({
+    request,
+    records,
+    referenceDate: context.matchDate ?? request.matchDate,
+  });
+}
+
 export function fetchProductionLeagueStrengthSourceData(
   request: LeagueStrengthProviderRequest
 ): ProviderDataByKey["leagueStrength"] | null {
   const cached = readCachedProductionLeagueStrength(request);
-  if (!cached || !isLeagueStrengthSampleUsable(cached.snapshot.sampleSize)) {
-    return null;
+  if (cached && isLeagueStrengthSampleUsable(cached.snapshot.sampleSize)) {
+    return cached.snapshot;
   }
-  return cached.snapshot;
+
+  const fromContext = resolveUsableLeagueStrengthFromContext(request);
+  if (fromContext && isLeagueStrengthSampleUsable(fromContext.snapshot.sampleSize)) {
+    return fromContext.snapshot;
+  }
+
+  return null;
 }
 
 export async function loadProductionLeagueStrengthMatchRecords(): Promise<
@@ -118,7 +145,12 @@ export async function prefetchProductionLeagueStrength(
 export function getProductionLeagueStrengthResolution(
   request: LeagueStrengthProviderRequest
 ): ProductionLeagueStrengthResolution | null {
-  return readCachedProductionLeagueStrength(request);
+  const cached = readCachedProductionLeagueStrength(request);
+  if (cached) {
+    return cached;
+  }
+
+  return resolveUsableLeagueStrengthFromContext(request);
 }
 
 export function prepareProductionLeagueStrengthContext(

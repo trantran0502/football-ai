@@ -12,8 +12,13 @@ import { clearProductionLeagueStrengthCacheForTests } from "@/lib/providers/leag
 import {
   fetchProductionLeagueStrengthSourceData,
   prefetchProductionLeagueStrength,
+  prepareProductionLeagueStrengthContext,
+  resetProductionLeagueStrengthContext,
 } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
-import { getFeatureProviderRegistry } from "@/lib/providers/registry";
+import {
+  getFeatureProviderRegistry,
+  resetFeatureProviderRegistryForTests,
+} from "@/lib/providers/registry";
 import { resolveEffectiveProviderSource } from "@/lib/providers/registry/types";
 
 function assert(condition: boolean, message: string): void {
@@ -177,6 +182,58 @@ async function runTests(): Promise<void> {
     leagueProvider?.confidence !== undefined && leagueProvider.confidence < 0.84,
     "12-match sample should use reduced confidence"
   );
+
+  const previousMode = process.env.FOOTBALL_RECOMMENDATION_MODE;
+  const previousAllowMock = process.env.ALLOW_MOCK_PROVIDERS;
+  process.env.FOOTBALL_RECOMMENDATION_MODE = "production";
+  process.env.ALLOW_MOCK_PROVIDERS = "false";
+  resetFeatureProviderRegistryForTests();
+  clearProductionLeagueStrengthCacheForTests();
+
+  const productionRegistry = getFeatureProviderRegistry();
+  await prefetchProductionLeagueStrength({
+    leagueName: LEAGUE,
+    matchDate: MATCH_DATE,
+    matchRecords: twentyRecords,
+  });
+  prepareProductionLeagueStrengthContext({
+    leagueName: LEAGUE,
+    matchDate: MATCH_DATE,
+    matchRecords: twentyRecords,
+  });
+  const productionResponse = productionRegistry.resolveSync("leagueStrength", {
+    leagueName: LEAGUE,
+    matchDate: MATCH_DATE,
+  });
+  const productionSource = resolveEffectiveProviderSource(productionResponse);
+  assert(
+    productionSource === "matchRecords",
+    "production leagueStrength must resolve to match-records only"
+  );
+  assert(
+    productionSource !== "mock" && productionSource !== "cache",
+    "production leagueStrength must not resolve to mock or cache"
+  );
+  resetProductionLeagueStrengthContext();
+
+  clearProductionLeagueStrengthCacheForTests();
+  prepareProductionLeagueStrengthContext({
+    leagueName: "Empty League",
+    matchDate: MATCH_DATE,
+    matchRecords: [],
+  });
+  const unavailableResponse = productionRegistry.resolveSync("leagueStrength", {
+    leagueName: "Empty League",
+    matchDate: MATCH_DATE,
+  });
+  assert(
+    resolveEffectiveProviderSource(unavailableResponse) === "unavailable",
+    "production leagueStrength without records must be unavailable immediately"
+  );
+  resetProductionLeagueStrengthContext();
+
+  process.env.FOOTBALL_RECOMMENDATION_MODE = previousMode;
+  process.env.ALLOW_MOCK_PROVIDERS = previousAllowMock;
 
   console.log("Production League Strength tests passed.");
 }

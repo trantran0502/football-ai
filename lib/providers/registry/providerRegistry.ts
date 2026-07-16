@@ -16,6 +16,7 @@ import {
 import {
   fetchProductionLeagueStrengthSourceData,
   getProductionLeagueStrengthResolution,
+  usesProductionLeagueStrengthOnlyPath,
 } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
 import { buildUnavailableProviderData } from "@/lib/providers/teamProfile/unavailableProviderData";
 import {
@@ -55,6 +56,12 @@ export class FeatureProviderRegistry {
     providerKey: K,
     request: ProviderRequestByKey[K]
   ): ProviderResponse<ProviderDataByKey[K]> {
+    if (providerKey === "leagueStrength" && usesProductionLeagueStrengthOnlyPath()) {
+      return this.resolveProductionLeagueStrength(
+        request as ProviderRequestByKey["leagueStrength"]
+      ) as ProviderResponse<ProviderDataByKey[K]>;
+    }
+
     const cacheKey = buildProviderCacheKey(providerKey, request);
     const memoryHit = this.cacheManager.getMemory<ProviderDataByKey[K]>(cacheKey);
     if (memoryHit) {
@@ -170,6 +177,12 @@ export class FeatureProviderRegistry {
     providerKey: K,
     request: ProviderRequestByKey[K]
   ): Promise<ProviderResponse<ProviderDataByKey[K]>> {
+    if (providerKey === "leagueStrength" && usesProductionLeagueStrengthOnlyPath()) {
+      return this.resolveProductionLeagueStrength(
+        request as ProviderRequestByKey["leagueStrength"]
+      ) as ProviderResponse<ProviderDataByKey[K]>;
+    }
+
     const cacheKey = buildProviderCacheKey(providerKey, request);
 
     const memoryHit = this.cacheManager.getMemory<ProviderDataByKey[K]>(cacheKey);
@@ -260,6 +273,29 @@ export class FeatureProviderRegistry {
       return fetchGoogleSearchSourceData(providerKey, request);
     }
     return fetchMockSourceData(providerKey, request);
+  }
+
+  private resolveProductionLeagueStrength(
+    request: ProviderRequestByKey["leagueStrength"]
+  ): ProviderResponse<ProviderDataByKey["leagueStrength"]> {
+    const data = fetchProductionLeagueStrengthSourceData(request);
+    if (data !== null) {
+      const response = this.buildResponse(data, "matchRecords", []);
+      const resolution = getProductionLeagueStrengthResolution(request);
+      if (resolution) {
+        response.confidence = resolution.confidence;
+        response.warnings = [
+          ...response.warnings,
+          ...resolution.diagnostics.warnings,
+        ];
+      }
+      return response;
+    }
+
+    const unavailableData = buildUnavailableProviderData("leagueStrength", request);
+    return this.buildResponse(unavailableData, "unavailable", [
+      "League strength unavailable: insufficient verified match records.",
+    ]);
   }
 
   private buildResponse<T>(
