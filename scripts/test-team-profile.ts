@@ -17,6 +17,7 @@ import {
 import {
   buildTeamProfilePersistencePlan,
   buildTeamProfileTeamDiagnostic,
+  buildTeamFormPathForProfile,
   calculateFormScore,
   calculateMomentumScore,
   calculateTeamProfile,
@@ -33,9 +34,12 @@ import {
   listMemoryTeamProfilesForTests,
   normalizeApiFootballFixtures,
   refreshTeamProfile,
+  resetTeamProfileFixtureFetchState,
   resetTeamProfileMemoryStoreForTests,
   resetTeamProfileRefreshDedupeForTests,
   shouldExcludeMatch,
+  shouldUseLastParameterForTeamProfile,
+  sliceRecentMatches,
   TEAM_PROFILE_UPSERT_CONFLICT_KEY,
   upsertTeamProfile,
   type TeamProfileMatchInput,
@@ -54,6 +58,33 @@ const IDENTITY = {
   leagueName: "Premier League",
   season: 2026,
 };
+
+function buildMockTeamFormPath(
+  teamId: number,
+  last: number,
+  options: {
+    leagueId?: number;
+    season?: number;
+    status?: string;
+    useLast?: boolean;
+  } = {}
+): string {
+  const useLast = options.useLast !== false;
+  let path = `/fixtures?team=${teamId}`;
+  if (useLast) {
+    path += `&last=${last}`;
+  }
+  if (options.leagueId) {
+    path += `&league=${options.leagueId}`;
+  }
+  if (options.season) {
+    path += `&season=${options.season}`;
+  }
+  if (options.status) {
+    path += `&status=${options.status}`;
+  }
+  return path;
+}
 
 function buildMatch(overrides: Partial<TeamProfileMatchInput> & Pick<TeamProfileMatchInput, "fixtureId">): TeamProfileMatchInput {
   return {
@@ -585,6 +616,7 @@ function testMapFixtureRecordFulltimeFallback(): void {
 
 async function testSeasonFallbackFetch(): Promise<void> {
   resetApiFootballQuotaForTests();
+  resetTeamProfileFixtureFetchState();
   const calls: string[] = [];
 
   class SeasonFallbackClient {
@@ -595,13 +627,10 @@ async function testSeasonFallbackFetch(): Promise<void> {
     async getTeamForm(
       teamId: number,
       last: number,
-      options: { leagueId?: number; season?: number; status?: string } = {}
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
     ): Promise<{ teamId: number; fixtures: ApiFootballFixtureRecord[]; meta: { requestPath: string; rawResponseCount: number } }> {
       recordApiFootballRequest();
-      const path = `/fixtures?team=${teamId}&last=${last}` +
-        (options.leagueId ? `&league=${options.leagueId}` : "") +
-        (options.season ? `&season=${options.season}` : "") +
-        (options.status ? `&status=${options.status}` : "");
+      const path = buildMockTeamFormPath(teamId, last, options);
       calls.push(path);
 
       if (options.season === 2026) {
@@ -652,9 +681,10 @@ async function testSeasonFallbackFetch(): Promise<void> {
     season: 2026,
   });
 
-  assert(result.matches.length === 1, "season fallback should use previous season data");
+  assert(result.matches.length === 0, "empty current season should not auto-fallback to previous season");
   assert(calls.some((path) => path.includes("season=2026")), "should try current season first");
-  assert(calls.some((path) => path.includes("season=2025")), "should fallback to previous season");
+  assert(!calls.some((path) => path.includes("season=2025")), "should not fallback to previous season without plan restriction");
+  assert(!calls.some((path) => path.includes("last=")), "free mode should not send last parameter");
 
   setApiFootballClientForTests(null);
 }
@@ -674,7 +704,7 @@ async function testFreePlanHistoricalFallback(): Promise<void> {
     async getTeamForm(
       teamId: number,
       last: number,
-      options: { leagueId?: number; season?: number; status?: string } = {}
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
     ): Promise<{
       teamId: number;
       fixtures: ApiFootballFixtureRecord[];
@@ -685,10 +715,7 @@ async function testFreePlanHistoricalFallback(): Promise<void> {
       };
     }> {
       recordApiFootballRequest();
-      const path = `/fixtures?team=${teamId}&last=${last}` +
-        (options.leagueId ? `&league=${options.leagueId}` : "") +
-        (options.season ? `&season=${options.season}` : "") +
-        (options.status ? `&status=${options.status}` : "");
+      const path = buildMockTeamFormPath(teamId, last, options);
       calls.push(path);
 
       if (options.season === 2026) {
@@ -775,6 +802,7 @@ async function testFreePlanHistoricalFallback(): Promise<void> {
   assert(calls.some((path) => path.includes("season=2026")), "should attempt requested season first");
   assert(calls.some((path) => path.includes("season=2024")), "should fallback to max free-plan season");
   assert(!calls.some((path) => path.includes("season=2025")), "should not waste requests on unsupported 2025");
+  assert(!calls.some((path) => path.includes("last=")), "free mode requests should omit last parameter");
   assert(result.diagnostics.attempts.length >= 2, "diagnostics attempts should include season calls");
   assert(result.diagnostics.requestUrls.length >= 2, "requestUrls should be populated");
   assert(
@@ -829,9 +857,10 @@ async function testVerifiedRecordsFusion(): Promise<void> {
     async getTeamForm(
       teamId: number,
       last: number,
-      options: { leagueId?: number; season?: number; status?: string } = {}
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
     ) {
       recordApiFootballRequest();
+      const path = buildMockTeamFormPath(teamId, last, options);
       if (options.season === 2024) {
         const match = buildMatch({ fixtureId: 901, date: "2024-04-01", homeGoals: 1, awayGoals: 0 });
         return {
@@ -858,7 +887,7 @@ async function testVerifiedRecordsFusion(): Promise<void> {
             },
           ],
           meta: {
-            requestPath: `/fixtures?team=${teamId}&last=${last}&season=2024`,
+            requestPath: path,
             rawResponseCount: 1,
             planRestriction: null,
           },
@@ -868,7 +897,7 @@ async function testVerifiedRecordsFusion(): Promise<void> {
         teamId,
         fixtures: [],
         meta: {
-          requestPath: `/fixtures?team=${teamId}&last=${last}&season=${options.season ?? "none"}`,
+          requestPath: path,
           rawResponseCount: 0,
           planRestriction:
             options.season === 2026
@@ -1156,7 +1185,7 @@ async function testProductionPlanErrorParserClientPath(): Promise<void> {
     async getTeamForm(
       teamId: number,
       last: number,
-      options: { leagueId?: number; season?: number; status?: string } = {}
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
     ): Promise<{
       teamId: number;
       fixtures: ApiFootballFixtureRecord[];
@@ -1167,11 +1196,7 @@ async function testProductionPlanErrorParserClientPath(): Promise<void> {
       };
     }> {
       recordApiFootballRequest();
-      const path =
-        `/fixtures?team=${teamId}&last=${last}` +
-        (options.leagueId ? `&league=${options.leagueId}` : "") +
-        (options.season ? `&season=${options.season}` : "") +
-        (options.status ? `&status=${options.status}` : "");
+      const path = buildMockTeamFormPath(teamId, last, options);
       calls.push(path);
 
       if (options.season === 2026) {
@@ -1289,6 +1314,7 @@ async function testProductionPlanErrorParserClientPath(): Promise<void> {
   assert(profile.sampleSize > 0, "2024 fallback with data should populate sample size");
   assert(calls.some((path) => path.includes("season=2026")), "2026 request should be attempted");
   assert(calls.some((path) => path.includes("season=2024")), "2024 fallback request should be attempted");
+  assert(!calls.some((path) => path.includes("last=")), "2024 fallback should omit last parameter");
 
   setApiFootballClientForTests(null);
 }
@@ -1305,18 +1331,14 @@ async function testProductionPlanErrorCatchFallbackPath(): Promise<void> {
     async getTeamForm(
       teamId: number,
       last: number,
-      options: { leagueId?: number; season?: number; status?: string } = {}
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
     ): Promise<{
       teamId: number;
       fixtures: ApiFootballFixtureRecord[];
       meta: { requestPath: string; rawResponseCount: number };
     }> {
       recordApiFootballRequest();
-      const path =
-        `/fixtures?team=${teamId}&last=${last}` +
-        (options.leagueId ? `&league=${options.leagueId}` : "") +
-        (options.season ? `&season=${options.season}` : "") +
-        (options.status ? `&status=${options.status}` : "");
+      const path = buildMockTeamFormPath(teamId, last, options);
       calls.push(path);
 
       if (options.season === 2026) {
@@ -1387,12 +1409,22 @@ async function testProductionPlanErrorCatchFallbackPath(): Promise<void> {
 
   assert(fetched.diagnostics.attempts.length >= 2, "catch fallback should record at least 2 attempts");
   assert(
-    fetched.diagnostics.attempts.some((attempt) => attempt.season === 2026 && attempt.planRestricted),
-    "catch fallback should record synthetic 2026 plan-restricted attempt"
+    fetched.diagnostics.attempts.some(
+      (attempt) =>
+        attempt.season === 2026 &&
+        attempt.planRestricted &&
+        attempt.success === false &&
+        attempt.error
+    ),
+    "2026 attempt should record plan-restricted error with requestUrl"
   );
   assert(
-    fetched.diagnostics.attempts.some((attempt) => attempt.season === 2024),
-    "catch fallback should record 2024 attempt"
+    fetched.diagnostics.attempts.some((attempt) => attempt.season === 2024 && attempt.success === true),
+    "2024 fallback attempt should succeed"
+  );
+  assert(
+    fetched.diagnostics.attempts.every((attempt) => attempt.requestUrl.length > 0),
+    "attempt diagnostics must retain requestUrl"
   );
   assert(profile.season === 2024, "catch fallback profile season should be 2024");
   assert(profile.sampleSize > 0, "catch fallback with 2024 data should populate sample size");
@@ -1412,7 +1444,7 @@ async function testProductionPlanErrorEmptyHistoricalMetadata(): Promise<void> {
     async getTeamForm(
       teamId: number,
       last: number,
-      options: { leagueId?: number; season?: number; status?: string } = {}
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
     ): Promise<{
       teamId: number;
       fixtures: ApiFootballFixtureRecord[];
@@ -1423,11 +1455,7 @@ async function testProductionPlanErrorEmptyHistoricalMetadata(): Promise<void> {
       };
     }> {
       recordApiFootballRequest();
-      const path =
-        `/fixtures?team=${teamId}&last=${last}` +
-        (options.leagueId ? `&league=${options.leagueId}` : "") +
-        (options.season ? `&season=${options.season}` : "") +
-        (options.status ? `&status=${options.status}` : "");
+      const path = buildMockTeamFormPath(teamId, last, options);
 
       if (options.season === 2026) {
         const planRestriction = parseApiFootballPlanSeasonRestriction({
@@ -1492,6 +1520,250 @@ async function testProductionPlanErrorEmptyHistoricalMetadata(): Promise<void> {
   setApiFootballClientForTests(null);
 }
 
+function testFreePlanRequestUrlNoLast(): void {
+  resetTeamProfileFixtureFetchState();
+  assert(
+    buildTeamFormPathForProfile(42, { leagueId: 39, season: 2026, status: "FT" }) ===
+      "/fixtures?team=42&league=39&season=2026&status=FT",
+    "free plan path should omit last parameter"
+  );
+  assert(!shouldUseLastParameterForTeamProfile(), "free mode should disable last parameter");
+}
+
+function testLocalSliceAndSort(): void {
+  const fixtures = Array.from({ length: 30 }, (_, index) =>
+    buildMatch({
+      fixtureId: index + 1,
+      date: `2024-01-${String(30 - index).padStart(2, "0")}`,
+    })
+  );
+  const sliced = sliceRecentMatches(fixtures, 15);
+  assert(sliced.length === 15, "should slice to 15 fixtures");
+  assert(sliced[0].date >= sliced[1].date, "should sort newest first");
+  assert(sliced[0].date === "2024-01-30", "newest fixture should be first");
+}
+
+async function testFixtureFetchThrowPreservesAttempt(): Promise<void> {
+  resetApiFootballQuotaForTests();
+  resetTeamProfileFixtureFetchState();
+
+  class ThrowingClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
+    ): Promise<never> {
+      recordApiFootballRequest();
+      const path = buildMockTeamFormPath(teamId, last, options);
+      throw new Error(`API-Football error: network failure for ${path}`);
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new ThrowingClient() as never);
+
+  const fetched = await fetchTeamProfileData(
+    { ...IDENTITY },
+    { allowApiFetch: true, listVerifiedRecords: async () => [] }
+  );
+
+  assert(fetched.diagnostics.attempts.length >= 1, "throw should still record attempt");
+  assert(
+    fetched.diagnostics.attempts[0].requestUrl.includes("team=42"),
+    "attempt should retain requestUrl"
+  );
+  assert(fetched.diagnostics.attempts[0].success === false, "attempt should be marked unsuccessful");
+  assert(
+    Boolean(fetched.diagnostics.attempts[0].error?.includes("network failure")),
+    "attempt should retain error message"
+  );
+  assert(fetched.diagnostics.attempts[0].season === 2026, "attempt should retain season");
+  assert(fetched.diagnostics.attempts[0].leagueId === 39, "attempt should retain leagueId");
+  assert(fetched.diagnostics.attempts[0].status === "FT", "attempt should retain status");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testLeagueFallbackWithoutLeague(): Promise<void> {
+  resetApiFootballQuotaForTests();
+  resetTeamProfileFixtureFetchState();
+  const calls: string[] = [];
+
+  class LeagueFallbackClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
+    ) {
+      recordApiFootballRequest();
+      const path = buildMockTeamFormPath(teamId, last, options);
+      calls.push(path);
+
+      if (options.season === 2026) {
+        return {
+          teamId,
+          fixtures: [],
+          meta: {
+            requestPath: path,
+            rawResponseCount: 0,
+            planRestriction: {
+              message: "Free plans do not have access to this season, try from 2022 to 2024.",
+              minSeason: 2022,
+              maxSeason: 2024,
+            },
+          },
+        };
+      }
+
+      if (options.season === 2024 && options.leagueId) {
+        return {
+          teamId,
+          fixtures: [],
+          meta: { requestPath: path, rawResponseCount: 0, planRestriction: null },
+        };
+      }
+
+      if (options.season === 2024 && !options.leagueId) {
+        const match = buildMatch({ fixtureId: 1201, date: "2024-02-10", homeGoals: 2, awayGoals: 0 });
+        return {
+          teamId,
+          fixtures: [
+            {
+              fixtureId: match.fixtureId,
+              date: match.date,
+              kickoffTime: null,
+              league: match.league,
+              leagueId: 39,
+              season: 2024,
+              homeTeam: match.homeTeam,
+              awayTeam: match.awayTeam,
+              homeTeamId: match.homeTeamId,
+              awayTeamId: match.awayTeamId,
+              status: match.status,
+              homeGoals: match.homeGoals,
+              awayGoals: match.awayGoals,
+              halfTimeHome: match.halfTimeHome,
+              halfTimeAway: match.halfTimeAway,
+              venue: null,
+              neutralVenue: false,
+            },
+          ],
+          meta: { requestPath: path, rawResponseCount: 1, planRestriction: null },
+        };
+      }
+
+      return {
+        teamId,
+        fixtures: [],
+        meta: { requestPath: path, rawResponseCount: 0, planRestriction: null },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new LeagueFallbackClient() as never);
+
+  const fetched = await fetchTeamProfileData(
+    { ...IDENTITY },
+    { allowApiFetch: true, listVerifiedRecords: async () => [] }
+  );
+
+  assert(
+    calls.some((path) => path.includes("season=2024") && path.includes("league=39")),
+    "should try league-scoped 2024 first"
+  );
+  assert(
+    calls.some((path) => path.includes("season=2024") && !path.includes("league=")),
+    "should fallback to team+season=2024 without league"
+  );
+  assert(!calls.some((path) => path.includes("last=")), "league fallback requests should omit last");
+  assert(fetched.matches.length === 1, "league fallback should return 2024 matches");
+  assert(fetched.seasonMetadata.dataSeason === 2024, "dataSeason should be 2024");
+
+  setApiFootballClientForTests(null);
+}
+
+async function testApiReturns30FixturesLocallySlicedTo15(): Promise<void> {
+  resetApiFootballQuotaForTests();
+  resetTeamProfileFixtureFetchState();
+
+  class ManyFixturesClient {
+    isConfigured(): boolean {
+      return true;
+    }
+
+    async getTeamForm(
+      teamId: number,
+      last: number,
+      options: { leagueId?: number; season?: number; status?: string; useLast?: boolean } = {}
+    ) {
+      recordApiFootballRequest();
+      const path = buildMockTeamFormPath(teamId, last, options);
+      const fixtures = Array.from({ length: 30 }, (_, index) => {
+        const match = buildMatch({
+          fixtureId: index + 1,
+          date: `2024-03-${String(30 - index).padStart(2, "0")}`,
+        });
+        return {
+          fixtureId: match.fixtureId,
+          date: match.date,
+          kickoffTime: null,
+          league: match.league,
+          leagueId: 39,
+          season: 2024,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+          status: match.status,
+          homeGoals: match.homeGoals,
+          awayGoals: match.awayGoals,
+          halfTimeHome: match.halfTimeHome,
+          halfTimeAway: match.halfTimeAway,
+          venue: null,
+          neutralVenue: false,
+        };
+      });
+
+      return {
+        teamId,
+        fixtures,
+        meta: { requestPath: path, rawResponseCount: 30, planRestriction: null },
+      };
+    }
+
+    async getTeamStatistics(): Promise<null> {
+      return null;
+    }
+  }
+
+  setApiFootballClientForTests(new ManyFixturesClient() as never);
+
+  const fetched = await fetchTeamProfileData(
+    { ...IDENTITY, season: 2024 },
+    { allowApiFetch: true, listVerifiedRecords: async () => [] }
+  );
+
+  assert(fetched.matches.length === 15, "30 API fixtures should be sliced to 15 locally");
+  assert(fetched.matches[0].date === "2024-03-30", "sliced fixtures should remain sorted newest first");
+
+  setApiFootballClientForTests(null);
+}
+
 async function runTests(): Promise<void> {
   enableTeamProfileMemoryStoreForTests();
   try {
@@ -1508,8 +1780,13 @@ async function runTests(): Promise<void> {
     await testApiRawEmptyDiagnostics();
     await testNormalizedEmptyDiagnostics();
     testMapFixtureRecordFulltimeFallback();
+    testFreePlanRequestUrlNoLast();
+    testLocalSliceAndSort();
     await testSeasonFallbackFetch();
     await testFreePlanHistoricalFallback();
+    await testFixtureFetchThrowPreservesAttempt();
+    await testLeagueFallbackWithoutLeague();
+    await testApiReturns30FixturesLocallySlicedTo15();
     testHistoricalCompletenessPenalty();
     await testProductionPlanSeasonParserFormats();
     await testProductionPlanErrorParserClientPath();

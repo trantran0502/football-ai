@@ -82,22 +82,28 @@ export interface ApiFootballInjuryRecord {
   reason: string | null;
 }
 
-export interface ApiFootballGetTeamFormOptions {
-  leagueId?: number;
-  season?: number;
-  status?: string;
-}
-
 export interface ApiFootballPlanSeasonRestriction {
   message: string;
   minSeason: number;
   maxSeason: number;
 }
 
+export interface ApiFootballGetTeamFormOptions {
+  leagueId?: number;
+  season?: number;
+  status?: string;
+  useLast?: boolean;
+}
+
+export interface ApiFootballPlanLastParameterRestriction {
+  message: string;
+}
+
 export interface ApiFootballTeamFormMeta {
   requestPath: string;
   rawResponseCount: number;
   planRestriction?: ApiFootballPlanSeasonRestriction | null;
+  planLastParameterRestricted?: ApiFootballPlanLastParameterRestriction | null;
 }
 
 export interface ApiFootballTeamFormRecord {

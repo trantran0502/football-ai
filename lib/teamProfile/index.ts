@@ -34,9 +34,19 @@ export {
   normalizeApiFootballFixtures,
   normalizeVerifiedMatchRecords,
   shouldExcludeMatch,
+  sliceRecentMatches,
+  sortMatchesDesc,
 } from "@/lib/teamProfile/teamProfileNormalizer";
 
-export { fetchTeamProfileData, mergeTeamProfileMatchesDeduped } from "@/lib/teamProfile/teamProfileDataSource";
+export {
+  fetchTeamProfileData,
+  mergeTeamProfileMatchesDeduped,
+  buildTeamFormPathForProfile,
+  resetTeamProfileFixtureFetchState,
+  setTeamProfileUseLastForTests,
+  shouldUseLastParameterForTeamProfile,
+  MAX_TEAM_PROFILE_FIXTURE_REQUESTS,
+} from "@/lib/teamProfile/teamProfileDataSource";
 
 export {
   buildTeamProfileTeamDiagnostic,

@@ -14,7 +14,7 @@ const PLAN_SEASON_RANGE_PATTERNS = [
 const PLAN_RESTRICTION_HINT =
   /free plan|plan restriction|do not have access|not have access to this season|subscription plan|upgrade your plan/i;
 
-const YEAR_TOKEN_PATTERN = /\b(19\d{2}|20\d{2})\b/g;
+const PLAN_LAST_PARAMETER_HINT = /last parameter/i;
 
 export function parseApiFootballPlanSeasonRestriction(
   errors: unknown
@@ -43,6 +43,32 @@ export function parseApiFootballPlanSeasonRestriction(
   return null;
 }
 
+export function parseApiFootballPlanLastParameterRestriction(
+  errors: unknown
+): { message: string } | null {
+  const messages = collectErrorMessages(errors);
+  if (typeof errors === "object" && errors !== null) {
+    messages.push(JSON.stringify(errors));
+  } else if (typeof errors === "string") {
+    messages.push(errors);
+  }
+
+  for (const message of messages) {
+    if (PLAN_LAST_PARAMETER_HINT.test(message)) {
+      return { message: message.trim() };
+    }
+  }
+
+  return null;
+}
+
+export function parsePlanLastParameterRestrictionFromText(
+  text: string
+): { message: string } | null {
+  const normalized = text.replace(/^API-Football error:\s*/i, "").trim();
+  return parseApiFootballPlanLastParameterRestriction(normalized);
+}
+
 export function parsePlanSeasonRestrictionFromText(text: string): ApiFootballPlanSeasonRange | null {
   const normalized = text.replace(/^API-Football error:\s*/i, "").trim();
   const direct = parsePlanSeasonMessage(normalized);
@@ -60,6 +86,8 @@ export function parsePlanSeasonRestrictionFromText(text: string): ApiFootballPla
 
   return parseApiFootballPlanSeasonRestriction(normalized);
 }
+
+const YEAR_TOKEN_PATTERN = /\b(19\d{2}|20\d{2})\b/g;
 
 export function parsePlanSeasonMessage(message: string): ApiFootballPlanSeasonRange | null {
   const trimmed = message.trim();

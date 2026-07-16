@@ -92,3 +92,42 @@ export function recordApiAttempt(
     attempt.normalizedMatchCount
   );
 }
+
+export function beginApiAttempt(
+  diagnostics: TeamProfileFetchDiagnostics,
+  attempt: Pick<
+    TeamProfileApiAttemptDiagnostic,
+    "requestUrl" | "season" | "leagueId" | "status" | "fallbackReason"
+  >
+): void {
+  recordApiAttempt(diagnostics, {
+    requestUrl: attempt.requestUrl,
+    rawResponseCount: 0,
+    afterGoalFilterCount: 0,
+    normalizedMatchCount: 0,
+    season: attempt.season,
+    leagueId: attempt.leagueId,
+    status: attempt.status,
+    success: false,
+    fallbackReason: attempt.fallbackReason,
+  });
+}
+
+export function finishApiAttempt(
+  diagnostics: TeamProfileFetchDiagnostics,
+  updates: Partial<TeamProfileApiAttemptDiagnostic> & {
+    success: boolean;
+    error?: string | null;
+  }
+): void {
+  const lastAttempt = diagnostics.attempts.at(-1);
+  if (!lastAttempt) {
+    return;
+  }
+
+  Object.assign(lastAttempt, updates);
+  diagnostics.normalizedMatchCount = Math.max(
+    diagnostics.normalizedMatchCount,
+    lastAttempt.normalizedMatchCount
+  );
+}

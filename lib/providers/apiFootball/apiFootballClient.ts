@@ -15,7 +15,9 @@ import {
   recordApiFootballRequest,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
 import {
+  parseApiFootballPlanLastParameterRestriction,
   parseApiFootballPlanSeasonRestriction,
+  parsePlanLastParameterRestrictionFromText,
   parsePlanSeasonRestrictionFromText,
   type ApiFootballPlanSeasonRange,
 } from "@/lib/providers/apiFootball/apiFootballPlanErrors";
@@ -113,21 +115,31 @@ export class ApiFootballClient {
     last = 10,
     options: ApiFootballGetTeamFormOptions = {}
   ): Promise<ApiFootballTeamFormRecord> {
-    const requestPath = buildTeamFormRequestPath(teamId, last, options);
+    const useLast = options.useLast ?? true;
+    const requestPath = buildTeamFormRequestPath(teamId, last, {
+      ...options,
+      useLast,
+    });
     const result = await this.requestAllowingPlanSeasonError<Array<Record<string, unknown>>>(
       requestPath
     );
+    const fixtures = result.response
+      .map((item) => mapFixtureRecord(item))
+      .filter(
+        (fixture) => fixture.homeGoals !== null && fixture.awayGoals !== null
+      );
+    const limitedFixtures = useLast
+      ? fixtures
+      : sortFixturesDesc(fixtures).slice(0, last);
+
     return {
       teamId,
-      fixtures: result.response
-        .map((item) => mapFixtureRecord(item))
-        .filter(
-          (fixture) => fixture.homeGoals !== null && fixture.awayGoals !== null
-        ),
+      fixtures: limitedFixtures,
       meta: {
         requestPath,
         rawResponseCount: result.response.length,
         planRestriction: result.planRestriction,
+        planLastParameterRestricted: result.planLastParameterRestricted,
       },
     };
   }
@@ -324,6 +336,7 @@ export class ApiFootballClient {
   private async requestAllowingPlanSeasonError<T>(path: string): Promise<{
     response: T;
     planRestriction: ApiFootballPlanSeasonRestriction | null;
+    planLastParameterRestricted: { message: string } | null;
   }> {
     if (!this.apiKey) {
       throw new Error("API_FOOTBALL_KEY is not configured.");
@@ -366,6 +379,16 @@ export class ApiFootballClient {
           return {
             response: (payload.response ?? []) as T,
             planRestriction,
+            planLastParameterRestricted: null,
+          };
+        }
+
+        const planLastRestriction = resolvePlanLastParameterRestriction(payload.errors);
+        if (planLastRestriction) {
+          return {
+            response: [] as T,
+            planRestriction: null,
+            planLastParameterRestricted: planLastRestriction,
           };
         }
 
@@ -373,6 +396,14 @@ export class ApiFootballClient {
           const serialized = Array.isArray(payload.errors)
             ? payload.errors.join(", ")
             : JSON.stringify(payload.errors);
+          const lastRestriction = parsePlanLastParameterRestrictionFromText(serialized);
+          if (lastRestriction) {
+            return {
+              response: [] as T,
+              planRestriction: null,
+              planLastParameterRestricted: lastRestriction,
+            };
+          }
           if (serialized && serialized !== "{}") {
             throw new Error(`API-Football error: ${serialized}`);
           }
@@ -381,9 +412,18 @@ export class ApiFootballClient {
         return {
           response: payload.response,
           planRestriction: null,
+          planLastParameterRestricted: null,
         };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
+        const lastRestriction = parsePlanLastParameterRestrictionFromText(lastError.message);
+        if (lastRestriction) {
+          return {
+            response: [] as T,
+            planRestriction: null,
+            planLastParameterRestricted: lastRestriction,
+          };
+        }
         if (attempt < this.maxRetries - 1) {
           await sleep(250 * (attempt + 1));
         }
@@ -482,6 +522,40 @@ export function getApiFootballCurrentSeason(now = new Date()): number {
   return now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
 }
 
+function resolvePlanLastParameterRestriction(
+  errors: unknown
+): { message: string } | null {
+  const direct = parseApiFootballPlanLastParameterRestriction(errors);
+  if (direct) {
+    return direct;
+  }
+
+  if (!errors) {
+    return null;
+  }
+
+  const serialized = Array.isArray(errors)
+    ? errors.join(", ")
+    : typeof errors === "string"
+      ? errors
+      : JSON.stringify(errors);
+
+  return (
+    parseApiFootballPlanLastParameterRestriction(serialized) ??
+    parsePlanLastParameterRestrictionFromText(serialized)
+  );
+}
+
+function sortFixturesDesc(
+  fixtures: ApiFootballFixtureRecord[]
+): ApiFootballFixtureRecord[] {
+  return [...fixtures].sort((left, right) => {
+    const leftTime = left.kickoffTime ?? left.date;
+    const rightTime = right.kickoffTime ?? right.date;
+    return rightTime.localeCompare(leftTime);
+  });
+}
+
 function buildTeamFormRequestPath(
   teamId: number,
   last: number,
@@ -489,7 +563,9 @@ function buildTeamFormRequestPath(
 ): string {
   const params = new URLSearchParams();
   params.set("team", String(teamId));
-  params.set("last", String(last));
+  if (options.useLast !== false) {
+    params.set("last", String(last));
+  }
   if (options.leagueId !== undefined) {
     params.set("league", String(options.leagueId));
   }

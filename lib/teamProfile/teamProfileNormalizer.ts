@@ -128,6 +128,13 @@ export function sortMatchesDesc(matches: TeamProfileMatchInput[]): TeamProfileMa
   return [...matches].sort((left, right) => right.date.localeCompare(left.date));
 }
 
+export function sliceRecentMatches(
+  matches: TeamProfileMatchInput[],
+  limit: number
+): TeamProfileMatchInput[] {
+  return sortMatchesDesc(matches).slice(0, limit);
+}
+
 function hashMatchKey(matchDate: string, homeTeam: string, awayTeam: string): number {
   const raw = `${matchDate}:${homeTeam}:${awayTeam}`;
   let hash = 0;

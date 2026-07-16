@@ -105,6 +105,10 @@ export interface TeamProfileApiAttemptDiagnostic {
   afterGoalFilterCount: number;
   normalizedMatchCount: number;
   season?: number | null;
+  leagueId?: number | null;
+  status?: string | null;
+  success?: boolean;
+  error?: string | null;
   planRestricted?: boolean;
   fallbackReason?: TeamProfileFallbackReason;
 }
