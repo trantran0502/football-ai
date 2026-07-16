@@ -13,6 +13,8 @@ import {
   createInitialHistoricalBackfillCursor,
   getHistoricalBackfillConfig,
   defaultHistoricalBackfillStartDate,
+  maybeRestartCompletedHistoricalBackfillCursor,
+  finalizeCompletedHistoricalBackfillCursor,
 } from "@/lib/scheduler";
 import { parseApiFootballPlanDateRestriction } from "@/lib/scheduler/historicalBackfillPlanErrors";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
@@ -257,6 +259,95 @@ async function runTests(): Promise<void> {
     partialLog?.context?.status === "partial_success",
     "execution log should record partial_success"
   );
+
+  delete process.env.HISTORICAL_BACKFILL_START_DATE;
+  delete process.env.HISTORICAL_BACKFILL_MIN_DATE;
+  const restartConfig = getHistoricalBackfillConfig(new Date("2026-07-17T12:00:00.000Z"));
+  const completedCursor = finalizeCompletedHistoricalBackfillCursor({
+    cursor: createInitialHistoricalBackfillCursor({
+      startDate: "2026-07-15",
+      minDate: "2026-07-13",
+    }),
+    now: new Date("2026-07-16T10:00:00.000Z"),
+  });
+  assert(
+    completedCursor.status === "completed" && completedCursor.currentDate === "2026-07-15",
+    "completed cursor should retain yesterday as currentDate"
+  );
+
+  const sameDay = maybeRestartCompletedHistoricalBackfillCursor({
+    cursor: completedCursor,
+    config: restartConfig,
+    now: new Date("2026-07-16T18:00:00.000Z"),
+  });
+  assert(
+    sameDay.status === "completed" && sameDay.currentDate === "2026-07-15",
+    "same-day completed cursor should not restart"
+  );
+
+  const nextDay = maybeRestartCompletedHistoricalBackfillCursor({
+    cursor: completedCursor,
+    config: restartConfig,
+    now: new Date("2026-07-17T12:00:00.000Z"),
+  });
+  assert(nextDay.status === "in_progress", "next-day completed cursor should restart");
+  assert(nextDay.currentDate === "2026-07-16", "restarted cursor should begin at yesterday");
+  assert(
+    nextDay.minDate === "2026-07-14",
+    "restarted cursor minDate should follow free-plan lookback from yesterday"
+  );
+
+  resetExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  duplicateCheck.existingFixtureIds.add(2001);
+
+  const sameDayRun = await runHistoricalMatchBackfillScheduler({
+    now: () => new Date("2026-07-16T18:00:00.000Z"),
+    fetchFixturesByDate: async (date) =>
+      date === "2026-07-15" ? [buildFixture({ fixtureId: 2001, date: "2026-07-15" })] : [],
+    loadCursor: async () => completedCursor,
+    saveCursor: async () => {},
+    loadDuplicateCheck: async () => ({
+      existingFixtureIds: new Set([2001]),
+      existingMatchKeys: new Set<string>(),
+    }),
+    insertRecord: async (record) => {
+      insertedRecords.push(record);
+      return record;
+    },
+    loadMatchKeysForDate: async () => new Set<string>(),
+  });
+
+  assert(sameDayRun.stats.inserted === 0, "same-day completed cursor should not insert");
+  assert(
+    sameDayRun.cursor?.status === "completed",
+    "same-day completed cursor should stay completed without restart"
+  );
+
+  const inProgressCursor = createInitialHistoricalBackfillCursor({
+    startDate: "2026-07-15",
+    minDate: "2026-07-15",
+  });
+
+  const duplicateRun = await runHistoricalMatchBackfillScheduler({
+    now: () => new Date("2026-07-16T18:00:00.000Z"),
+    fetchFixturesByDate: async (date) =>
+      date === "2026-07-15" ? [buildFixture({ fixtureId: 2001, date: "2026-07-15" })] : [],
+    loadCursor: async () => inProgressCursor,
+    saveCursor: async () => {},
+    loadDuplicateCheck: async () => ({
+      existingFixtureIds: new Set([2001]),
+      existingMatchKeys: new Set<string>(),
+    }),
+    insertRecord: async (record) => {
+      insertedRecords.push(record);
+      return record;
+    },
+    loadMatchKeysForDate: async () => new Set<string>(),
+  });
+
+  assert(duplicateRun.stats.inserted === 0, "duplicate fixtures should not insert");
+  assert(duplicateRun.stats.duplicates >= 1, "duplicate fixtures should be counted");
 
   disableHistoricalBackfillCursorStoreForTests();
   disableExecutionLogPersistStoreForTests();

@@ -106,5 +106,9 @@ export {
   resolveHistoricalBackfillMinDate,
 } from "@/lib/scheduler/historicalBackfillConfig";
 export { parseApiFootballPlanDateRestriction } from "@/lib/scheduler/historicalBackfillPlanErrors";
+export {
+  maybeRestartCompletedHistoricalBackfillCursor,
+  finalizeCompletedHistoricalBackfillCursor,
+} from "@/lib/scheduler/historicalBackfillCursorRestart";
 export { getSchedulerStatus } from "@/lib/scheduler/schedulerService";
 export type { SchedulerStatusDependencies } from "@/lib/scheduler/schedulerService";

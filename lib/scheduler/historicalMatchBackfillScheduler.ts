@@ -23,6 +23,10 @@ import {
   resolveHistoricalBackfillMinDate,
   resolveHistoricalBackfillStartDate,
 } from "@/lib/scheduler/historicalBackfillConfig";
+import {
+  finalizeCompletedHistoricalBackfillCursor,
+  maybeRestartCompletedHistoricalBackfillCursor,
+} from "@/lib/scheduler/historicalBackfillCursorRestart";
 import { filterEligibleHistoricalBackfillFixtures } from "@/lib/scheduler/historicalBackfillIntake";
 import { fetchHistoricalBackfillFixtures } from "@/lib/scheduler/historicalBackfillFetch";
 import { withTimeout } from "@/lib/scheduler/retry";
@@ -44,6 +48,7 @@ import {
 
 export interface HistoricalMatchBackfillDependencies {
   ownerId?: string;
+  now?: () => Date;
   fetchFixturesByDate?: (date: string) => Promise<ApiFootballFixtureRecord[]>;
   loadCursor?: () => Promise<HistoricalBackfillCursor | null>;
   saveCursor?: (cursor: HistoricalBackfillCursor) => Promise<void>;
@@ -68,30 +73,42 @@ function buildMatchKey(matchDate: string, homeTeam: string, awayTeam: string): s
 }
 
 async function resolveCursor(
-  dependencies: HistoricalMatchBackfillDependencies
+  dependencies: HistoricalMatchBackfillDependencies,
+  now = new Date()
 ): Promise<HistoricalBackfillCursor> {
-  const config = getHistoricalBackfillConfig();
-  const startDate = resolveHistoricalBackfillStartDate(config);
+  const config = getHistoricalBackfillConfig(now);
+  const startDate = resolveHistoricalBackfillStartDate(config, now);
   const loadCursor = dependencies.loadCursor ?? loadHistoricalBackfillCursor;
   const existing = await loadCursor();
 
-  if (existing) {
-    const minDate = resolveHistoricalBackfillMinDate(
-      config,
+  if (!existing) {
+    return createInitialHistoricalBackfillCursor({
       startDate,
-      existing.planMinDate
-    );
-    return {
-      ...existing,
-      minDate,
-      currentDate: minDateKey(maxDateKey(existing.currentDate, minDate), startDate),
-    };
+      minDate: resolveHistoricalBackfillMinDate(config, startDate),
+    });
   }
 
-  return createInitialHistoricalBackfillCursor({
-    startDate,
-    minDate: resolveHistoricalBackfillMinDate(config, startDate),
+  const cursor = maybeRestartCompletedHistoricalBackfillCursor({
+    cursor: existing,
+    config,
+    now,
   });
+
+  if (cursor.status === "completed") {
+    return cursor;
+  }
+
+  const minDate = resolveHistoricalBackfillMinDate(
+    config,
+    resolveHistoricalBackfillStartDate(config, now),
+    cursor.planMinDate
+  );
+
+  return {
+    ...cursor,
+    minDate: maxDateKey(cursor.minDate, minDate),
+    currentDate: minDateKey(maxDateKey(cursor.currentDate, cursor.minDate), startDate),
+  };
 }
 
 function applyPlanDateRestriction(
@@ -176,7 +193,8 @@ function applyLeaguePolicy(
 export async function runHistoricalMatchBackfillScheduler(
   dependencies: HistoricalMatchBackfillDependencies = {}
 ): Promise<HistoricalMatchBackfillResult> {
-  const config = getHistoricalBackfillConfig();
+  const now = dependencies.now?.() ?? new Date();
+  const config = getHistoricalBackfillConfig(now);
   const schedulerConfig = getSchedulerConfig();
   const ownerId = dependencies.ownerId ?? crypto.randomUUID();
   const startedAtMs = Date.now();
@@ -258,8 +276,8 @@ export async function runHistoricalMatchBackfillScheduler(
   try {
     const outcome = await withTimeout(
       (async () => {
-        const startDate = resolveHistoricalBackfillStartDate(config);
-        let cursor = await resolveCursor(dependencies);
+        const startDate = resolveHistoricalBackfillStartDate(config, now);
+        let cursor = await resolveCursor(dependencies, now);
         const stats: HistoricalBackfillRunStats = {
           fetched: 0,
           inserted: 0,
@@ -281,10 +299,7 @@ export async function runHistoricalMatchBackfillScheduler(
               cursor.planMinDate &&
               compareDateKeys(cursor.currentDate, cursor.planMinDate) < 0
             ) {
-              cursor = {
-                ...cursor,
-                status: "completed",
-              };
+              cursor = finalizeCompletedHistoricalBackfillCursor({ cursor, now });
             }
             break;
           }
@@ -376,10 +391,7 @@ export async function runHistoricalMatchBackfillScheduler(
           const reachedBatchLimit = stats.inserted >= config.maxPerRun;
           if (!reachedBatchLimit) {
             if (compareDateKeys(cursor.currentDate, cursor.minDate) <= 0) {
-              cursor = {
-                ...cursor,
-                status: "completed",
-              };
+              cursor = finalizeCompletedHistoricalBackfillCursor({ cursor, now });
               break;
             }
 
@@ -396,10 +408,7 @@ export async function runHistoricalMatchBackfillScheduler(
           cursor.status === "in_progress" &&
           compareDateKeys(cursor.currentDate, cursor.minDate) < 0
         ) {
-          cursor = {
-            ...cursor,
-            status: "completed",
-          };
+          cursor = finalizeCompletedHistoricalBackfillCursor({ cursor, now });
         }
 
         await saveCursor(cursor);
