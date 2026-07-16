@@ -1,6 +1,7 @@
 export type {
   DailySchedulerResult,
   ExecutionLogEntry,
+  HistoricalMatchBackfillResult,
   ResultSchedulerResult,
   SchedulerConfig,
   SchedulerDailySummary,
@@ -84,5 +85,21 @@ export type {
 } from "@/lib/scheduler/dailyAnalysisQueueStore";
 export { runResultScheduler } from "@/lib/scheduler/resultScheduler";
 export type { ResultSchedulerDependencies } from "@/lib/scheduler/resultScheduler";
+export { runHistoricalMatchBackfillScheduler } from "@/lib/scheduler/historicalMatchBackfillScheduler";
+export type { HistoricalMatchBackfillDependencies } from "@/lib/scheduler/historicalMatchBackfillScheduler";
+export {
+  enableHistoricalBackfillCursorStoreForTests,
+  disableHistoricalBackfillCursorStoreForTests,
+  resetHistoricalBackfillCursorStoreForTests,
+  getHistoricalBackfillCursorForTests,
+  loadHistoricalBackfillCursor,
+  saveHistoricalBackfillCursor,
+  createInitialHistoricalBackfillCursor,
+} from "@/lib/scheduler/historicalBackfillCursorStore";
+export {
+  isEligibleHistoricalBackfillFixture,
+  filterEligibleHistoricalBackfillFixtures,
+} from "@/lib/scheduler/historicalBackfillIntake";
+export { getHistoricalBackfillConfig } from "@/lib/scheduler/historicalBackfillConfig";
 export { getSchedulerStatus } from "@/lib/scheduler/schedulerService";
 export type { SchedulerStatusDependencies } from "@/lib/scheduler/schedulerService";

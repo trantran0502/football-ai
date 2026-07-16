@@ -2,7 +2,11 @@ import type { DailyPipelineResult } from "@/lib/production/productionTypes";
 import type { ResultPipelineResult } from "@/lib/production/productionTypes";
 import type { AdminErrorLogEntry } from "@/lib/admin/adminDashboardTypes";
 
-export type SchedulerJobName = "daily_analysis" | "result_update" | "daily_summary";
+export type SchedulerJobName =
+  | "daily_analysis"
+  | "result_update"
+  | "daily_summary"
+  | "historical_match_backfill";
 
 export interface ExecutionLogEntry {
   id: string;
@@ -110,6 +114,26 @@ export interface ResultSchedulerResult {
   updatesBuilt: number;
   pipeline: ResultPipelineResult;
   summarySynced: boolean;
+  executionLogId: string;
+  skippedDueToLock: boolean;
+  observabilityWarning?: string;
+}
+
+export interface HistoricalMatchBackfillResult {
+  cursor: {
+    currentDate: string;
+    minDate: string;
+    status: "in_progress" | "completed";
+    updatedAt: string;
+  } | null;
+  stats: {
+    fetched: number;
+    inserted: number;
+    duplicates: number;
+    skipped: number;
+    apiRequests: number;
+    datesProcessed: number;
+  };
   executionLogId: string;
   skippedDueToLock: boolean;
   observabilityWarning?: string;

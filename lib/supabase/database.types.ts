@@ -30,6 +30,11 @@ export interface MatchRecordRow {
   result: MatchResult | null;
   verification_result: MatchVerificationResult | null;
   legacy_date: string | null;
+  fixture_id: number | null;
+  league_id: number | null;
+  season: number | null;
+  home_team_id: number | null;
+  away_team_id: number | null;
   source: string;
   schema_version: number;
   created_at: string;
@@ -50,6 +55,11 @@ export interface MatchRecordInsert {
   result: MatchResult | null;
   verification_result: MatchVerificationResult | null;
   legacy_date: string | null;
+  fixture_id?: number | null;
+  league_id?: number | null;
+  season?: number | null;
+  home_team_id?: number | null;
+  away_team_id?: number | null;
   source: string;
   schema_version: number;
   created_at: string;

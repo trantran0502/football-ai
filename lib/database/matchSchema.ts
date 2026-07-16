@@ -84,6 +84,11 @@ export interface HistoricalMatchRecord {
   candidates: AnalysisCandidate[];
   status: MatchStatus;
   verificationResult: MatchVerificationResult | null;
+  fixtureId?: number | null;
+  leagueId?: number | null;
+  season?: number | null;
+  homeTeamId?: number | null;
+  awayTeamId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
