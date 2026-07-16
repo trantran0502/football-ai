@@ -267,6 +267,7 @@ export async function ensureTeamProfilesForMatch(
     season: input.season,
     runDate: input.runDate,
     allowApiFetch: input.allowApiFetch,
+    waitForQuota: input.waitForQuota,
     side: "home",
     matchLabel,
   });
@@ -292,6 +293,7 @@ export async function ensureTeamProfilesForMatch(
     season: input.season,
     runDate: input.runDate,
     allowApiFetch: input.allowApiFetch,
+    waitForQuota: input.waitForQuota,
     side: "away",
     matchLabel,
   });
@@ -312,20 +314,22 @@ export async function ensureTeamProfilesForMatch(
   let finalHome = homeResult;
   let finalAway = awayResult;
 
-  for (const item of deferred) {
-    const retry = await refreshTeamProfile({
-      ...item,
-      matchLabel,
-    });
-    profileDiagnostics.push({
-      ...retry.diagnostics,
-      skippedReason: retry.skippedReason ?? "quota_deferred_retry",
-      matchLabel,
-    });
-    if (item.side === "home") {
-      finalHome = retry;
-    } else {
-      finalAway = retry;
+  if (!input.skipDeferredRetry) {
+    for (const item of deferred) {
+      const retry = await refreshTeamProfile({
+        ...item,
+        matchLabel,
+      });
+      profileDiagnostics.push({
+        ...retry.diagnostics,
+        skippedReason: retry.skippedReason ?? "quota_deferred_retry",
+        matchLabel,
+      });
+      if (item.side === "home") {
+        finalHome = retry;
+      } else {
+        finalAway = retry;
+      }
     }
   }
 

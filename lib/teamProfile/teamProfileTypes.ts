@@ -183,6 +183,8 @@ export interface EnsureTeamProfilesInput {
   leagueName: string | null;
   season: number | null;
   allowApiFetch?: boolean;
+  waitForQuota?: boolean;
+  skipDeferredRetry?: boolean;
 }
 
 export interface EnsureTeamProfilesResult {

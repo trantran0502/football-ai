@@ -11,7 +11,7 @@ const SCHEDULER_STATE_KEY = "last_run";
 
 export interface ExecutionLogContext extends Record<string, unknown> {
   jobType: SchedulerJobName;
-  status: "success" | "failed" | "skipped";
+  status: "success" | "partial_success" | "failed" | "skipped";
   fixturesFetched?: number;
   analyzedCount?: number;
   skippedCount?: number;

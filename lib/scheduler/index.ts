@@ -68,6 +68,20 @@ export {
 } from "@/lib/scheduler/dailySummary";
 export { runDailyScheduler } from "@/lib/scheduler/dailyScheduler";
 export type { DailySchedulerDependencies } from "@/lib/scheduler/dailyScheduler";
+export {
+  clearDailyAnalysisQueue,
+  disableDailyAnalysisQueueStoreForTests,
+  enableDailyAnalysisQueueStoreForTests,
+  listDailyAnalysisQueuesForTests,
+  loadDailyAnalysisQueue,
+  mergeQueueWithEligibleFixtures,
+  resetDailyAnalysisQueueStoreForTests,
+  saveDailyAnalysisQueue,
+} from "@/lib/scheduler/dailyAnalysisQueueStore";
+export type {
+  DailyAnalysisBatchProgress,
+  DailyAnalysisQueueState,
+} from "@/lib/scheduler/dailyAnalysisQueueStore";
 export { runResultScheduler } from "@/lib/scheduler/resultScheduler";
 export type { ResultSchedulerDependencies } from "@/lib/scheduler/resultScheduler";
 export { getSchedulerStatus } from "@/lib/scheduler/schedulerService";

@@ -77,6 +77,18 @@ export interface SchedulerStatusResponse {
   locks: SchedulerLockState[];
 }
 
+export interface DailySchedulerBatchProgress {
+  totalEligible: number;
+  processedThisRun: number;
+  remaining: number;
+  cursorBefore: number;
+  cursorAfter: number;
+  deferredFixtures: number[];
+  deferredTeamProfiles: string[];
+  timeBudgetReached: boolean;
+  executionDurationMs: number;
+}
+
 export interface DailySchedulerResult {
   runDate: string;
   fixturesFetched: number;
@@ -88,6 +100,8 @@ export interface DailySchedulerResult {
   skippedDueToLock: boolean;
   intakeWarnings: string[];
   observabilityWarning?: string;
+  batchProgress?: DailySchedulerBatchProgress;
+  executionStatus?: "success" | "partial_success" | "failed" | "skipped";
 }
 
 export interface ResultSchedulerResult {
@@ -109,6 +123,9 @@ export interface SchedulerConfig {
   lockTtlMs: number;
   fixtureTimeoutMs: number;
   jobTimeoutMs: number;
+  timeBudgetMs: number;
+  maxFixturesPerRun: number;
+  maxTeamProfileRefreshesPerRun: number;
   maxRetries: number;
   retryDelayMs: number;
 }

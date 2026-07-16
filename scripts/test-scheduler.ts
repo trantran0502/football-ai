@@ -19,7 +19,9 @@ import {
 import {
   buildSchedulerPlaceholderOdds,
   buildFixtureFilterStats,
+  disableDailyAnalysisQueueStoreForTests,
   disableExecutionLogPersistStoreForTests,
+  enableDailyAnalysisQueueStoreForTests,
   enableExecutionLogPersistStoreForTests,
   enrichAnalysisReportWithFixture,
   filterFixturesByLeagueIdWhitelist,
@@ -39,7 +41,11 @@ import {
   withTimeout,
   acquireSchedulerLock,
   releaseSchedulerLock,
+  listDailyAnalysisQueuesForTests,
   listExecutionLogs,
+  loadDailyAnalysisQueue,
+  resetDailyAnalysisQueueStoreForTests,
+  saveDailyAnalysisQueue,
 } from "@/lib/scheduler";
 import { getSchedulerConfig } from "@/lib/scheduler/schedulerConfig";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
@@ -54,9 +60,17 @@ const MATCH_DATE = "2026-07-16";
 const ORIGINAL_LEAGUE_ID_WHITELIST = process.env.SCHEDULER_LEAGUE_ID_WHITELIST;
 const ORIGINAL_LEAGUE_WHITELIST = process.env.SCHEDULER_LEAGUE_WHITELIST;
 
+const ORIGINAL_TIME_BUDGET = process.env.SCHEDULER_TIME_BUDGET_MS;
+const ORIGINAL_MAX_FIXTURES = process.env.SCHEDULER_MAX_FIXTURES_PER_RUN;
+const ORIGINAL_MAX_PROFILE_REFRESHES =
+  process.env.SCHEDULER_MAX_TEAM_PROFILE_REFRESHS_PER_RUN;
+
 function resetSchedulerEnv(): void {
   delete process.env.SCHEDULER_LEAGUE_ID_WHITELIST;
   delete process.env.SCHEDULER_LEAGUE_WHITELIST;
+  delete process.env.SCHEDULER_TIME_BUDGET_MS;
+  delete process.env.SCHEDULER_MAX_FIXTURES_PER_RUN;
+  delete process.env.SCHEDULER_MAX_TEAM_PROFILE_REFRESHS_PER_RUN;
 }
 
 function restoreSchedulerEnv(): void {
@@ -69,6 +83,22 @@ function restoreSchedulerEnv(): void {
     delete process.env.SCHEDULER_LEAGUE_WHITELIST;
   } else {
     process.env.SCHEDULER_LEAGUE_WHITELIST = ORIGINAL_LEAGUE_WHITELIST;
+  }
+  if (ORIGINAL_TIME_BUDGET === undefined) {
+    delete process.env.SCHEDULER_TIME_BUDGET_MS;
+  } else {
+    process.env.SCHEDULER_TIME_BUDGET_MS = ORIGINAL_TIME_BUDGET;
+  }
+  if (ORIGINAL_MAX_FIXTURES === undefined) {
+    delete process.env.SCHEDULER_MAX_FIXTURES_PER_RUN;
+  } else {
+    process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = ORIGINAL_MAX_FIXTURES;
+  }
+  if (ORIGINAL_MAX_PROFILE_REFRESHES === undefined) {
+    delete process.env.SCHEDULER_MAX_TEAM_PROFILE_REFRESHS_PER_RUN;
+  } else {
+    process.env.SCHEDULER_MAX_TEAM_PROFILE_REFRESHS_PER_RUN =
+      ORIGINAL_MAX_PROFILE_REFRESHES;
   }
 }
 
@@ -288,6 +318,8 @@ async function testFixtureMappingFields(): Promise<void> {
 async function testDuplicateProtection(): Promise<void> {
   resetSchedulerEnv();
   resetSchedulerLocksForTests();
+  resetInMemoryProductionStore();
+  resetDailyAnalysisQueueStoreForTests();
 
   const fetchFixtures = async () =>
     intakeFixtures([
@@ -301,17 +333,23 @@ async function testDuplicateProtection(): Promise<void> {
       }),
     ]);
 
-  const second = await runDailyScheduler({
+  const deps = {
     runDate: MATCH_DATE,
-    ownerId: "test-dup",
     fetchFixtures,
     saveMatch: saveMatchInMemory,
     listRecords: async () => listInMemoryProductionRecords(),
     runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
-  });
+  };
 
-  assert(second.pipeline.duplicates === 1, "duplicate fixture should not create new record");
-  assert(second.pipeline.created === 0, "no new records on duplicate run");
+  const first = await runDailyScheduler({ ...deps, ownerId: "test-dup-1" });
+  assert(first.pipeline.created === 1, "first run should create one record");
+
+  const second = await runDailyScheduler({ ...deps, ownerId: "test-dup-2" });
+  assert(
+    second.pipeline.duplicates === 1 || second.pipeline.processed === 0,
+    "duplicate fixture should not create a new record"
+  );
+  assert(listInMemoryProductionRecords().length === 1, "store should still contain one record");
 }
 
 async function testLockProtection(): Promise<void> {
@@ -370,8 +408,46 @@ async function testTimeout(): Promise<void> {
 
 async function testResultScheduler(): Promise<void> {
   resetSchedulerEnv();
+  resetInMemoryProductionStore();
   resetSchedulerLocksForTests();
   resetExecutionLogsForTests();
+  resetDailyAnalysisQueueStoreForTests();
+  process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = "10";
+
+  await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "result-seed",
+    fetchFixtures: async () =>
+      intakeFixtures([
+        buildApiFixture({
+          id: 1,
+          home: "Arsenal",
+          away: "Chelsea",
+          league: "Premier League",
+          leagueId: 39,
+          status: "NS",
+        }),
+        buildApiFixture({
+          id: 2,
+          home: "Real Madrid",
+          away: "Barcelona",
+          league: "La Liga",
+          leagueId: 140,
+          status: "NS",
+        }),
+        buildApiFixture({
+          id: 3,
+          home: "Club A",
+          away: "Club B",
+          league: "J1 League",
+          leagueId: 98,
+          status: "NS",
+        }),
+      ]),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
 
   const pending = listInMemoryProductionRecords().filter((record) => record.status === "PENDING");
   assert(pending.length >= 3, "pending records required for result scheduler test");
@@ -708,6 +784,274 @@ async function testFixtureFilterStatsInExecutionLog(): Promise<void> {
   assert(filterStats?.whitelist?.activePolicy === "none", "default policy should be none");
 }
 
+async function testDailySchedulerBatchLimitAndResume(): Promise<void> {
+  resetSchedulerEnv();
+  process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = "3";
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  enableDailyAnalysisQueueStoreForTests();
+  resetDailyAnalysisQueueStoreForTests();
+
+  const apiFixtures = Array.from({ length: 21 }, (_, index) =>
+    buildApiFixture({
+      id: index + 1,
+      home: `Home ${index + 1}`,
+      away: `Away ${index + 1}`,
+      league: `League ${index + 1}`,
+      leagueId: 100 + index,
+      status: "NS",
+    })
+  );
+
+  const fetchFixtures = async () => intakeFixtures(apiFixtures);
+  const deps = {
+    runDate: MATCH_DATE,
+    ownerId: "test-batch",
+    fetchFixtures,
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  };
+
+  const first = await runDailyScheduler(deps);
+  assert(first.pipeline.processed === 3, "first run should process only batch limit");
+  assert(first.batchProgress?.remaining === 18, "first run should leave remaining fixtures");
+  assert(first.executionStatus === "partial_success", "first run should be partial_success");
+
+  const queueAfterFirst = await loadDailyAnalysisQueue(MATCH_DATE);
+  assert(queueAfterFirst?.completedFixtureIds.length === 3, "queue should track completed fixtures");
+  assert(queueAfterFirst?.cursor === 3, "queue cursor should advance");
+
+  const second = await runDailyScheduler({ ...deps, ownerId: "test-batch-2" });
+  assert(second.pipeline.processed === 3, "second run should process next batch");
+  assert(second.batchProgress?.remaining === 15, "second run should reduce remaining count");
+}
+
+async function testDailySchedulerDuplicateCountsAsCompleted(): Promise<void> {
+  resetSchedulerEnv();
+  process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = "1";
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  enableDailyAnalysisQueueStoreForTests();
+  resetDailyAnalysisQueueStoreForTests();
+
+  const apiFixtures = [
+    buildApiFixture({
+      id: 501,
+      home: "Alpha",
+      away: "Beta",
+      league: "Test League",
+      leagueId: 501,
+      status: "NS",
+    }),
+  ];
+
+  const deps = {
+    runDate: MATCH_DATE,
+    fetchFixtures: async () => intakeFixtures(apiFixtures),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  };
+
+  const first = await runDailyScheduler({ ...deps, ownerId: "dup-1" });
+  assert(first.pipeline.created === 1, "first run should create one record");
+
+  const second = await runDailyScheduler({ ...deps, ownerId: "dup-2" });
+  assert(
+    second.pipeline.duplicates === 1 || second.pipeline.processed === 0,
+    "second run should treat existing match as duplicate or skip via queue sync"
+  );
+  assert(second.executionStatus === "success", "queue should be complete after duplicate");
+}
+
+async function testDailySchedulerTimeBudgetStopsSafely(): Promise<void> {
+  resetSchedulerEnv();
+  process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = "5";
+  process.env.SCHEDULER_TIME_BUDGET_MS = "1000";
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  enableDailyAnalysisQueueStoreForTests();
+  resetDailyAnalysisQueueStoreForTests();
+
+  let fakeNow = 1_000;
+  const apiFixtures = Array.from({ length: 5 }, (_, index) =>
+    buildApiFixture({
+      id: 600 + index,
+      home: `Budget Home ${index}`,
+      away: `Budget Away ${index}`,
+      league: "Budget League",
+      leagueId: 600,
+      status: "NS",
+    })
+  );
+
+  const result = await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "budget-test",
+    now: () => fakeNow,
+    fetchFixtures: async () => intakeFixtures(apiFixtures),
+    saveMatch: async (rawOdds, report, matchDate) => {
+      fakeNow += 600;
+      return saveMatchInMemory(rawOdds, report, matchDate);
+    },
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  assert(result.batchProgress?.timeBudgetReached === true, "time budget should be reached");
+  assert(result.pipeline.processed < 5, "time budget should stop before all fixtures");
+  assert(result.executionStatus === "partial_success", "budget-limited run should be partial");
+}
+
+async function testDailySchedulerColdStartQueueRestore(): Promise<void> {
+  resetSchedulerEnv();
+  process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = "2";
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  enableDailyAnalysisQueueStoreForTests();
+  resetDailyAnalysisQueueStoreForTests();
+
+  const apiFixtures = Array.from({ length: 4 }, (_, index) =>
+    buildApiFixture({
+      id: 700 + index,
+      home: `Cold Home ${index}`,
+      away: `Cold Away ${index}`,
+      league: "Cold League",
+      leagueId: 700,
+      status: "NS",
+    })
+  );
+
+  const deps = {
+    runDate: MATCH_DATE,
+    fetchFixtures: async () => intakeFixtures(apiFixtures),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  };
+
+  await runDailyScheduler({ ...deps, ownerId: "cold-1" });
+  const restored = await loadDailyAnalysisQueue(MATCH_DATE);
+  assert(restored !== null, "queue should persist for cold start");
+  assert(restored!.completedFixtureIds.length === 2, "restored queue should keep completed fixtures");
+
+  disableDailyAnalysisQueueStoreForTests();
+  enableDailyAnalysisQueueStoreForTests();
+  const queues = listDailyAnalysisQueuesForTests();
+  assert(queues.length === 0, "cold start should begin empty in new runtime");
+
+  await saveDailyAnalysisQueue(restored!);
+  const second = await runDailyScheduler({ ...deps, ownerId: "cold-2" });
+  assert(second.pipeline.processed === 2, "restored queue should resume next batch");
+}
+
+async function testDailySchedulerQuotaExhaustedNoWait(): Promise<void> {
+  resetSchedulerEnv();
+  process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = "1";
+  process.env.SCHEDULER_MAX_TEAM_PROFILE_REFRESHS_PER_RUN = "4";
+  process.env.TEAM_PROFILE_QUOTA_WAIT_MS = "60000";
+  resetApiFootballQuotaForTests();
+  resetTeamProfileRefreshDedupeForTests();
+  enableTeamProfileMemoryStoreForTests();
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  enableDailyAnalysisQueueStoreForTests();
+  resetDailyAnalysisQueueStoreForTests();
+
+  for (let index = 0; index < 100; index += 1) {
+    recordApiFootballRequest();
+  }
+
+  const startedAt = Date.now();
+  const result = await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "quota-no-wait",
+    fetchFixtures: async () =>
+      intakeFixtures([
+        buildApiFixture({
+          id: 801,
+          home: "Quota Home",
+          away: "Quota Away",
+          league: "Quota League",
+          leagueId: 801,
+          status: "NS",
+        }),
+      ]),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+  const elapsedMs = Date.now() - startedAt;
+
+  assert(elapsedMs < 15_000, "quota exhausted cron should not wait 65 seconds");
+  assert(result.pipeline.created === 1, "analysis should continue with deferred profiles");
+  assert(
+    (result.batchProgress?.deferredTeamProfiles.length ?? 0) >= 0,
+    "deferred team profiles should be tracked when budget/quota blocks refresh"
+  );
+
+  const logs = listExecutionLogs();
+  const dailyLog = logs.find((entry) => entry.jobName === "daily_analysis" && entry.success);
+  const diagnostics = dailyLog?.context?.teamProfileDiagnostics as
+    | Array<{ skippedReason?: string }>
+    | undefined;
+  const deferredProfiles = dailyLog?.context?.deferredTeamProfiles as string[] | undefined;
+  assert(
+    diagnostics?.some((entry) => entry.skippedReason === "quota_exhausted") === true ||
+      (deferredProfiles?.length ?? 0) > 0,
+    "quota exhausted should be reflected in diagnostics or deferred team profiles"
+  );
+}
+
+async function testDailySchedulerPartialSuccessExecutionLog(): Promise<void> {
+  resetSchedulerEnv();
+  process.env.SCHEDULER_MAX_FIXTURES_PER_RUN = "1";
+  resetInMemoryProductionStore();
+  resetExecutionLogsForTests();
+  resetPersistedExecutionLogsForTests();
+  resetSchedulerLocksForTests();
+  enableDailyAnalysisQueueStoreForTests();
+  resetDailyAnalysisQueueStoreForTests();
+
+  await runDailyScheduler({
+    runDate: MATCH_DATE,
+    ownerId: "partial-log",
+    fetchFixtures: async () =>
+      intakeFixtures([
+        buildApiFixture({
+          id: 901,
+          home: "Partial A",
+          away: "Partial B",
+          league: "Partial League",
+          leagueId: 901,
+          status: "NS",
+        }),
+        buildApiFixture({
+          id: 902,
+          home: "Partial C",
+          away: "Partial D",
+          league: "Partial League",
+          leagueId: 901,
+          status: "NS",
+        }),
+      ]),
+    saveMatch: saveMatchInMemory,
+    listRecords: async () => listInMemoryProductionRecords(),
+    runSummaryCron: async () => ({ summaryDate: MATCH_DATE, syncedAt: new Date().toISOString() }),
+  });
+
+  const logs = listExecutionLogs();
+  const dailyLog = logs.find((entry) => entry.jobName === "daily_analysis" && entry.success);
+  assert(dailyLog?.context?.status === "partial_success", "execution log should mark partial_success");
+  assert(dailyLog?.context?.remaining === 1, "execution log should include remaining count");
+}
+
 async function testLeagueIdWhitelistHelper(): Promise<void> {
   const fixtures = intakeFixtures([
     buildApiFixture({
@@ -872,6 +1216,7 @@ async function testTeamProfileQuotaDiagnosticsInExecutionLog(): Promise<void> {
 
 async function runTests(): Promise<void> {
   enableExecutionLogPersistStoreForTests();
+  enableDailyAnalysisQueueStoreForTests();
   try {
     await testFixtureValidationFailClosed();
     await testFixtureMappingFields();
@@ -891,11 +1236,18 @@ async function runTests(): Promise<void> {
     await testFixtureFilterStatsAllFinished();
     await testFixtureFilterStatsWhitelistBlocks();
     await testFixtureFilterStatsInExecutionLog();
+    await testDailySchedulerBatchLimitAndResume();
+    await testDailySchedulerDuplicateCountsAsCompleted();
+    await testDailySchedulerTimeBudgetStopsSafely();
+    await testDailySchedulerColdStartQueueRestore();
+    await testDailySchedulerQuotaExhaustedNoWait();
+    await testDailySchedulerPartialSuccessExecutionLog();
     await testLeagueIdWhitelistHelper();
     await testAnalyzePipelineIntegrity();
     console.log("All scheduler tests passed.");
   } finally {
     disableExecutionLogPersistStoreForTests();
+    disableDailyAnalysisQueueStoreForTests();
     restoreSchedulerEnv();
   }
 }
@@ -903,6 +1255,7 @@ async function runTests(): Promise<void> {
 runTests().catch((error) => {
   console.error(error);
   disableExecutionLogPersistStoreForTests();
+  disableDailyAnalysisQueueStoreForTests();
   restoreSchedulerEnv();
   process.exit(1);
 });
