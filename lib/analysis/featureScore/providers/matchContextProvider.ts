@@ -31,6 +31,15 @@ export interface MatchContextSnapshot {
   cupMatch: boolean | null;
   leagueMatch: boolean | null;
   internationalBreak: boolean | null;
+  matchImportance?: string | null;
+  eliminated?: boolean | null;
+  neutralVenue?: boolean | null;
+  travelDistance?: number | null;
+  restDays?: number | null;
+  fixtureCongestion?: boolean | null;
+  weatherImpact?: string | null;
+  dataFreshnessDays?: number | null;
+  sampleSize?: number;
 }
 
 export interface MatchContextProviderRequest {

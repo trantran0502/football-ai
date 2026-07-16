@@ -112,6 +112,15 @@ export function buildUnavailableProviderData<K extends FeatureProviderKey>(
         cupMatch: null,
         leagueMatch: null,
         internationalBreak: null,
+        matchImportance: null,
+        eliminated: null,
+        neutralVenue: null,
+        travelDistance: null,
+        restDays: null,
+        fixtureCongestion: null,
+        weatherImpact: null,
+        dataFreshnessDays: null,
+        sampleSize: 0,
       } as unknown as ProviderDataByKey[K];
     default:
       throw new Error(`Unsupported provider key: ${providerKey}`);

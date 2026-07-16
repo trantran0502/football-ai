@@ -23,6 +23,11 @@ import {
   getProductionSquadAvailabilityResolution,
   usesProductionSquadAvailabilityOnlyPath,
 } from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
+import {
+  fetchProductionMatchContextSourceData,
+  getProductionMatchContextResolution,
+  usesProductionMatchContextOnlyPath,
+} from "@/lib/providers/matchContext/productionMatchContextProvider";
 import { buildUnavailableProviderData } from "@/lib/providers/teamProfile/unavailableProviderData";
 import {
   extractProviderDataFromContext,
@@ -70,6 +75,12 @@ export class FeatureProviderRegistry {
     if (providerKey === "squadAvailability" && usesProductionSquadAvailabilityOnlyPath()) {
       return this.resolveProductionSquadAvailability(
         request as ProviderRequestByKey["squadAvailability"]
+      ) as ProviderResponse<ProviderDataByKey[K]>;
+    }
+
+    if (providerKey === "matchContext" && usesProductionMatchContextOnlyPath()) {
+      return this.resolveProductionMatchContext(
+        request as ProviderRequestByKey["matchContext"]
       ) as ProviderResponse<ProviderDataByKey[K]>;
     }
 
@@ -200,6 +211,12 @@ export class FeatureProviderRegistry {
       ) as ProviderResponse<ProviderDataByKey[K]>;
     }
 
+    if (providerKey === "matchContext" && usesProductionMatchContextOnlyPath()) {
+      return this.resolveProductionMatchContext(
+        request as ProviderRequestByKey["matchContext"]
+      ) as ProviderResponse<ProviderDataByKey[K]>;
+    }
+
     const cacheKey = buildProviderCacheKey(providerKey, request);
 
     const memoryHit = this.cacheManager.getMemory<ProviderDataByKey[K]>(cacheKey);
@@ -326,6 +343,43 @@ export class FeatureProviderRegistry {
     const unavailableData = buildUnavailableProviderData("squadAvailability", request);
     return this.buildResponse(unavailableData, "unavailable", [
       "Squad availability unavailable: no official injury or suspension data.",
+    ]);
+  }
+
+  private resolveProductionMatchContext(
+    request: ProviderRequestByKey["matchContext"]
+  ): ProviderResponse<ProviderDataByKey["matchContext"]> {
+    const fromGoogle = fetchProductionMatchContextSourceData(request, "googleSearch");
+    if (fromGoogle !== null) {
+      const response = this.buildResponse(fromGoogle, "googleSearch", []);
+      const resolution = getProductionMatchContextResolution(request);
+      if (resolution) {
+        response.confidence = resolution.confidence;
+        response.warnings = [
+          ...response.warnings,
+          ...resolution.diagnostics.warnings,
+        ];
+      }
+      return response;
+    }
+
+    const fromRecords = fetchProductionMatchContextSourceData(request, "matchRecords");
+    if (fromRecords !== null) {
+      const response = this.buildResponse(fromRecords, "matchRecords", []);
+      const resolution = getProductionMatchContextResolution(request);
+      if (resolution) {
+        response.confidence = resolution.confidence;
+        response.warnings = [
+          ...response.warnings,
+          ...resolution.diagnostics.warnings,
+        ];
+      }
+      return response;
+    }
+
+    const unavailableData = buildUnavailableProviderData("matchContext", request);
+    return this.buildResponse(unavailableData, "unavailable", [
+      "Match context unavailable: no official match context data.",
     ]);
   }
 

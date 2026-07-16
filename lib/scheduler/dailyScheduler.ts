@@ -27,6 +27,7 @@ import {
   prefetchProductionLeagueStrength,
 } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
 import { prefetchProductionSquadAvailability } from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
+import { prefetchProductionMatchContext } from "@/lib/providers/matchContext/productionMatchContextProvider";
 import {
   fetchFixturesByDate,
   buildFixtureFilterStats,
@@ -297,6 +298,12 @@ async function runBatchedDailyPipeline(
                 matchDate: fixture.matchDate,
                 matchRecords: matchRecordsForH2H,
               });
+              await prefetchProductionMatchContext({
+                homeTeam: fixture.homeTeam,
+                awayTeam: fixture.awayTeam,
+                matchDate: fixture.matchDate,
+                matchRecords: matchRecordsForH2H,
+              });
 
               const report = attachTeamProfilesToReport(
                 enrichAnalysisReportWithFixture(
@@ -316,6 +323,12 @@ async function runBatchedDailyPipeline(
                       matchRecords: matchRecordsForH2H,
                     },
                     squadAvailabilityContext: {
+                      homeTeam: fixture.homeTeam,
+                      awayTeam: fixture.awayTeam,
+                      matchDate: fixture.matchDate,
+                      matchRecords: matchRecordsForH2H,
+                    },
+                    matchContextContext: {
                       homeTeam: fixture.homeTeam,
                       awayTeam: fixture.awayTeam,
                       matchDate: fixture.matchDate,

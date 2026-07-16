@@ -12,6 +12,7 @@ import {
 import { getProductionH2HResolution } from "@/lib/providers/h2h/productionH2HProvider";
 import { getProductionLeagueStrengthResolution } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
 import { getProductionSquadAvailabilityResolution } from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
+import { getProductionMatchContextResolution } from "@/lib/providers/matchContext/productionMatchContextProvider";
 import type { ReplayDataSource } from "@/lib/replay/replayTypes";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import {
@@ -136,8 +137,17 @@ export function resolveAllProviderSnapshots(input: {
             request as ProviderRequestByKey["squadAvailability"]
           )
         : null;
+    const matchContextResolution =
+      providerKey === "matchContext"
+        ? getProductionMatchContextResolution(
+            request as ProviderRequestByKey["matchContext"]
+          )
+        : null;
     const productionResolution =
-      h2hResolution ?? leagueStrengthResolution ?? squadAvailabilityResolution;
+      h2hResolution ??
+      leagueStrengthResolution ??
+      squadAvailabilityResolution ??
+      matchContextResolution;
     return {
       key: providerKey,
       source,

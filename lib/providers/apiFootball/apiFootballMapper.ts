@@ -496,6 +496,15 @@ export function mapMatchContextSnapshot(
     cupMatch: null,
     leagueMatch: fixture?.league ? true : null,
     internationalBreak: null,
+    matchImportance: null,
+    eliminated: null,
+    neutralVenue: fixture?.neutralVenue ?? null,
+    travelDistance: null,
+    restDays: null,
+    fixtureCongestion: null,
+    weatherImpact: null,
+    dataFreshnessDays: null,
+    sampleSize: 0,
   };
 }
 
