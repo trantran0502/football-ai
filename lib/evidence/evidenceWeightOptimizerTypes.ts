@@ -14,6 +14,8 @@ export interface EvidenceWeightSuggestion {
   sampleSize: number;
   reliability: number;
   reason: string;
+  disableCandidate: boolean;
+  disableReason: string | null;
 }
 
 export interface EvidenceWeightOptimizerReport {
@@ -22,6 +24,7 @@ export interface EvidenceWeightOptimizerReport {
   weightsApplied: false;
   totalSampleSize: number;
   suggestions: EvidenceWeightSuggestion[];
+  recommendedDisable: EvidenceWeightSuggestion[];
   normalizedWeightSum: number;
 }
 

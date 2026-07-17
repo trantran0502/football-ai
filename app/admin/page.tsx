@@ -4,6 +4,7 @@ import { SystemOverviewPanel } from "@/components/admin/RecommendationPipelinePa
 import type { ValidationMetricBucket } from "@/lib/validation/validationTypes";
 import type { EvidencePerformanceStats } from "@/lib/evidence/evidenceValidation";
 import type { EvidenceWeightSuggestion } from "@/lib/evidence/evidenceWeightOptimizerTypes";
+import type { EvidenceHealthStatus, EvidenceRankedEntry } from "@/lib/evidence/evidenceLearningIntegration";
 
 function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
@@ -173,6 +174,181 @@ function EvidenceWeightSuggestionsTable(props: {
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+function healthBadgeClass(status: EvidenceHealthStatus): string {
+  if (status === "healthy") {
+    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200";
+  }
+  if (status === "warning") {
+    return "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200";
+  }
+  return "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-200";
+}
+
+function healthLabel(status: EvidenceHealthStatus): string {
+  if (status === "healthy") {
+    return "Healthy";
+  }
+  if (status === "warning") {
+    return "Warning";
+  }
+  return "Critical";
+}
+
+function EvidenceOverallRankingTable(props: { rows: EvidenceRankedEntry[] }) {
+  if (props.rows.length === 0) {
+    return (
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <h2 className="mb-3 text-lg font-semibold">Evidence 總排名</h2>
+        <p className="text-sm text-zinc-500">尚無資料</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <h2 className="mb-3 text-lg font-semibold">Evidence 總排名</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-800">
+              <th className="px-2 py-2">Rank</th>
+              <th className="px-2 py-2">Provider</th>
+              <th className="px-2 py-2">Score</th>
+              <th className="px-2 py-2">Reliability</th>
+              <th className="px-2 py-2">Accuracy</th>
+              <th className="px-2 py-2">ROI</th>
+              <th className="px-2 py-2">Sample</th>
+              <th className="px-2 py-2">Health</th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.rows.map((row) => (
+              <tr key={row.category} className="border-b border-zinc-100 dark:border-zinc-900">
+                <td className="px-2 py-2">{row.rank}</td>
+                <td className="px-2 py-2 font-medium">{row.label}</td>
+                <td className="px-2 py-2">{row.overallScore.toFixed(3)}</td>
+                <td className="px-2 py-2">{row.reliabilityScore}</td>
+                <td className="px-2 py-2">{formatPercent(row.hitRate)}</td>
+                <td className="px-2 py-2">{formatPercent(row.roi)}</td>
+                <td className="px-2 py-2">{row.usageCount}</td>
+                <td className="px-2 py-2">
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${healthBadgeClass(row.health)}`}>
+                    {healthLabel(row.health)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function EvidenceInsightTable(props: {
+  title: string;
+  rows: EvidenceRankedEntry[];
+}) {
+  if (props.rows.length === 0) {
+    return (
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <h2 className="mb-3 text-lg font-semibold">{props.title}</h2>
+        <p className="text-sm text-zinc-500">尚無資料</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <h2 className="mb-3 text-lg font-semibold">{props.title}</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-800">
+              <th className="px-2 py-2">Provider</th>
+              <th className="px-2 py-2">Reliability</th>
+              <th className="px-2 py-2">Accuracy</th>
+              <th className="px-2 py-2">ROI</th>
+              <th className="px-2 py-2">Sample</th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.rows.map((row) => (
+              <tr key={row.category} className="border-b border-zinc-100 dark:border-zinc-900">
+                <td className="px-2 py-2 font-medium">{row.label}</td>
+                <td className="px-2 py-2">{row.reliabilityScore}</td>
+                <td className="px-2 py-2">{formatPercent(row.hitRate)}</td>
+                <td className="px-2 py-2">{formatPercent(row.roi)}</td>
+                <td className="px-2 py-2">{row.usageCount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function EvidenceHealthPanel(props: {
+  healthy: number;
+  warning: number;
+  critical: number;
+  entries: Array<{
+    category: string;
+    label: string;
+    health: EvidenceHealthStatus;
+    reliabilityScore: number;
+    hitRate: number;
+    roi: number;
+    usageCount: number;
+  }>;
+}) {
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <h2 className="mb-3 text-lg font-semibold">Evidence Health</h2>
+      <div className="mb-4 grid gap-4 md:grid-cols-3">
+        <MetricCard label="Healthy" value={String(props.healthy)} />
+        <MetricCard label="Warning" value={String(props.warning)} />
+        <MetricCard label="Critical" value={String(props.critical)} />
+      </div>
+      {props.entries.length === 0 ? (
+        <p className="text-sm text-zinc-500">尚無資料</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-800">
+                <th className="px-2 py-2">Provider</th>
+                <th className="px-2 py-2">Status</th>
+                <th className="px-2 py-2">Reliability</th>
+                <th className="px-2 py-2">Accuracy</th>
+                <th className="px-2 py-2">ROI</th>
+                <th className="px-2 py-2">Sample</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.entries.map((row) => (
+                <tr key={row.category} className="border-b border-zinc-100 dark:border-zinc-900">
+                  <td className="px-2 py-2 font-medium">{row.label}</td>
+                  <td className="px-2 py-2">
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${healthBadgeClass(row.health)}`}>
+                      {healthLabel(row.health)}
+                    </span>
+                  </td>
+                  <td className="px-2 py-2">{row.reliabilityScore}</td>
+                  <td className="px-2 py-2">{formatPercent(row.hitRate)}</td>
+                  <td className="px-2 py-2">{formatPercent(row.roi)}</td>
+                  <td className="px-2 py-2">{row.usageCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }
@@ -517,6 +693,37 @@ export default async function AdminDashboardPage() {
             />
           </div>
         </section>
+
+        <EvidenceOverallRankingTable rows={dashboard.learning.rankings.evidenceOverallRanking} />
+
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Evidence Learning Report</h2>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <EvidenceInsightTable
+              title="Top Performing Evidence"
+              rows={dashboard.learning.evidenceLearning.topPerforming}
+            />
+            <EvidenceInsightTable
+              title="Worst Performing Evidence"
+              rows={dashboard.learning.evidenceLearning.worstPerforming}
+            />
+            <EvidenceInsightTable
+              title="Most Used Evidence"
+              rows={dashboard.learning.evidenceLearning.mostUsed}
+            />
+            <EvidenceInsightTable
+              title="Least Reliable Evidence"
+              rows={dashboard.learning.evidenceLearning.leastReliable}
+            />
+          </div>
+        </section>
+
+        <EvidenceHealthPanel
+          healthy={dashboard.learning.evidenceLearning.health.healthy}
+          warning={dashboard.learning.evidenceLearning.health.warning}
+          critical={dashboard.learning.evidenceLearning.health.critical}
+          entries={dashboard.learning.evidenceLearning.health.entries}
+        />
 
         <EvidenceWeightSuggestionsTable
           suggestions={dashboard.learning.evidenceWeightSuggestions.suggestions}

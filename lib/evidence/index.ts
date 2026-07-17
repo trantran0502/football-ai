@@ -37,8 +37,25 @@ export type {
   EvidenceValidationRecord,
 } from "@/lib/evidence/evidenceValidation";
 export {
-  buildEvidenceWeightOptimizerReport,
-} from "@/lib/evidence/evidenceWeightOptimizer";
+  buildEvidenceLearningInsights,
+  computeEvidenceOverallScore,
+  computeEvidenceReliabilityScore,
+  EVIDENCE_DISABLE_ACCURACY_THRESHOLD,
+  EVIDENCE_DISABLE_MIN_SAMPLE,
+  EVIDENCE_RANKING_WEIGHTS,
+  EVIDENCE_RELIABILITY_WEIGHTS,
+  isEvidenceDisableCandidate,
+  normalizeEvidenceRoi,
+  normalizeEvidenceSampleSize,
+  resolveEvidenceHealthStatus,
+} from "@/lib/evidence/evidenceLearningIntegration";
+export type {
+  EvidenceHealthProviderEntry,
+  EvidenceHealthStatus,
+  EvidenceHealthSummary,
+  EvidenceLearningInsights,
+  EvidenceRankedEntry,
+} from "@/lib/evidence/evidenceLearningIntegration";
 export {
   DEFAULT_EVIDENCE_WEIGHTS,
   sumEvidenceWeights,

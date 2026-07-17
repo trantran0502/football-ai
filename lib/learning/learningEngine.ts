@@ -20,6 +20,7 @@ import { DEFAULT_LEARNING_ENGINE_CONFIG } from "@/lib/learning/learningTypes";
 import { buildWeightSuggestions } from "@/lib/learning/weightSuggestions";
 import { buildEvidencePerformanceFromHistory, buildEvidencePerformanceReport } from "@/lib/evidence/evidenceValidation";
 import { buildEvidenceWeightOptimizerReport } from "@/lib/evidence/evidenceWeightOptimizer";
+import { buildEvidenceLearningInsights } from "@/lib/evidence/evidenceLearningIntegration";
 import { buildRecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningBuilder";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import {
@@ -78,13 +79,18 @@ export function buildLearningEngineReport(
           .filter((record): record is NonNullable<typeof record> => record !== null)
       )
     : buildEvidencePerformanceFromHistory(learningInput.recommendationHistory);
+  const evidenceLearning = buildEvidenceLearningInsights(
+    evidencePerformance,
+    config.rankingLimit
+  );
   const rankings = buildRankings(
     features,
     rules,
     byLeague,
     byMarket,
     config,
-    evidencePerformance
+    evidencePerformance,
+    evidenceLearning
   );
   const suggestions = buildWeightSuggestions({
     features,
@@ -109,6 +115,7 @@ export function buildLearningEngineReport(
     rankings,
     evidencePerformance,
     evidenceWeightSuggestions: buildEvidenceWeightOptimizerReport(evidencePerformance),
+    evidenceLearning,
   };
 }
 
@@ -295,7 +302,8 @@ function buildRankings(
   byLeague: Record<string, ValidationMetricBucket>,
   byMarket: Record<ValidationMarketKey, ValidationMetricBucket>,
   config: LearningEngineConfig,
-  evidencePerformance: import("@/lib/evidence/evidenceValidation").EvidencePerformanceReport
+  evidencePerformance: import("@/lib/evidence/evidenceValidation").EvidencePerformanceReport,
+  evidenceLearning: import("@/lib/evidence/evidenceLearningIntegration").EvidenceLearningInsights
 ): LearningEngineRankings {
   const eligibleFeatures = features.filter(
     (item) => item.usageCount >= config.minSampleSize
@@ -320,6 +328,7 @@ function buildRankings(
     evidenceByAccuracy: evidencePerformance.byAccuracy.slice(0, config.rankingLimit),
     evidenceByConfidence: evidencePerformance.byConfidence.slice(0, config.rankingLimit),
     evidenceByUsage: evidencePerformance.byUsage.slice(0, config.rankingLimit),
+    evidenceOverallRanking: evidenceLearning.overallRanking.slice(0, config.rankingLimit),
   };
 }
 

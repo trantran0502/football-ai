@@ -1,4 +1,5 @@
 import type { EvidencePerformanceReport, EvidencePerformanceStats } from "@/lib/evidence/evidenceValidation";
+import { isEvidenceDisableCandidate } from "@/lib/evidence/evidenceLearningIntegration";
 import {
   EVIDENCE_PROVIDER_LABELS,
   TRACKED_EVIDENCE_CATEGORIES,
@@ -146,6 +147,23 @@ function computeRawDelta(
   };
 }
 
+function resolveDisableCandidate(
+  stats: EvidencePerformanceStats | null
+): { disableCandidate: boolean; disableReason: string | null } {
+  if (!stats || stats.usageCount === 0) {
+    return { disableCandidate: false, disableReason: null };
+  }
+
+  if (!isEvidenceDisableCandidate(stats)) {
+    return { disableCandidate: false, disableReason: null };
+  }
+
+  return {
+    disableCandidate: true,
+    disableReason: `Accuracy ${formatRate(stats.hitRate)}、ROI ${formatRate(stats.roi)}、樣本 ${stats.usageCount}，建議停用候選（analysis-only）`,
+  };
+}
+
 export function buildEvidenceWeightOptimizerReport(
   performance: EvidencePerformanceReport
 ): EvidenceWeightOptimizerReport {
@@ -208,6 +226,7 @@ export function buildEvidenceWeightOptimizerReport(
       const suggestedWeight = normalized.get(category) ?? currentWeight;
       const details = meta.get(category)!;
       const stats = details.stats;
+      const disable = resolveDisableCandidate(stats);
 
       return {
         category,
@@ -223,9 +242,13 @@ export function buildEvidenceWeightOptimizerReport(
         sampleSize: details.sampleSize,
         reliability: details.reliability,
         reason: details.reason,
+        disableCandidate: disable.disableCandidate,
+        disableReason: disable.disableReason,
       };
     }
   );
+
+  const recommendedDisable = suggestions.filter((suggestion) => suggestion.disableCandidate);
 
   const normalizedWeightSum = suggestions.reduce(
     (sum, suggestion) => sum + suggestion.suggestedWeight,
@@ -238,6 +261,7 @@ export function buildEvidenceWeightOptimizerReport(
     weightsApplied: false,
     totalSampleSize: performance.sampleSize,
     suggestions,
+    recommendedDisable,
     normalizedWeightSum,
   };
 }

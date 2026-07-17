@@ -220,6 +220,46 @@ export function WeightOptimizerDashboard(props: { report: WeightOptimizerReport 
         </div>
       </section>
 
+      <section className="rounded-xl border border-rose-200 bg-rose-50 p-5 shadow-sm dark:border-rose-900/50 dark:bg-rose-950/20">
+        <h2 className="mb-3 text-lg font-semibold">Recommended Disable（analysis-only）</h2>
+        <p className="mb-4 text-sm text-rose-800 dark:text-rose-200">
+          僅標記 disableCandidate，不會真正停用 Evidence Provider。
+        </p>
+        {report.evidenceWeightSuggestions.recommendedDisable.length === 0 ? (
+          <p className="text-sm text-zinc-500">目前無停用候選</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-rose-200 text-left text-zinc-500 dark:border-rose-900/50">
+                  <th className="px-2 py-2">Provider</th>
+                  <th className="px-2 py-2">Accuracy</th>
+                  <th className="px-2 py-2">ROI</th>
+                  <th className="px-2 py-2">Sample</th>
+                  <th className="px-2 py-2">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.evidenceWeightSuggestions.recommendedDisable.map((row) => (
+                  <tr
+                    key={row.category}
+                    className="border-b border-rose-100 dark:border-rose-900/30"
+                  >
+                    <td className="px-2 py-2 font-medium">{row.label}</td>
+                    <td className="px-2 py-2">{formatPercent(row.hitRate)}</td>
+                    <td className="px-2 py-2">{formatPercent(row.roi)}</td>
+                    <td className="px-2 py-2">{row.usageCount}</td>
+                    <td className="px-2 py-2 text-zinc-600 dark:text-zinc-300">
+                      {row.disableReason ?? row.reason}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h2 className="mb-3 text-lg font-semibold">Diagnostics</h2>
         <dl className="grid gap-3 text-sm md:grid-cols-2">

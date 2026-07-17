@@ -4,6 +4,7 @@ import type {
   EvidencePerformanceStats,
 } from "@/lib/evidence/evidenceValidation";
 import type { EvidenceWeightOptimizerReport } from "@/lib/evidence/evidenceWeightOptimizerTypes";
+import type { EvidenceLearningInsights, EvidenceRankedEntry } from "@/lib/evidence/evidenceLearningIntegration";
 import type { ValidationMarketKey, ValidationMetricBucket } from "@/lib/validation/validationTypes";
 
 export interface FeaturePerformanceStats {
@@ -70,6 +71,7 @@ export interface LearningEngineRankings {
   evidenceByAccuracy: EvidencePerformanceStats[];
   evidenceByConfidence: EvidencePerformanceStats[];
   evidenceByUsage: EvidencePerformanceStats[];
+  evidenceOverallRanking: EvidenceRankedEntry[];
 }
 
 export interface LearningEngineReport {
@@ -85,6 +87,7 @@ export interface LearningEngineReport {
   rankings: LearningEngineRankings;
   evidencePerformance: EvidencePerformanceReport;
   evidenceWeightSuggestions: EvidenceWeightOptimizerReport;
+  evidenceLearning: EvidenceLearningInsights;
 }
 
 export interface LearningEngineInput {

@@ -23,6 +23,12 @@ export type {
   EvidenceWeightOptimizerReport,
   EvidenceWeightSuggestion,
 } from "@/lib/evidence/evidenceWeightOptimizerTypes";
+export type {
+  EvidenceHealthStatus,
+  EvidenceHealthSummary,
+  EvidenceLearningInsights,
+  EvidenceRankedEntry,
+} from "@/lib/evidence/evidenceLearningIntegration";
 
 export { DEFAULT_LEARNING_ENGINE_CONFIG } from "@/lib/learning/learningTypes";
 export { buildLearningEngineReport } from "@/lib/learning/learningEngine";
