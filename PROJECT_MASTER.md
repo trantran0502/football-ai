@@ -61,6 +61,9 @@ AI Learning v1
 Historical Fundamentals Backtest v1
 ✅ Completed
 
+Full Production Health Check v1
+🟨 PARTIAL PASS
+
 Phase 4
 AI Learning
 🟨 In Progress
@@ -136,6 +139,17 @@ Completed
 - Evidence Learning Integration
 - AI Learning v1
 - Historical Fundamentals Backtest v1
+- Full Production Health Check v1 (PARTIAL PASS — see HEALTH_CHECK_REPORT.md)
+
+==================================
+
+Health Check Policy (v1)
+
+- Run: `npm run health-check`
+- Report: `HEALTH_CHECK_REPORT.md` + `artifacts/health-check-report.json`
+- Full PASS requires: test, build, validate:system, Supabase CRUD, pipeline, production routes, no critical security/leakage
+- NOT TESTABLE ≠ PASS; missing local provider keys or unapplied migrations → PARTIAL PASS
+- Do not fake PASS without evidence
 
 ==================================
 
@@ -151,7 +165,8 @@ Historical Data Policy
 
 Current Blocker
 
-None
+- Local `.env.local` missing API_FOOTBALL_KEY, ADMIN_API_KEY, CRON_SECRET (production-only on Vercel)
+- Supabase project missing migrations: scheduler_state, admin_* tables, security_rate_limit_buckets (see HEALTH_CHECK_REPORT.md)
 
 ==================================
 

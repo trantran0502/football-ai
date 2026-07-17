@@ -1,21 +1,22 @@
 {
   "overallStatus": "PASS",
-  "startedAt": "2026-07-17T04:15:51.661Z",
-  "completedAt": "2026-07-17T04:16:00.690Z",
-  "durationMs": 9029,
-  "gitCommit": "b0fb2bc60656952b0a458371f1fe59cb331aa492",
+  "startedAt": "2026-07-17T06:31:32.500Z",
+  "completedAt": "2026-07-17T06:31:34.593Z",
+  "durationMs": 2093,
+  "gitCommit": "a4fe3851886514a225629d6b5b82ce13e774ad05",
   "fixtureCount": 12,
   "build": {
     "name": "Build",
-    "status": "PASS",
+    "status": "SKIP",
     "checksPassed": 1,
     "checksFailed": 0,
     "warnings": [],
     "errors": [],
     "details": [
       {
-        "name": "npm run build",
-        "status": "PASS"
+        "name": "build skipped",
+        "status": "PASS",
+        "message": "skipBuild=true"
       }
     ]
   },
@@ -4993,7 +4994,7 @@
       {
         "name": "batch snapshot generated",
         "status": "PASS",
-        "message": "5739dd88-c068-45c8-bc36-2662dc4b7da0"
+        "message": "f3f14997-332c-417a-9b44-477b8b9a0034"
       }
     ]
   },
@@ -5950,12 +5951,12 @@
       {
         "name": "replay final snapshot",
         "status": "PASS",
-        "message": "b6433381-baa6-4784-b099-1f29e21fc27f"
+        "message": "9732a976-621d-4bbb-82df-f78fdc08cdcd"
       },
       {
         "name": "incremental final snapshot",
         "status": "PASS",
-        "message": "9df240db-58cc-4c31-929b-a928655035ec"
+        "message": "ccebd565-12d2-4d6d-a9d0-9d2d8cb1bc54"
       }
     ]
   }

@@ -1,0 +1,406 @@
+{
+  "version": "v1",
+  "startedAt": "2026-07-17T06:31:16.619Z",
+  "completedAt": "2026-07-17T06:31:51.872Z",
+  "durationMs": 35253,
+  "gitCommit": "a4fe3851886514a225629d6b5b82ce13e774ad05",
+  "overallStatus": "PARTIAL PASS",
+  "criticalCount": 0,
+  "highCount": 0,
+  "mediumCount": 1,
+  "lowCount": 6,
+  "supabaseStatus": "FAIL",
+  "apiFootballStatus": "NOT CONFIGURED",
+  "geminiStatus": "NOT CONFIGURED",
+  "schedulerStatus": "NOT CONFIGURED",
+  "pipelineStatus": "PASS",
+  "productionStatus": "PASS",
+  "items": [
+    {
+      "id": "code-health:npm-test",
+      "section": "Code Health",
+      "name": "npm test",
+      "status": "PASS",
+      "evidence": "exit 0"
+    },
+    {
+      "id": "code-health:npm-run-build",
+      "section": "Code Health",
+      "name": "npm run build",
+      "status": "PASS",
+      "evidence": "exit 0"
+    },
+    {
+      "id": "code-health:npm-run-lint",
+      "section": "Code Health",
+      "name": "npm run lint",
+      "status": "WARNING",
+      "evidence": "errors=3 warnings=70"
+    },
+    {
+      "id": "code-health:npm-run-validate:system",
+      "section": "Code Health",
+      "name": "npm run validate:system",
+      "status": "PASS",
+      "evidence": "overall=PASS"
+    },
+    {
+      "id": "pipeline:verified-pipeline",
+      "section": "Pipeline",
+      "name": "Verified pipeline",
+      "status": "PASS",
+      "evidence": "checksPassed=146"
+    },
+    {
+      "id": "pipeline:market-engine-integration",
+      "section": "Pipeline",
+      "name": "Market engine integration",
+      "status": "PASS"
+    },
+    {
+      "id": "learning:fundamentals-backtest-isolation",
+      "section": "Learning",
+      "name": "Fundamentals backtest isolation",
+      "status": "PASS",
+      "evidence": "Unit tests enforce historical_fundamentals separation"
+    },
+    {
+      "id": "data-leakage:pre-match-snapshot-validator",
+      "section": "Data Leakage",
+      "name": "Pre-match snapshot validator",
+      "status": "PASS",
+      "evidence": "fundamentalsBacktest.test.ts covers leakage rules"
+    },
+    {
+      "id": "environment:api_football_key",
+      "section": "Environment",
+      "name": "API_FOOTBALL_KEY",
+      "status": "NOT CONFIGURED",
+      "message": "Required variable missing locally"
+    },
+    {
+      "id": "environment:admin_api_key",
+      "section": "Environment",
+      "name": "ADMIN_API_KEY",
+      "status": "NOT CONFIGURED",
+      "message": "Required variable missing locally"
+    },
+    {
+      "id": "environment:cron_secret",
+      "section": "Environment",
+      "name": "CRON_SECRET",
+      "status": "NOT CONFIGURED",
+      "message": "Required variable missing locally"
+    },
+    {
+      "id": "security:service-role-not-in-next_public",
+      "section": "Security",
+      "name": "Service role not in NEXT_PUBLIC",
+      "status": "PASS"
+    },
+    {
+      "id": "security:admin-api-key-configured",
+      "section": "Security",
+      "name": "Admin API key configured",
+      "status": "NOT CONFIGURED"
+    },
+    {
+      "id": "security:cron-secret-configured",
+      "section": "Security",
+      "name": "Cron secret configured",
+      "status": "NOT CONFIGURED"
+    },
+    {
+      "id": "security:supabase-client-uses-server-only-env",
+      "section": "Security",
+      "name": "Supabase client uses server-only env",
+      "status": "PASS",
+      "evidence": "Uses SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (no browser anon client)"
+    },
+    {
+      "id": "localstorage:football-ai-match-records",
+      "section": "LocalStorage",
+      "name": "football-ai-match-records",
+      "status": "WARNING",
+      "evidence": "Hybrid: Supabase primary when configured; localStorage fallback/cache"
+    },
+    {
+      "id": "localstorage:football-ai-beta-recommendations",
+      "section": "LocalStorage",
+      "name": "football-ai-beta-recommendations",
+      "status": "WARNING",
+      "evidence": "Cache / legacy P0"
+    },
+    {
+      "id": "localstorage:football-ai-beta-rolling-reports",
+      "section": "LocalStorage",
+      "name": "football-ai-beta-rolling-reports",
+      "status": "WARNING",
+      "evidence": "Cache / legacy P0"
+    },
+    {
+      "id": "localstorage:football-ai-free-data:*",
+      "section": "LocalStorage",
+      "name": "football-ai-free-data:*",
+      "status": "PASS",
+      "evidence": "Client cache only"
+    },
+    {
+      "id": "localstorage:football-ai-api-usage",
+      "section": "LocalStorage",
+      "name": "football-ai-api-usage",
+      "status": "PASS",
+      "evidence": "Client quota cache"
+    },
+    {
+      "id": "localstorage:football-ai-final-score:*",
+      "section": "LocalStorage",
+      "name": "football-ai-final-score:*",
+      "status": "PASS",
+      "evidence": "Client cache"
+    },
+    {
+      "id": "localstorage:cross-device-sync",
+      "section": "LocalStorage",
+      "name": "Cross-device sync",
+      "status": "WARNING",
+      "evidence": "Production should persist via Supabase APIs, not localStorage alone"
+    },
+    {
+      "id": "scheduler:vercel.json-cron-definitions",
+      "section": "Scheduler",
+      "name": "vercel.json cron definitions",
+      "status": "PASS",
+      "evidence": "4 cron routes configured UTC"
+    },
+    {
+      "id": "scheduler:production-cron-execution",
+      "section": "Scheduler",
+      "name": "Production cron execution",
+      "status": "NOT TESTABLE",
+      "message": "Requires Vercel dashboard / live cron invocation with CRON_SECRET"
+    },
+    {
+      "id": "scheduler:secret-verification-(code)",
+      "section": "Scheduler",
+      "name": "Secret verification (code)",
+      "status": "PASS",
+      "evidence": "requireCronAuth uses timing-safe Bearer compare"
+    },
+    {
+      "id": "supabase:connection-probe",
+      "section": "Supabase",
+      "name": "Connection probe",
+      "status": "FAIL",
+      "evidence": "TypeError: fetch failed"
+    },
+    {
+      "id": "supabase:schema-tables",
+      "section": "Supabase",
+      "name": "Schema tables",
+      "status": "NOT TESTABLE",
+      "message": "Connection failed"
+    },
+    {
+      "id": "supabase:crud-test",
+      "section": "Supabase",
+      "name": "CRUD test",
+      "status": "NOT TESTABLE",
+      "message": "Connection failed"
+    },
+    {
+      "id": "api-football:api-key-configured",
+      "section": "API-Football",
+      "name": "API key configured",
+      "status": "NOT CONFIGURED"
+    },
+    {
+      "id": "gemini:api-key-configured",
+      "section": "Gemini",
+      "name": "API key configured",
+      "status": "NOT CONFIGURED"
+    },
+    {
+      "id": "database-quality:active-match_records-reachable",
+      "section": "Database Quality",
+      "name": "Active match_records reachable",
+      "status": "WARNING",
+      "evidence": "count=unknown"
+    },
+    {
+      "id": "database-quality:stale-pending-fixtures-sample",
+      "section": "Database Quality",
+      "name": "Stale pending fixtures sample",
+      "status": "PASS",
+      "evidence": "sample=0"
+    },
+    {
+      "id": "deployment:homepage",
+      "section": "Deployment",
+      "name": "Homepage",
+      "status": "PASS",
+      "evidence": "status=200 latencyMs=217 url=https://football-ai-ten.vercel.app/"
+    },
+    {
+      "id": "deployment:admin-dashboard",
+      "section": "Deployment",
+      "name": "Admin dashboard",
+      "status": "PASS",
+      "evidence": "status=200 latencyMs=224 url=https://football-ai-ten.vercel.app/admin"
+    },
+    {
+      "id": "deployment:health-api-(public)",
+      "section": "Deployment",
+      "name": "Health API (public)",
+      "status": "PASS",
+      "evidence": "status=200 latencyMs=289 url=https://football-ai-ten.vercel.app/api/data/health"
+    },
+    {
+      "id": "dashboard:browser-ui-verification",
+      "section": "Dashboard",
+      "name": "Browser UI verification",
+      "status": "NOT TESTABLE",
+      "message": "Automated HTTP only in v1"
+    },
+    {
+      "id": "frontend:interactive-parser-flow",
+      "section": "Frontend",
+      "name": "Interactive parser flow",
+      "status": "NOT TESTABLE",
+      "message": "Requires manual/browser E2E"
+    },
+    {
+      "id": "observability:structured-logs-in-scheduler",
+      "section": "Observability",
+      "name": "Structured logs in scheduler",
+      "status": "PASS",
+      "evidence": "execution_logs + admin_error_logs tables"
+    },
+    {
+      "id": "recovery:provider-failure-fallbacks",
+      "section": "Recovery",
+      "name": "Provider failure fallbacks",
+      "status": "PASS",
+      "evidence": "Unit tests + validate:system verified pipeline"
+    },
+    {
+      "id": "performance:homepage-latency-budget",
+      "section": "Performance",
+      "name": "Homepage latency budget",
+      "status": "NOT TESTABLE",
+      "message": "No automated Lighthouse run in v1"
+    }
+  ],
+  "envAudit": [
+    {
+      "name": "SUPABASE_URL",
+      "required": true,
+      "present": true,
+      "clientSafe": false,
+      "serverOnly": true,
+      "invalidFormat": false,
+      "maskedValue": "http…e.co (len=40)"
+    },
+    {
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "required": true,
+      "present": true,
+      "clientSafe": false,
+      "serverOnly": true,
+      "invalidFormat": false,
+      "maskedValue": "sb_s…kjbu (len=41)"
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_URL",
+      "required": false,
+      "present": false,
+      "clientSafe": true,
+      "serverOnly": false
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "required": false,
+      "present": false,
+      "clientSafe": true,
+      "serverOnly": false
+    },
+    {
+      "name": "API_FOOTBALL_KEY",
+      "required": true,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "GOOGLE_GEMINI_API_KEY",
+      "required": false,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "ADMIN_API_KEY",
+      "required": true,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "CRON_SECRET",
+      "required": true,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "FOOTBALL_DATA_MODE",
+      "required": false,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "SCHEDULER_ENABLED",
+      "required": false,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "NEXT_PUBLIC_BETA_RECOMMENDATION_MODE",
+      "required": false,
+      "present": false,
+      "clientSafe": true,
+      "serverOnly": false
+    },
+    {
+      "name": "BETA_RECOMMENDATION_MODE",
+      "required": false,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "RATE_LIMIT_ADAPTER",
+      "required": false,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "GOOGLE_GEMINI_MODEL",
+      "required": false,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    },
+    {
+      "name": "API_FOOTBALL_BASE_URL",
+      "required": false,
+      "present": false,
+      "clientSafe": false,
+      "serverOnly": true
+    }
+  ],
+  "pushResult": "not attempted"
+}
