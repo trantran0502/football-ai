@@ -1,4 +1,4 @@
-export type ValidationStatus = "PASS" | "FAIL" | "SKIP";
+export type ValidationStatus = "PASS" | "FAIL" | "SKIP" | "CONDITIONAL_PASS";
 
 export interface ValidationCheckDetail {
   name: string;
@@ -52,6 +52,7 @@ export interface SystemValidationReport {
     replayChecksum: string | null;
     incrementalChecksum: string | null;
   };
+  marketEngineIntegration: ValidationSectionResult;
   verifiedPipeline: ValidationSectionResult;
 }
 

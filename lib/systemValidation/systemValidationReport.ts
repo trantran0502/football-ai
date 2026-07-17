@@ -38,6 +38,7 @@ export function writeSystemValidationReports(
     sectionSummary(report.persistence),
     sectionSummary(report.incremental),
     sectionSummary(report.consistency),
+    sectionSummary(report.marketEngineIntegration),
     sectionSummary(report.verifiedPipeline),
     "",
     "## Consistency",
@@ -70,6 +71,7 @@ export function writeSystemValidationReports(
     report.persistence,
     report.incremental,
     report.consistency,
+    report.marketEngineIntegration,
     report.verifiedPipeline,
   ]) {
     if (section.errors.length === 0 && section.details.every((item) => item.status !== "FAIL")) {
@@ -132,6 +134,8 @@ export function printSystemValidationConsoleSummary(report: SystemValidationRepo
   console.log(`Incremental:\n${report.incremental.status}`);
   console.log("");
   console.log(`Consistency:\n${report.consistency.status}`);
+  console.log("");
+  console.log(`Market Engine Integration:\n${report.marketEngineIntegration.status}`);
   console.log("");
   console.log(`Verified Pipeline:\n${report.verifiedPipeline.status}`);
   console.log("");

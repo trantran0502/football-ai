@@ -24,6 +24,11 @@ import type {
   RecommendationEngineOptions,
   RecommendationEngineResult,
 } from "@/lib/recommendation/recommendationTypes";
+import {
+  applyMarketEngineToCandidate,
+  buildMarketAnalysisIndex,
+  runMarketEngineForRecommendations,
+} from "@/lib/recommendation/marketEngineIntegration";
 import type { MarketSelection } from "@/types/match";
 
 const SUPPORTED_MARKET_TYPES = new Set([
@@ -66,6 +71,8 @@ export function generateRecommendations(
 
   const passGate = evaluateGlobalPass(effectiveFusion, marketSelections);
   const fusionWarnings = buildFusionWarnings(effectiveFusion);
+  const marketEngineSnapshot = runMarketEngineForRecommendations(marketSelections);
+  const marketAnalysisByType = buildMarketAnalysisIndex(marketEngineSnapshot);
 
   const candidates = marketSelections
     .filter((selection) => isSupportedSelection(selection))
@@ -76,7 +83,8 @@ export function generateRecommendations(
         weighting,
         passGate.pass,
         fusionWarnings,
-        passGate.reason
+        passGate.reason,
+        marketAnalysisByType
       )
     );
 
@@ -113,14 +121,24 @@ function buildCandidate(
   weighting: ProviderWeightingResult | null,
   globalPass: boolean,
   fusionWarnings: string[],
-  passReason: string | null
+  passReason: string | null,
+  marketAnalysisByType: ReturnType<typeof buildMarketAnalysisIndex>
 ): RecommendationCandidate {
   const direction = directionalMultiplier(selection.side, selection.marketType);
   const scored = scoreSelection(selection, fusion, direction, weighting?.normalizedWeights ?? null);
-  const level = scoreToLevel(scored.score, fusion.overallConfidence, globalPass);
-  const expectedValue = globalPass || level === "pass" ? 0 : computeExpectedValue(selection, scored.score);
+  const marketAdjusted = applyMarketEngineToCandidate({
+    selection,
+    featureScore: scored.score,
+    marketAnalysisByType,
+    globalPass,
+  });
+  const level = scoreToLevel(marketAdjusted.blendedScore, fusion.overallConfidence, globalPass);
+  const expectedValue =
+    globalPass || level === "pass"
+      ? 0
+      : computeExpectedValue(selection, marketAdjusted.blendedScore);
 
-  const warnings = [...fusionWarnings];
+  const warnings = [...fusionWarnings, ...marketAdjusted.warnings];
   if (globalPass && passReason) {
     warnings.unshift(passReason);
   }
@@ -139,8 +157,8 @@ function buildCandidate(
     selection,
     confidence: level,
     expectedValue,
-    score: globalPass ? 0 : clampScore(scored.score),
-    reasons: globalPass ? [] : scored.reasons,
+    score: globalPass ? 0 : clampScore(marketAdjusted.blendedScore),
+    reasons: globalPass ? [] : [...scored.reasons, ...marketAdjusted.reasons],
     warnings: uniqueStrings(warnings),
     supportingFeatures: globalPass ? [] : scored.supportingFeatures,
   };

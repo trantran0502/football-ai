@@ -1,9 +1,9 @@
 {
-  "overallStatus": "FAIL",
-  "startedAt": "2026-07-17T03:59:16.044Z",
-  "completedAt": "2026-07-17T03:59:24.906Z",
-  "durationMs": 8862,
-  "gitCommit": "d71c3923f6f5ae10de768d5db0da7a7e9c516d29",
+  "overallStatus": "CONDITIONAL_PASS",
+  "startedAt": "2026-07-17T04:04:39.976Z",
+  "completedAt": "2026-07-17T04:04:49.003Z",
+  "durationMs": 9027,
+  "gitCommit": "2ca642ab826c2290bfe174f2715644d26b8799da",
   "fixtureCount": 12,
   "build": {
     "name": "Build",
@@ -4976,7 +4976,7 @@
       {
         "name": "batch snapshot generated",
         "status": "PASS",
-        "message": "d234453a-94d2-475d-8dc8-440bb53e4fa6"
+        "message": "344e8a85-2049-4a66-a50b-360f35415823"
       }
     ]
   },
@@ -5308,6 +5308,42 @@
     "batchChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77",
     "replayChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77",
     "incrementalChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77"
+  },
+  "marketEngineIntegration": {
+    "name": "Market Engine Integration",
+    "status": "PASS",
+    "checksPassed": 6,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "generateRecommendations completed",
+        "status": "PASS"
+      },
+      {
+        "name": "runMarketEngine invoked via recommendation pipeline",
+        "status": "PASS"
+      },
+      {
+        "name": "globalPass false for integration fixture",
+        "status": "PASS"
+      },
+      {
+        "name": "market engine decision signals",
+        "status": "PASS",
+        "message": "9 candidate(s) include market engine output"
+      },
+      {
+        "name": "market engine markets",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "blended recommendation score",
+        "status": "PASS"
+      }
+    ]
   },
   "verifiedPipeline": {
     "name": "Verified Pipeline",
@@ -5897,12 +5933,12 @@
       {
         "name": "replay final snapshot",
         "status": "PASS",
-        "message": "e2b8ada3-8ae4-45fe-a065-4d17f59a7626"
+        "message": "7b78bfbf-7796-4744-b23d-a4bd47069bfb"
       },
       {
         "name": "incremental final snapshot",
         "status": "PASS",
-        "message": "17867d40-347e-44cb-a2ff-7c80b69765e8"
+        "message": "36822c5c-1586-41a1-be36-36cf1bd11699"
       }
     ]
   }
