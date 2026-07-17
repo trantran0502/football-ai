@@ -2,6 +2,7 @@ import type { MatchResult } from "@/lib/database/matchSchema";
 import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import type { ReplayProviderRecommendationDiagnostic } from "@/lib/replay/replayTypes";
 import type { RecommendationLevel } from "@/lib/recommendation/recommendationTypes";
+import type { EvidenceValidationRecord } from "@/lib/evidence/evidenceValidation";
 
 export type RecommendationLearningMarketKey = "1X2" | "AH" | "O/U" | "BTTS";
 
@@ -33,6 +34,7 @@ export interface RecommendationLearningRecord {
   awayTeam: string;
   createdAt: string;
   updatedAt: string;
+  evidenceValidation: EvidenceValidationRecord | null;
 }
 
 export interface RecommendationProviderLearningStats {

@@ -6,6 +6,7 @@ import type {
 import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import type { ReplayProviderRecommendationDiagnostic } from "@/lib/replay/replayTypes";
 import type { RecommendationLearningRow } from "@/lib/supabase/database.types";
+import { extractEvidenceValidationFromRecommendation, buildEvidenceValidationRecord } from "@/lib/evidence/evidenceValidation";
 
 export function recommendationLearningDomainToRow(
   record: RecommendationLearningRecord
@@ -59,5 +60,27 @@ export function recommendationLearningRowToDomain(
     awayTeam: row.away_team,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    evidenceValidation:
+      extractEvidenceValidationFromRecommendation(
+        row.recommendation as RecommendationEngineResult | null
+      ) ??
+      buildEvidenceValidationFromLearningRecordFallback(row),
   };
+}
+
+function buildEvidenceValidationFromLearningRecordFallback(
+  row: RecommendationLearningRow
+): RecommendationLearningRecord["evidenceValidation"] {
+  const recommendation = row.recommendation as RecommendationEngineResult | null;
+  if (!recommendation) {
+    return null;
+  }
+
+  return buildEvidenceValidationRecord({
+    matchRecordId: row.match_record_id,
+    recommendation,
+    actualResult: row.actual_result as MatchResult,
+    matchHit: row.hit,
+    validatedAt: row.verified_at,
+  });
 }

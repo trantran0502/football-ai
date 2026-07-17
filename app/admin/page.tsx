@@ -2,6 +2,7 @@ import { buildAdminDashboardResponse } from "@/lib/admin/adminDashboardService";
 import { runAutomatedLearningPipeline } from "@/lib/admin/recommendationPipelineService";
 import { SystemOverviewPanel } from "@/components/admin/RecommendationPipelinePanels";
 import type { ValidationMetricBucket } from "@/lib/validation/validationTypes";
+import type { EvidencePerformanceStats } from "@/lib/evidence/evidenceValidation";
 
 function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
@@ -64,6 +65,55 @@ function PerformanceRankingTable(props: {
                 {props.rows.some((item) => item.extra) ? (
                   <td className="px-2 py-2">{row.extra ?? "—"}</td>
                 ) : null}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function EvidenceRankingTable(props: {
+  title: string;
+  rows: EvidencePerformanceStats[];
+}) {
+  if (props.rows.length === 0) {
+    return (
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <h2 className="mb-3 text-lg font-semibold">{props.title}</h2>
+        <p className="text-sm text-zinc-500">尚無資料</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <h2 className="mb-3 text-lg font-semibold">{props.title}</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-800">
+              <th className="px-2 py-2">Provider</th>
+              <th className="px-2 py-2">使用次數</th>
+              <th className="px-2 py-2">命中率</th>
+              <th className="px-2 py-2">平均影響分數</th>
+              <th className="px-2 py-2">平均信心</th>
+              <th className="px-2 py-2">ROI</th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.rows.map((row) => (
+              <tr
+                key={row.category}
+                className="border-b border-zinc-100 dark:border-zinc-900"
+              >
+                <td className="px-2 py-2 font-medium">{row.label}</td>
+                <td className="px-2 py-2">{row.usageCount}</td>
+                <td className="px-2 py-2">{formatPercent(row.hitRate)}</td>
+                <td className="px-2 py-2">{row.averageImpactScore.toFixed(1)}</td>
+                <td className="px-2 py-2">{formatPercent(row.averageConfidence)}</td>
+                <td className="px-2 py-2">{formatPercent(row.roi)}</td>
               </tr>
             ))}
           </tbody>
@@ -388,6 +438,28 @@ export default async function AdminDashboardPage() {
                 hitRate: item.hitRate,
                 roi: item.roi,
               }))}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Evidence 排名</h2>
+          <p className="mb-4 text-sm text-zinc-500">
+            樣本 {dashboard.learning.evidencePerformance.sampleSize} 場 ·
+            產生於 {dashboard.learning.evidencePerformance.generatedAt}
+          </p>
+          <div className="grid gap-4 xl:grid-cols-3">
+            <EvidenceRankingTable
+              title="Accuracy 排名"
+              rows={dashboard.learning.rankings.evidenceByAccuracy}
+            />
+            <EvidenceRankingTable
+              title="Confidence 排名"
+              rows={dashboard.learning.rankings.evidenceByConfidence}
+            />
+            <EvidenceRankingTable
+              title="Usage 排名"
+              rows={dashboard.learning.rankings.evidenceByUsage}
             />
           </div>
         </section>

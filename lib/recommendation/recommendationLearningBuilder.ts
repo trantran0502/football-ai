@@ -6,6 +6,10 @@ import type {
   RecommendationLearningRecord,
 } from "@/lib/recommendation/recommendationLearningTypes";
 import {
+  attachEvidenceValidationToRecommendation,
+  buildEvidenceValidationRecord,
+} from "@/lib/evidence/evidenceValidation";
+import {
   validateVerifiedMatch,
   validateVerifiedMatchFromPipeline,
 } from "@/lib/validation/validationEngine";
@@ -153,14 +157,26 @@ export function buildRecommendationLearningRecord(
   const marketOutcomes = buildMarketOutcomes(record);
   const totalProfit = marketOutcomes.reduce((sum, outcome) => sum + outcome.profit, 0);
   const totalStake = marketOutcomes.reduce((sum, outcome) => sum + outcome.stake, 0);
+  const matchHit = resolveMatchHit(marketOutcomes);
+  const recommendation = resolveRecommendation(record);
+  const evidenceValidation = buildEvidenceValidationRecord({
+    matchRecordId: record.id,
+    recommendation,
+    actualResult: record.result,
+    matchHit,
+    validatedAt: verifiedAt,
+  });
 
   return {
     id: createLearningId(record.id),
     matchRecordId: record.id,
     fixtureId: record.fixtureId ?? record.analysisSnapshot?.replay?.match?.fixtureId ?? null,
-    recommendation: resolveRecommendation(record),
+    recommendation: attachEvidenceValidationToRecommendation(
+      recommendation,
+      evidenceValidation
+    ),
     actualResult: record.result,
-    hit: resolveMatchHit(marketOutcomes),
+    hit: matchHit,
     providerDiagnostics: providerSnapshot.providerDiagnostics,
     providerOverallConfidence: providerSnapshot.providerOverallConfidence,
     marketOutcomes,
@@ -173,5 +189,6 @@ export function buildRecommendationLearningRecord(
     awayTeam: record.awayTeam,
     createdAt: now,
     updatedAt: now,
+    evidenceValidation,
   };
 }

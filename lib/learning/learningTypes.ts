@@ -1,4 +1,8 @@
 import type { DecisionLevel } from "@/lib/decision/decisionTypes";
+import type {
+  EvidencePerformanceReport,
+  EvidencePerformanceStats,
+} from "@/lib/evidence/evidenceValidation";
 import type { ValidationMarketKey, ValidationMetricBucket } from "@/lib/validation/validationTypes";
 
 export interface FeaturePerformanceStats {
@@ -62,6 +66,9 @@ export interface LearningEngineRankings {
   worstRules: RulePerformanceStats[];
   leagueRoiRanking: RankedMetricBucket[];
   marketRoiRanking: RankedMetricBucket[];
+  evidenceByAccuracy: EvidencePerformanceStats[];
+  evidenceByConfidence: EvidencePerformanceStats[];
+  evidenceByUsage: EvidencePerformanceStats[];
 }
 
 export interface LearningEngineReport {
@@ -75,6 +82,7 @@ export interface LearningEngineReport {
   byModelVersion: Record<string, ModelVersionStats>;
   suggestions: LearningSuggestions;
   rankings: LearningEngineRankings;
+  evidencePerformance: EvidencePerformanceReport;
 }
 
 export interface LearningEngineInput {

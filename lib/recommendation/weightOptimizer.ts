@@ -5,6 +5,7 @@ import type {
   RecommendationLearningRecord,
 } from "@/lib/recommendation/recommendationLearningTypes";
 import { filterCompleteLearningRecords, inspectLearningRecordCompleteness } from "@/lib/recommendation/recommendationLearningDiagnostics";
+import { buildEvidencePerformanceReport } from "@/lib/evidence/evidenceValidation";
 import {
   DEFAULT_MARKET_GROUP_WEIGHT,
   DEFAULT_TEAM_GROUP_WEIGHT,
@@ -566,6 +567,7 @@ export function buildWeightOptimizerReport(
       (left, right) => right.roi - left.roi
     ),
     byMarketType: buildMarketTypeAnalysis(used, overallSampleSize),
+    evidencePerformance: buildEvidencePerformanceReport(used),
   };
 }
 

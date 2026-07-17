@@ -104,6 +104,7 @@ function buildLearningRecord(input: {
     awayTeam: "Chelsea",
     createdAt: input.createdAt ?? "2026-07-01T00:00:00.000Z",
     updatedAt: input.createdAt ?? "2026-07-01T00:00:00.000Z",
+    evidenceValidation: null,
   };
 }
 

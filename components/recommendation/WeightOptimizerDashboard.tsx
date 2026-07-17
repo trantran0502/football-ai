@@ -148,6 +148,42 @@ export function WeightOptimizerDashboard(props: { report: WeightOptimizerReport 
       </section>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <h2 className="mb-3 text-lg font-semibold">Evidence Performance（唯讀）</h2>
+        <p className="mb-4 text-sm text-zinc-500">
+          樣本 {report.evidencePerformance.sampleSize} 場 · 僅供分析，不自動調整權重
+        </p>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-800">
+                <th className="px-2 py-2">Provider</th>
+                <th className="px-2 py-2">使用次數</th>
+                <th className="px-2 py-2">命中率</th>
+                <th className="px-2 py-2">平均影響分數</th>
+                <th className="px-2 py-2">平均信心</th>
+                <th className="px-2 py-2">ROI</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.evidencePerformance.providers.map((row) => (
+                <tr
+                  key={row.category}
+                  className="border-b border-zinc-100 dark:border-zinc-900"
+                >
+                  <td className="px-2 py-2 font-medium">{row.label}</td>
+                  <td className="px-2 py-2">{row.usageCount}</td>
+                  <td className="px-2 py-2">{formatPercent(row.hitRate)}</td>
+                  <td className="px-2 py-2">{row.averageImpactScore.toFixed(1)}</td>
+                  <td className="px-2 py-2">{formatPercent(row.averageConfidence)}</td>
+                  <td className="px-2 py-2">{formatPercent(row.roi)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h2 className="mb-3 text-lg font-semibold">Diagnostics</h2>
         <dl className="grid gap-3 text-sm md:grid-cols-2">
           <div>

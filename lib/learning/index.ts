@@ -15,6 +15,11 @@ export type {
   RulePerformanceStats,
 } from "@/lib/learning/learningTypes";
 
+export type {
+  EvidencePerformanceReport,
+  EvidencePerformanceStats,
+} from "@/lib/evidence/evidenceValidation";
+
 export { DEFAULT_LEARNING_ENGINE_CONFIG } from "@/lib/learning/learningTypes";
 export { buildLearningEngineReport } from "@/lib/learning/learningEngine";
 export {

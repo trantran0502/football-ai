@@ -18,6 +18,8 @@ import type {
 } from "@/lib/learning/learningTypes";
 import { DEFAULT_LEARNING_ENGINE_CONFIG } from "@/lib/learning/learningTypes";
 import { buildWeightSuggestions } from "@/lib/learning/weightSuggestions";
+import { buildEvidencePerformanceFromHistory, buildEvidencePerformanceReport } from "@/lib/evidence/evidenceValidation";
+import { buildRecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningBuilder";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import {
   accumulateBucket,
@@ -68,7 +70,21 @@ export function buildLearningEngineReport(
   const byDecisionLevel = buildDecisionLevelStats(learningInput);
   const byModelVersion = buildModelVersionStats(taggedEntries, learningInput);
 
-  const rankings = buildRankings(features, rules, byLeague, byMarket, config);
+  const evidencePerformance = Array.isArray(input)
+    ? buildEvidencePerformanceReport(
+        input
+          .map((record) => buildRecommendationLearningRecord(record))
+          .filter((record): record is NonNullable<typeof record> => record !== null)
+      )
+    : buildEvidencePerformanceFromHistory(learningInput.recommendationHistory);
+  const rankings = buildRankings(
+    features,
+    rules,
+    byLeague,
+    byMarket,
+    config,
+    evidencePerformance
+  );
   const suggestions = buildWeightSuggestions({
     features,
     rules,
@@ -90,6 +106,7 @@ export function buildLearningEngineReport(
     byModelVersion,
     suggestions,
     rankings,
+    evidencePerformance,
   };
 }
 
@@ -275,7 +292,8 @@ function buildRankings(
   rules: RulePerformanceStats[],
   byLeague: Record<string, ValidationMetricBucket>,
   byMarket: Record<ValidationMarketKey, ValidationMetricBucket>,
-  config: LearningEngineConfig
+  config: LearningEngineConfig,
+  evidencePerformance: import("@/lib/evidence/evidenceValidation").EvidencePerformanceReport
 ): LearningEngineRankings {
   const eligibleFeatures = features.filter(
     (item) => item.usageCount >= config.minSampleSize
@@ -297,6 +315,9 @@ function buildRankings(
       .slice(0, config.rankingLimit),
     leagueRoiRanking: rankBuckets(byLeague, config.rankingLimit),
     marketRoiRanking: rankBuckets(byMarket, config.rankingLimit),
+    evidenceByAccuracy: evidencePerformance.byAccuracy.slice(0, config.rankingLimit),
+    evidenceByConfidence: evidencePerformance.byConfidence.slice(0, config.rankingLimit),
+    evidenceByUsage: evidencePerformance.byUsage.slice(0, config.rankingLimit),
   };
 }
 
