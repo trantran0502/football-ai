@@ -5,6 +5,7 @@ import type { FeatureFusionResult } from "@/lib/analysis/featureScore/fusion/fus
 import type { RecommendationSection } from "@/lib/analysis/types";
 import { generateRecommendations } from "@/lib/recommendation/recommendationEngine";
 import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
+import { collectEvidence } from "@/lib/evidence/evidenceEngine";
 import {
   EMPTY_RECOMMENDATION_MESSAGE,
   getRecommendationMessage,
@@ -61,6 +62,7 @@ export interface FeatureRecommendationPipelineResult {
   recommendation: RecommendationEngineResult | null;
   section: RecommendationSection;
   providerAudit: ProviderResolutionAudit | null;
+  evidenceReport: import("@/lib/evidence/evidenceTypes").EvidenceReport | null;
 }
 
 export interface FeatureRecommendationPipelineOptions {
@@ -90,6 +92,7 @@ export function runFeatureRecommendationPipeline(
         message: EMPTY_RECOMMENDATION_MESSAGE,
       },
       providerAudit: null,
+      evidenceReport: null,
     };
   }
 
@@ -134,12 +137,21 @@ export function runFeatureRecommendationPipeline(
           message: EMPTY_RECOMMENDATION_MESSAGE,
         },
         providerAudit,
+        evidenceReport: null,
       };
     }
 
     const fusion = fuseFeatureScores(annotatedFeatures);
+    const evidenceReport = collectEvidence({
+      fusion,
+      features: annotatedFeatures,
+      marketSelections: markets,
+      providerAudit,
+      teamProfiles: options.teamProfiles ?? null,
+    });
     const recommendation = generateRecommendations(fusion, markets, {
       providerAudit,
+      evidenceReport,
     });
     const guarded = applyRecommendationProviderGuard({
       fusion,
@@ -161,6 +173,7 @@ export function runFeatureRecommendationPipeline(
       recommendation: guarded.recommendation,
       section,
       providerAudit,
+      evidenceReport,
     };
   } finally {
     resetTeamProfileProviderContext();

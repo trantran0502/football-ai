@@ -25,7 +25,7 @@ Current Tag:
 v1.0.0
 
 Latest Commit:
-6c50288bdcbb488cff1a07dcf6c6ad801afd2ff1
+779c7b872fe014adfd5fb6aee8b14aa626cec3b5
 
 ==================================
 
@@ -37,15 +37,15 @@ Core System
 
 Phase 2
 Real Data Integration
-⬜ Not Started
+🟨 In Progress
 
 Phase 3
 Evidence Engine
-⬜ Not Started
+✅ Completed
 
 Phase 4
 AI Learning
-⬜ Not Started
+🟨 In Progress
 
 Phase 5
 Website Enhancement
@@ -57,20 +57,61 @@ Completed
 
 - Parser
 - Market Normalizer
+- Asian Handicap Rules
+- Cross-Market Validation
+- Feature Score Engine
+- Feature Fusion
 - Recommendation Engine
+- Decision Engine
+- Explain Engine
 - Validation Engine
 - Replay Engine
 - Batch Learning
 - Incremental Learning
+- Recommendation Learning
+- Learning Engine
 - Market Engine
+- Market Engine Integration
 - Rule Engine
 - Pattern Engine
 - Knowledge Engine
+- Knowledge Layers
 - Persistence
 - Weight Optimizer
 - System Validation
 - Release Validation
 - Git v1.0.0 Release
+- API-Football
+- H2H
+- Recent 10 Matches
+- Home Form
+- Away Form
+- Team Profile
+- Team Engine
+- Fixture
+- xG
+- xGA
+- League Strength
+- Squad Availability
+- Match Context
+- Scheduler
+- Historical Backfill
+- Cache
+- Google Gemini Search
+- Hybrid Data Resolver
+- Admin Dashboard
+- Match Records
+- LocalStorage
+- Supabase Integration
+- Production Pipeline
+- Betting Intelligence
+- Backtest Engine
+- Provider Registry
+- Provider Weighting
+- Security / Auth
+- Golden Dataset
+- Beta Recommendation Mode
+- Evidence Engine
 
 ==================================
 
@@ -89,31 +130,19 @@ Real Data Integration
 Priority：
 
 1.
-API-Football
-
-2.
 Google Gemini Grounding
 
-3.
+2.
 Weather
 
-4.
+3.
 Injuries
 
-5.
+4.
 Suspensions
 
-6.
+5.
 Standings
-
-7.
-Recent 10 Matches
-
-8.
-Home / Away Form
-
-9.
-xG / xGA
 
 ==================================
 

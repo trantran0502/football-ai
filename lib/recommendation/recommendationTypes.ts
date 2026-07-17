@@ -1,4 +1,5 @@
 import type { FeatureFusionResult } from "@/lib/analysis/featureScore/fusion/fusionTypes";
+import type { EvidenceReport } from "@/lib/evidence/evidenceTypes";
 import type { MarketSelection, MarketType } from "@/types/match";
 import type { ProviderRecommendationDiagnostic } from "@/lib/recommendation/providerWeightEngine";
 
@@ -18,6 +19,7 @@ export interface RecommendationCandidate {
 export interface RecommendationEngineInput {
   fusion: FeatureFusionResult;
   marketSelections: MarketSelection[];
+  evidenceReport?: EvidenceReport | null;
 }
 
 export interface RecommendationEngineResult {
@@ -28,6 +30,7 @@ export interface RecommendationEngineResult {
   unavailableProviderCount: number;
   providerDiagnostics: ProviderRecommendationDiagnostic[];
   providerOverallConfidence: number | null;
+  evidenceReport: EvidenceReport | null;
 }
 
 export interface RecommendationEngineOptions {
@@ -50,6 +53,7 @@ export function createEmptyRecommendationResult(
     unavailableProviderCount: 0,
     providerDiagnostics: [],
     providerOverallConfidence: null,
+    evidenceReport: null,
     ...overrides,
   };
 }

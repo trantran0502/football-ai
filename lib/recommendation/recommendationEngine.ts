@@ -51,7 +51,10 @@ export class RecommendationEngine {
   }
 
   recommend(input: RecommendationEngineInput): RecommendationEngineResult {
-    return generateRecommendations(input.fusion, input.marketSelections, this.options);
+    return generateRecommendations(input.fusion, input.marketSelections, {
+      ...this.options,
+      evidenceReport: input.evidenceReport ?? null,
+    });
   }
 }
 
@@ -60,6 +63,7 @@ export function generateRecommendations(
   marketSelections: MarketSelection[],
   options: RecommendationEngineOptions & {
     providerAudit?: ProviderResolutionAudit | null;
+    evidenceReport?: RecommendationEngineInput["evidenceReport"];
   } = {}
 ): RecommendationEngineResult {
   const weighting = options.providerAudit
@@ -96,6 +100,7 @@ export function generateRecommendations(
     unavailableProviderCount: weighting?.unavailableProviderCount ?? 0,
     providerDiagnostics: weighting?.diagnostics ?? [],
     providerOverallConfidence: weighting?.overallConfidence ?? null,
+    evidenceReport: options.evidenceReport ?? null,
   };
 }
 
