@@ -498,6 +498,7 @@ function testRuleEngineScoreBreakdown(): void {
     result.auditLog.some((entry) => entry.ruleId === "BalancedMarketRule" && entry.triggered),
     "audit includes triggered balanced rule"
   );
+  assert(result.scoreAfterRules >= result.baseScore, "score after rules computed");
 }
 
 function testRuleHistoricalInterface(): void {

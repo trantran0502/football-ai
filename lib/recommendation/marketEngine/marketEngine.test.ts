@@ -20,6 +20,7 @@ import {
   scoreToConfidence,
 } from "./marketScore";
 import { runMarketRulesTests } from "./rules/marketRules.test";
+import { runMarketPatternsTests } from "./patterns/marketPatterns.test";
 
 const EPSILON = 1e-4;
 
@@ -152,6 +153,10 @@ function assertMarketAnalysisShape(analysis: MarketAnalysis, marketType: string)
   assert(Array.isArray(analysis.ruleResults) && analysis.ruleResults.length > 0, `${marketType} ruleResults`);
   assert(Array.isArray(analysis.scoreBreakdown) && analysis.scoreBreakdown.length > 0, `${marketType} scoreBreakdown`);
   assert(Array.isArray(analysis.auditLog) && analysis.auditLog.length > 0, `${marketType} auditLog`);
+  assert(Array.isArray(analysis.matchedPatterns), `${marketType} matchedPatterns`);
+  assert(Array.isArray(analysis.patternAudit) && analysis.patternAudit.length > 0, `${marketType} patternAudit`);
+  assert(Number.isFinite(analysis.patternScore), `${marketType} patternScore`);
+  assert(Number.isFinite(analysis.patternAdjustment), `${marketType} patternAdjustment`);
   assert(Array.isArray(analysis.reasons) && analysis.reasons.length > 0, `${marketType} reasons`);
   assert(Array.isArray(analysis.signals) && analysis.signals.length > 0, `${marketType} signals`);
   assert(typeof analysis.recommendation.label === "string", `${marketType} recommendation label`);
@@ -276,7 +281,7 @@ function testBTTSAnalyzer(): void {
 function testRunMarketEngine(): void {
   const snapshot = runMarketEngine(buildStandardMarkets());
 
-  assert(snapshot.engineVersion === "1.1.0", "engine version");
+  assert(snapshot.engineVersion === "1.2.0", "engine version");
   assertNear(snapshot.marketEngineWeight, 0.6, "snapshot weight");
   assert(snapshot.markets.length === 4, "four market analyses");
   assert(
@@ -320,4 +325,5 @@ export function runMarketEngineTests(): void {
   testRunMarketEngine();
   testCustomHistoryProvider();
   runMarketRulesTests();
+  runMarketPatternsTests();
 }

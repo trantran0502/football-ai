@@ -3,6 +3,10 @@ import type {
   MarketRuleSignal,
   ScoreBreakdownEntry,
 } from "./rules/ruleTypes";
+import type {
+  MarketPatternMatch,
+  PatternAuditEntry,
+} from "./patterns/patternTypes";
 
 export type MarketEngineType = "1X2" | "AH" | "O/U" | "BTTS";
 
@@ -45,6 +49,10 @@ export interface MarketAnalysis {
   ruleResults: MarketRuleSignal[];
   scoreBreakdown: ScoreBreakdownEntry[];
   auditLog: MarketRuleAuditEntry[];
+  matchedPatterns: MarketPatternMatch[];
+  patternAudit: PatternAuditEntry[];
+  patternScore: number;
+  patternAdjustment: number;
   riskLevel: MarketRiskLevel;
   line: number | null;
   period: string;

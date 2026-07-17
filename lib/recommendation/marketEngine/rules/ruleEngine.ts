@@ -1,4 +1,4 @@
-import { clampMarketScore, MARKET_ENGINE_BASE_SCORE } from "../marketScore";
+import { MARKET_ENGINE_BASE_SCORE } from "../marketScore";
 import { MARKET_RULE_REGISTRY } from "./ruleRegistry";
 import type {
   MarketRuleAuditEntry,
@@ -49,13 +49,7 @@ export function runMarketRuleEngine(context: MarketRuleContext): MarketRuleEngin
     });
   }
 
-  const finalScore = clampMarketScore(runningScore);
-  scoreBreakdown.push({
-    step: "Final",
-    scoreAdjustment: finalScore - runningScore,
-    runningScore: finalScore,
-    reason: "Clamped to 0-100 range.",
-  });
+  const scoreAfterRules = runningScore;
 
   const totalConfidenceAdjustment = ruleResults.reduce(
     (sum, signal) => sum + (signal.triggered ? signal.confidenceAdjustment : 0),
@@ -67,7 +61,8 @@ export function runMarketRuleEngine(context: MarketRuleContext): MarketRuleEngin
     auditLog,
     scoreBreakdown,
     baseScore,
-    finalScore,
+    scoreAfterRules,
+    finalScore: scoreAfterRules,
     totalConfidenceAdjustment,
   };
 }

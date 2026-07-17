@@ -6,6 +6,7 @@ import type {
   MarketRecommendation,
 } from "../marketEngineTypes";
 import { evaluateMarketOddsRules } from "../marketOddsRules";
+import { runMarketPatternEngine } from "../patterns/patternEngine";
 import { runMarketRuleEngine } from "../rules/ruleEngine";
 import {
   deriveRiskLevel,
@@ -57,16 +58,29 @@ export function buildMarketAnalysis(
     return null;
   }
 
-  const ruleEngineResult = runMarketRuleEngine({
+  const ruleContext = {
     marketType,
     selections: group,
     oddsContext,
-  });
+  };
 
-  const finalScore = ruleEngineResult.finalScore;
+  const ruleEngineResult = runMarketRuleEngine(ruleContext);
+  const patternEngineResult = runMarketPatternEngine(
+    {
+      marketType,
+      selections: group,
+      oddsContext,
+      ruleResults: ruleEngineResult.ruleResults,
+    },
+    ruleEngineResult.scoreAfterRules,
+    ruleEngineResult.scoreBreakdown
+  );
+
+  const finalScore = patternEngineResult.finalScore;
   const confidence = scoreToConfidence(
     finalScore,
-    ruleEngineResult.totalConfidenceAdjustment
+    ruleEngineResult.totalConfidenceAdjustment +
+      patternEngineResult.patternConfidenceAdjustment
   );
   const historical = historyProvider.getHistoricalPattern({
     marketType,
@@ -96,6 +110,11 @@ export function buildMarketAnalysis(
     reasons.push(`${entry.ruleName}: ${entry.reason} (${sign}${entry.scoreAdjustment})`);
   }
 
+  for (const pattern of patternEngineResult.matchedPatterns) {
+    const sign = pattern.matchScore >= 0 ? "+" : "";
+    reasons.push(`${pattern.name}: ${pattern.reason} (${sign}${pattern.matchScore})`);
+  }
+
   return {
     marketType,
     confidence,
@@ -108,8 +127,12 @@ export function buildMarketAnalysis(
     reasons,
     signals: oddsContext.signals,
     ruleResults: ruleEngineResult.ruleResults,
-    scoreBreakdown: ruleEngineResult.scoreBreakdown,
+    scoreBreakdown: patternEngineResult.scoreBreakdown,
     auditLog: ruleEngineResult.auditLog,
+    matchedPatterns: patternEngineResult.matchedPatterns,
+    patternAudit: patternEngineResult.patternAudit,
+    patternScore: patternEngineResult.patternScore,
+    patternAdjustment: patternEngineResult.patternAdjustment,
     riskLevel: deriveRiskLevel(finalScore),
     line: group[0]?.line ?? null,
     period: group[0]?.period ?? "full",

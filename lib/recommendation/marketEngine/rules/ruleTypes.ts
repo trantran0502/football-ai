@@ -51,6 +51,7 @@ export interface MarketRuleEngineResult {
   auditLog: MarketRuleAuditEntry[];
   scoreBreakdown: ScoreBreakdownEntry[];
   baseScore: number;
+  scoreAfterRules: number;
   finalScore: number;
   totalConfidenceAdjustment: number;
 }
