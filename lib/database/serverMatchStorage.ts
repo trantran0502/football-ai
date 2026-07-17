@@ -14,9 +14,9 @@ import {
 } from "@/lib/supabase/services/matchRecordService";
 import type {
   MatchHistoryLoadResult,
-  MatchRecordVerifyResult,
   MatchRecordWriteResult,
 } from "@/lib/database/compositeMatchStorage";
+import type { MatchRecordVerifyResult } from "@/lib/database/matchRecordApiTypes";
 
 export async function saveMatchFromAnalysisServerSide(
   rawOdds: string,

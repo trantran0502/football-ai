@@ -1,10 +1,10 @@
 # Football AI V1 System Validation Report
 
-- **Overall**: CONDITIONAL_PASS
-- **Started**: 2026-07-17T04:04:39.976Z
-- **Completed**: 2026-07-17T04:04:49.003Z
-- **Duration**: 9027ms
-- **Git Commit**: 2ca642ab826c2290bfe174f2715644d26b8799da
+- **Overall**: PASS
+- **Started**: 2026-07-17T04:15:51.661Z
+- **Completed**: 2026-07-17T04:16:00.690Z
+- **Duration**: 9029ms
+- **Git Commit**: b0fb2bc60656952b0a458371f1fe59cb331aa492
 - **Fixtures**: 12
 
 ## Summary
@@ -13,7 +13,7 @@
 - **Unit Tests**: PASS (passed 1, failed 0)
 - **Market Engine**: PASS (passed 492, failed 0)
 - **Rules**: PASS (passed 71, failed 0)
-- **Patterns**: FAIL (passed 611, failed 3)
+- **Patterns**: PASS (passed 620, failed 0)
 - **Knowledge Batch**: PASS (passed 44, failed 0)
 - **Replay**: PASS (passed 30, failed 0)
 - **Persistence**: PASS (passed 14, failed 0)
@@ -24,15 +24,6 @@
 
 ## Consistency
 
-- Batch checksum: 2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77
-- Replay checksum: 2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77
-- Incremental checksum: 2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77
-
-## Patterns Details
-
-- ERROR: HomeLowWaterBalanced matched at least once: pattern never matched across fixtures
-- ERROR: BalancedUnderdog matched at least once: pattern never matched across fixtures
-- ERROR: LowOverroundBalanced matched at least once: pattern never matched across fixtures
-- FAIL `HomeLowWaterBalanced matched at least once`: pattern never matched across fixtures
-- FAIL `BalancedUnderdog matched at least once`: pattern never matched across fixtures
-- FAIL `LowOverroundBalanced matched at least once`: pattern never matched across fixtures
+- Batch checksum: a0df7ae4c2a45599719a5b691446850f75c771f4135bf60e323a2ce8355071db
+- Replay checksum: a0df7ae4c2a45599719a5b691446850f75c771f4135bf60e323a2ce8355071db
+- Incremental checksum: a0df7ae4c2a45599719a5b691446850f75c771f4135bf60e323a2ce8355071db

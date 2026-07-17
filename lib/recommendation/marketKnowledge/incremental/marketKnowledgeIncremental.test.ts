@@ -4,7 +4,7 @@ import { buildMarketKnowledgeFromVerifiedMatches } from "../marketKnowledgeFromV
 import { computeSnapshotChecksum } from "../persistence/marketKnowledgePersistence";
 import { createDefaultSnapshotMetadata } from "../persistence/marketKnowledgeVersioning";
 import { createInMemoryMarketKnowledgeRepository } from "../persistence/inMemoryMarketKnowledgeRepository";
-import { replayMarketKnowledge } from "../replay/marketKnowledgeReplayRunner";
+import { replayMarketKnowledge } from "@/lib/replay/marketKnowledge/marketKnowledgeReplayRunner";
 import type { MarketKnowledgeSnapshot } from "../marketKnowledgeTypes";
 import {
   updateMarketKnowledgeIncrementally,

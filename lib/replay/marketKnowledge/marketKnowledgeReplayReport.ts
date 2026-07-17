@@ -1,5 +1,5 @@
-import type { KnowledgeMarketType, MarketKnowledgeSnapshot } from "../marketKnowledgeTypes";
-import { createEmptyMarketStatisticsMap } from "../marketKnowledgeTypes";
+import type { KnowledgeMarketType, MarketKnowledgeSnapshot } from "@/lib/recommendation/marketKnowledge/marketKnowledgeTypes";
+import { createEmptyMarketStatisticsMap } from "@/lib/recommendation/marketKnowledge/marketKnowledgeTypes";
 import type {
   ReplayAuditEntry,
   ReplayMarketStatChange,

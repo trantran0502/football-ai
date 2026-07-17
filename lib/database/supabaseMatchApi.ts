@@ -5,6 +5,7 @@ import type {
   SaveMatchOutcome,
   UpdateMatchResultInput,
 } from "@/lib/database/matchSchema";
+import type { MatchRecordVerifyResult } from "@/lib/database/matchRecordApiTypes";
 
 export type MatchRecordStorageSource = "supabase" | "local";
 
@@ -18,10 +19,7 @@ export interface MatchHistoryLoadResult {
   storage: MatchRecordStorageSource;
 }
 
-export interface MatchRecordVerifyResult {
-  record: HistoricalMatchRecord | null;
-  storage: MatchRecordStorageSource;
-}
+export type { MatchRecordVerifyResult };
 
 export interface CreateMatchRecordRequest {
   rawOdds: string;

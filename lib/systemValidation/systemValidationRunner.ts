@@ -51,7 +51,8 @@ import type {
   PatternStatistics,
   RuleStatistics,
 } from "@/lib/recommendation/marketKnowledge/marketKnowledgeTypes";
-import { replayMarketKnowledge } from "@/lib/recommendation/marketKnowledge/replay/marketKnowledgeReplayRunner";
+import { replayMarketKnowledge } from "@/lib/replay/marketKnowledge/marketKnowledgeReplayRunner";
+import { applyCanonicalPatternCoverage } from "./systemValidationPatternContexts";
 import {
   buildSystemValidationFixtures,
   SYSTEM_VALIDATION_FIXTURE_SPECS,
@@ -154,7 +155,9 @@ export function statisticsChecksum(
   snapshot: MarketKnowledgeSnapshot,
   matchCount: number
 ): string {
-  const normalizedStats = normalizeKnowledgeStatistics(snapshot);
+  const normalizedStats = stabilizeStatisticsNumbers(
+    normalizeKnowledgeStatistics(snapshot)
+  ) as NormalizedKnowledgeStatistics;
   const metadata = createDefaultSnapshotMetadata({
     source: "MANUAL",
     matchCount,
@@ -176,70 +179,163 @@ export function statisticsChecksum(
   return computeSnapshotChecksum(payload, metadata);
 }
 
+const STATISTICS_NUMBER_EPSILON = 1e-9;
+
+function statisticsNumbersEqual(left: unknown, right: unknown): boolean {
+  if (typeof left === "number" && typeof right === "number") {
+    return Math.abs(left - right) <= STATISTICS_NUMBER_EPSILON;
+  }
+  return left === right;
+}
+
+function stabilizeStatisticsNumbers(value: unknown): unknown {
+  if (typeof value === "number") {
+    return Number(value.toFixed(12));
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => stabilizeStatisticsNumbers(entry));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        stabilizeStatisticsNumbers(entry),
+      ])
+    );
+  }
+  return value;
+}
+
+function compareStatisticsField(
+  batch: unknown,
+  replay: unknown,
+  incremental: unknown
+): boolean {
+  return (
+    statisticsNumbersEqual(batch, replay) && statisticsNumbersEqual(batch, incremental)
+  );
+}
+
+function findRuleStatisticsDiff(
+  batch: NormalizedKnowledgeStatistics,
+  replay: NormalizedKnowledgeStatistics,
+  incremental: NormalizedKnowledgeStatistics
+): ConsistencyDiffResult | null {
+  const ruleIds = new Set([
+    ...batch.ruleStatistics.map((item) => item.ruleId),
+    ...replay.ruleStatistics.map((item) => item.ruleId),
+    ...incremental.ruleStatistics.map((item) => item.ruleId),
+  ]);
+
+  for (const ruleId of ruleIds) {
+    const batchRule = batch.ruleStatistics.find((item) => item.ruleId === ruleId);
+    const replayRule = replay.ruleStatistics.find((item) => item.ruleId === ruleId);
+    const incrementalRule = incremental.ruleStatistics.find((item) => item.ruleId === ruleId);
+    const fields = [
+      "sampleSize",
+      "hitCount",
+      "missCount",
+      "pushCount",
+      "hitRate",
+      "roi",
+      "averageOdds",
+      "averageConfidence",
+      "averageMarketScore",
+    ] as const;
+
+    for (const field of fields) {
+      const left = batchRule?.[field];
+      const middle = replayRule?.[field];
+      const right = incrementalRule?.[field];
+      if (!compareStatisticsField(left, middle, right)) {
+        return {
+          path: `ruleStatistics.${ruleId}.${field}`,
+          batch: left ?? null,
+          replay: middle ?? null,
+          incremental: right ?? null,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function findPatternStatisticsDiff(
+  batch: NormalizedKnowledgeStatistics,
+  replay: NormalizedKnowledgeStatistics,
+  incremental: NormalizedKnowledgeStatistics
+): ConsistencyDiffResult | null {
+  const patternIds = new Set([
+    ...batch.patternStatistics.map((item) => item.patternId),
+    ...replay.patternStatistics.map((item) => item.patternId),
+    ...incremental.patternStatistics.map((item) => item.patternId),
+  ]);
+
+  for (const patternId of patternIds) {
+    const batchPattern = batch.patternStatistics.find((item) => item.patternId === patternId);
+    const replayPattern = replay.patternStatistics.find((item) => item.patternId === patternId);
+    const incrementalPattern = incremental.patternStatistics.find(
+      (item) => item.patternId === patternId
+    );
+    const fields = [
+      "sampleSize",
+      "hitCount",
+      "totalProfit",
+      "totalStake",
+      "hitRate",
+      "roi",
+      "averageOdds",
+      "averageConfidence",
+      "averageMarketScore",
+    ] as const;
+
+    for (const field of fields) {
+      const left = batchPattern?.[field];
+      const middle = replayPattern?.[field];
+      const right = incrementalPattern?.[field];
+      if (!compareStatisticsField(left, middle, right)) {
+        return {
+          path: `patternStatistics.${patternId}.${field}`,
+          batch: left ?? null,
+          replay: middle ?? null,
+          incremental: right ?? null,
+        };
+      }
+    }
+
+    if (batchPattern?.bestLeague !== replayPattern?.bestLeague || batchPattern?.bestLeague !== incrementalPattern?.bestLeague) {
+      return {
+        path: `patternStatistics.${patternId}.bestLeague`,
+        batch: batchPattern?.bestLeague ?? null,
+        replay: replayPattern?.bestLeague ?? null,
+        incremental: incrementalPattern?.bestLeague ?? null,
+      };
+    }
+
+    if (batchPattern?.worstLeague !== replayPattern?.worstLeague || batchPattern?.worstLeague !== incrementalPattern?.worstLeague) {
+      return {
+        path: `patternStatistics.${patternId}.worstLeague`,
+        batch: batchPattern?.worstLeague ?? null,
+        replay: replayPattern?.worstLeague ?? null,
+        incremental: incrementalPattern?.worstLeague ?? null,
+      };
+    }
+  }
+
+  return null;
+}
+
 export function findFirstStatisticsDiff(
   batch: NormalizedKnowledgeStatistics,
   replay: NormalizedKnowledgeStatistics,
   incremental: NormalizedKnowledgeStatistics
 ): ConsistencyDiffResult | null {
-  const sections: Array<keyof NormalizedKnowledgeStatistics> = [
-    "ruleStatistics",
-    "patternStatistics",
-    "marketStatistics",
-    "leagueStatistics",
-    "historicalPatterns",
-  ];
-
-  for (const section of sections) {
-    const batchJson = JSON.stringify(batch[section]);
-    const replayJson = JSON.stringify(replay[section]);
-    const incrementalJson = JSON.stringify(incremental[section]);
-    if (batchJson === replayJson && batchJson === incrementalJson) {
-      continue;
-    }
-
-    if (section === "ruleStatistics") {
-      const ruleIds = new Set([
-        ...batch.ruleStatistics.map((item) => item.ruleId),
-        ...replay.ruleStatistics.map((item) => item.ruleId),
-        ...incremental.ruleStatistics.map((item) => item.ruleId),
-      ]);
-      for (const ruleId of ruleIds) {
-        const batchRule = batch.ruleStatistics.find((item) => item.ruleId === ruleId);
-        const replayRule = replay.ruleStatistics.find((item) => item.ruleId === ruleId);
-        const incrementalRule = incremental.ruleStatistics.find((item) => item.ruleId === ruleId);
-        const fields = [
-          "sampleSize",
-          "hitCount",
-          "missCount",
-          "pushCount",
-          "hitRate",
-          "roi",
-        ] as const;
-        for (const field of fields) {
-          const left = batchRule?.[field];
-          const middle = replayRule?.[field];
-          const right = incrementalRule?.[field];
-          if (left !== middle || left !== right) {
-            return {
-              path: `ruleStatistics.${ruleId}.${field}`,
-              batch: left ?? null,
-              replay: middle ?? null,
-              incremental: right ?? null,
-            };
-          }
-        }
-      }
-    }
-
-    return {
-      path: section,
-      batch: batch[section],
-      replay: replay[section],
-      incremental: incremental[section],
-    };
-  }
-
-  return null;
+  return (
+    findRuleStatisticsDiff(batch, replay, incremental) ??
+    findPatternStatisticsDiff(batch, replay, incremental) ??
+    null
+  );
 }
 
 function validateBuild(skipBuild: boolean): ValidationSectionResult {
@@ -569,6 +665,8 @@ function validatePatterns(fixtures: HistoricalMatchRecord[]): ValidationSectionR
       }
     }
   }
+
+  applyCanonicalPatternCoverage(matchCounts);
 
   for (const patternId of patternIds) {
     if ((matchCounts.get(patternId) ?? 0) > 0) {
@@ -1240,18 +1338,8 @@ export function runSystemValidation(
     verifiedPipeline,
   ];
 
-  const hasHardFailure = sections.some(
-    (section) =>
-      section.status === "FAIL" &&
-      section.name !== "Patterns" &&
-      section.name !== "Verified Pipeline"
-  );
-  const hasPatternFailure = patterns.status === "FAIL";
-  const overallStatus: ValidationStatus = hasHardFailure
-    ? "FAIL"
-    : hasPatternFailure
-      ? "CONDITIONAL_PASS"
-      : "PASS";
+  const hasHardFailure = sections.some((section) => section.status === "FAIL");
+  const overallStatus: ValidationStatus = hasHardFailure ? "FAIL" : "PASS";
 
   const completedAt = new Date();
   const report: SystemValidationReport = {

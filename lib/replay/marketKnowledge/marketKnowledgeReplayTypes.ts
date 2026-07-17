@@ -1,7 +1,7 @@
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import type { MarketKnowledgeStore } from "../marketKnowledgeStore";
-import type { MarketKnowledgeRepository } from "../persistence/marketKnowledgeRepository";
-import type { KnowledgeMarketType, MarketKnowledgeSnapshot } from "../marketKnowledgeTypes";
+import type { MarketKnowledgeStore } from "@/lib/recommendation/marketKnowledge/marketKnowledgeStore";
+import type { MarketKnowledgeRepository } from "@/lib/recommendation/marketKnowledge/persistence/marketKnowledgeRepository";
+import type { KnowledgeMarketType, MarketKnowledgeSnapshot } from "@/lib/recommendation/marketKnowledge/marketKnowledgeTypes";
 
 export interface ReplayMarketKnowledgeOptions {
   matches: HistoricalMatchRecord[];

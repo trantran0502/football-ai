@@ -282,6 +282,10 @@ export function buildSystemValidationFixtures(): HistoricalMatchRecord[] {
       homeTeam: "Brighton",
       awayTeam: "West Ham",
       marketSelections: standardFourMarkets({
+        btts: [
+          selection({ marketType: "btts", marketFamily: "btts", side: "yes", odds: 0.9, impliedProbability: 0.515 }),
+          selection({ marketType: "btts", marketFamily: "btts", side: "no", odds: 0.92, impliedProbability: 0.512 }),
+        ],
         ou: [
           selection({ marketType: "totalGoals", marketFamily: "asianOverUnder", side: "over", odds: 0.92, line: 2.5, rawLine: "2.5", modifier: "plain", impliedProbability: 0.515 }),
           selection({ marketType: "totalGoals", marketFamily: "asianOverUnder", side: "under", odds: 0.92, line: 2.5, rawLine: "2.5", modifier: "plain", impliedProbability: 0.515 }),
@@ -297,6 +301,10 @@ export function buildSystemValidationFixtures(): HistoricalMatchRecord[] {
       homeTeam: "Athletic Bilbao",
       awayTeam: "Osasuna",
       marketSelections: standardFourMarkets({
+        btts: [
+          selection({ marketType: "btts", marketFamily: "btts", side: "yes", odds: 0.97, impliedProbability: 0.515 }),
+          selection({ marketType: "btts", marketFamily: "btts", side: "no", odds: 0.99, impliedProbability: 0.502 }),
+        ],
         moneyline: [
           selection({ marketType: "moneyline", marketFamily: "moneyline", side: "home", odds: 1.95, impliedProbability: 0.48 }),
           selection({ marketType: "moneyline", marketFamily: "moneyline", side: "draw", odds: 3.15, impliedProbability: 0.32 }),

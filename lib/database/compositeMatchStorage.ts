@@ -9,6 +9,7 @@ import type {
 import { getBrowserHistoryRepository } from "@/lib/database/browserHistoryRepository";
 import type { StorageHealth } from "@/lib/storage/storageStatus";
 import { STORAGE_POLICY } from "@/lib/storage/storageStatus";
+import type { MatchRecordVerifyResult } from "@/lib/database/matchRecordApiTypes";
 
 export type MatchRecordWriteResult = SaveMatchOutcome & {
   storage: StorageHealth;
@@ -20,10 +21,7 @@ export interface MatchHistoryLoadResult {
   storage: StorageHealth;
 }
 
-export interface MatchRecordVerifyResult {
-  record: HistoricalMatchRecord | null;
-  storage: StorageHealth;
-}
+export type { MatchRecordVerifyResult };
 
 function assertSupabaseFirstPolicy(): void {
   if (STORAGE_POLICY !== "supabase-first") {

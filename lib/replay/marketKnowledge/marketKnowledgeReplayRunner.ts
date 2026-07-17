@@ -1,10 +1,10 @@
 import { randomUUID } from "crypto";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { buildMarketKnowledgeFromVerifiedMatches } from "../marketKnowledgeFromVerified";
-import { MARKET_KNOWLEDGE_SNAPSHOT_VERSION } from "../marketKnowledgeSnapshot";
-import type { MarketKnowledgeStore } from "../marketKnowledgeStore";
-import { marketKnowledgeStore } from "../marketKnowledgeStore";
-import type { MarketKnowledgeSnapshot } from "../marketKnowledgeTypes";
+import { buildMarketKnowledgeFromVerifiedMatches } from "@/lib/recommendation/marketKnowledge/marketKnowledgeFromVerified";
+import { MARKET_KNOWLEDGE_SNAPSHOT_VERSION } from "@/lib/recommendation/marketKnowledge/marketKnowledgeSnapshot";
+import type { MarketKnowledgeStore } from "@/lib/recommendation/marketKnowledge/marketKnowledgeStore";
+import { marketKnowledgeStore } from "@/lib/recommendation/marketKnowledge/marketKnowledgeStore";
+import type { MarketKnowledgeSnapshot } from "@/lib/recommendation/marketKnowledge/marketKnowledgeTypes";
 import {
   buildReplayAuditEntry,
   buildStatisticsDiff,

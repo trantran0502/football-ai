@@ -1,8 +1,8 @@
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { accumulateVerifiedMatchesForKnowledge } from "../marketKnowledgeAccumulator";
-import { buildMarketKnowledgeFromVerifiedMatches } from "../marketKnowledgeFromVerified";
-import { buildStatisticsFromObservations } from "../marketKnowledgeStatistics";
-import type { MarketKnowledgeSnapshot } from "../marketKnowledgeTypes";
+import { accumulateVerifiedMatchesForKnowledge } from "@/lib/recommendation/marketKnowledge/marketKnowledgeAccumulator";
+import { buildMarketKnowledgeFromVerifiedMatches } from "@/lib/recommendation/marketKnowledge/marketKnowledgeFromVerified";
+import { buildStatisticsFromObservations } from "@/lib/recommendation/marketKnowledge/marketKnowledgeStatistics";
+import type { MarketKnowledgeSnapshot } from "@/lib/recommendation/marketKnowledge/marketKnowledgeTypes";
 import type {
   ReplayStep,
   ReplayValidationResult,

@@ -1,9 +1,9 @@
 {
-  "overallStatus": "CONDITIONAL_PASS",
-  "startedAt": "2026-07-17T04:04:39.976Z",
-  "completedAt": "2026-07-17T04:04:49.003Z",
-  "durationMs": 9027,
-  "gitCommit": "2ca642ab826c2290bfe174f2715644d26b8799da",
+  "overallStatus": "PASS",
+  "startedAt": "2026-07-17T04:15:51.661Z",
+  "completedAt": "2026-07-17T04:16:00.690Z",
+  "durationMs": 9029,
+  "gitCommit": "b0fb2bc60656952b0a458371f1fe59cb331aa492",
   "fixtureCount": 12,
   "build": {
     "name": "Build",
@@ -2322,15 +2322,11 @@
   },
   "patterns": {
     "name": "Patterns",
-    "status": "FAIL",
-    "checksPassed": 611,
-    "checksFailed": 3,
+    "status": "PASS",
+    "checksPassed": 620,
+    "checksFailed": 0,
     "warnings": [],
-    "errors": [
-      "HomeLowWaterBalanced matched at least once: pattern never matched across fixtures",
-      "BalancedUnderdog matched at least once: pattern never matched across fixtures",
-      "LowOverroundBalanced matched at least once: pattern never matched across fixtures"
-    ],
+    "errors": [],
     "details": [
       {
         "name": "pattern registry unique ids",
@@ -3741,6 +3737,14 @@
         "status": "PASS"
       },
       {
+        "name": "sv-fix-07.LowOverroundBalanced.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.LowOverroundBalanced.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
         "name": "sv-fix-08.HomeLowWaterBalanced.reason",
         "status": "PASS"
       },
@@ -3930,6 +3934,22 @@
       },
       {
         "name": "sv-fix-08.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedUnderdog.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.LowOverroundBalanced.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.LowOverroundBalanced.matchedRules.BalancedMarketRule",
         "status": "PASS"
       },
       {
@@ -4710,8 +4730,7 @@
       },
       {
         "name": "HomeLowWaterBalanced matched at least once",
-        "status": "FAIL",
-        "message": "pattern never matched across fixtures"
+        "status": "PASS"
       },
       {
         "name": "HomeLowWaterBalanced not matched at least once",
@@ -4743,8 +4762,7 @@
       },
       {
         "name": "BalancedUnderdog matched at least once",
-        "status": "FAIL",
-        "message": "pattern never matched across fixtures"
+        "status": "PASS"
       },
       {
         "name": "BalancedUnderdog not matched at least once",
@@ -4768,8 +4786,7 @@
       },
       {
         "name": "LowOverroundBalanced matched at least once",
-        "status": "FAIL",
-        "message": "pattern never matched across fixtures"
+        "status": "PASS"
       },
       {
         "name": "LowOverroundBalanced not matched at least once",
@@ -4976,7 +4993,7 @@
       {
         "name": "batch snapshot generated",
         "status": "PASS",
-        "message": "344e8a85-2049-4a66-a50b-360f35415823"
+        "message": "5739dd88-c068-45c8-bc36-2662dc4b7da0"
       }
     ]
   },
@@ -5305,9 +5322,9 @@
       }
     ],
     "firstDiff": null,
-    "batchChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77",
-    "replayChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77",
-    "incrementalChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77"
+    "batchChecksum": "a0df7ae4c2a45599719a5b691446850f75c771f4135bf60e323a2ce8355071db",
+    "replayChecksum": "a0df7ae4c2a45599719a5b691446850f75c771f4135bf60e323a2ce8355071db",
+    "incrementalChecksum": "a0df7ae4c2a45599719a5b691446850f75c771f4135bf60e323a2ce8355071db"
   },
   "marketEngineIntegration": {
     "name": "Market Engine Integration",
@@ -5933,12 +5950,12 @@
       {
         "name": "replay final snapshot",
         "status": "PASS",
-        "message": "7b78bfbf-7796-4744-b23d-a4bd47069bfb"
+        "message": "b6433381-baa6-4784-b099-1f29e21fc27f"
       },
       {
         "name": "incremental final snapshot",
         "status": "PASS",
-        "message": "36822c5c-1586-41a1-be36-36cf1bd11699"
+        "message": "9df240db-58cc-4c31-929b-a928655035ec"
       }
     ]
   }

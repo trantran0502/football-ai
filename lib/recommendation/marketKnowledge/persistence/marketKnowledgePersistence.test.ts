@@ -8,7 +8,7 @@ import {
   type MarketKnowledgeSnapshot,
 } from "../marketKnowledgeTypes";
 import { resetMarketKnowledgeStoreForTests } from "../marketKnowledgeStore";
-import { replayMarketKnowledge } from "../replay/marketKnowledgeReplayRunner";
+import { replayMarketKnowledge } from "@/lib/replay/marketKnowledge/marketKnowledgeReplayRunner";
 import {
   computeSnapshotChecksum,
   buildPersistedSnapshot,

@@ -3,7 +3,7 @@ import type { MarketSelection } from "@/types/match";
 import {
   createInMemoryMarketKnowledgeStore,
   resetMarketKnowledgeStoreForTests,
-} from "../marketKnowledgeStore";
+} from "@/lib/recommendation/marketKnowledge/marketKnowledgeStore";
 import {
   validateReplayResult,
   validateReplaySnapshots,
