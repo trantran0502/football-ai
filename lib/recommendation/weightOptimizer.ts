@@ -4,6 +4,7 @@ import type {
   RecommendationLearningMarketKey,
   RecommendationLearningRecord,
 } from "@/lib/recommendation/recommendationLearningTypes";
+import { filterCompleteLearningRecords, inspectLearningRecordCompleteness } from "@/lib/recommendation/recommendationLearningDiagnostics";
 import {
   DEFAULT_MARKET_GROUP_WEIGHT,
   DEFAULT_TEAM_GROUP_WEIGHT,
@@ -74,28 +75,6 @@ function finalizeGroupStats(accumulator: GroupAccumulator): {
     roi: accumulator.totalStake > 0 ? accumulator.totalProfit / accumulator.totalStake : 0,
     averageConfidence: accumulator.confidenceSum / accumulator.sampleSize,
   };
-}
-
-function isCompleteLearningRecord(
-  record: RecommendationLearningRecord
-): { ok: true } | { ok: false; reason: string } {
-  if (!record.actualResult) {
-    return { ok: false, reason: "missing_actual_result" };
-  }
-  if (record.recommendation === null) {
-    return { ok: false, reason: "missing_recommendation" };
-  }
-  if (!record.providerDiagnostics || record.providerDiagnostics.length === 0) {
-    return { ok: false, reason: "missing_provider_diagnostics" };
-  }
-  const decisiveOutcomes = record.marketOutcomes.filter((outcome) => outcome.result !== "PUSH");
-  if (decisiveOutcomes.length === 0 && record.totalStake <= 0) {
-    return { ok: false, reason: "missing_market_outcomes" };
-  }
-  if (record.providerOverallConfidence === null) {
-    return { ok: false, reason: "missing_provider_overall_confidence" };
-  }
-  return { ok: true };
 }
 
 function getMaxAdjustment(sampleSize: number): number {
@@ -515,24 +494,7 @@ function buildMarketTypeAnalysis(
   });
 }
 
-export function filterCompleteLearningRecords(records: RecommendationLearningRecord[]): {
-  used: RecommendationLearningRecord[];
-  skipped: Array<{ record: RecommendationLearningRecord; reason: string }>;
-} {
-  const used: RecommendationLearningRecord[] = [];
-  const skipped: Array<{ record: RecommendationLearningRecord; reason: string }> = [];
-
-  for (const record of records) {
-    const validation = isCompleteLearningRecord(record);
-    if (validation.ok) {
-      used.push(record);
-    } else {
-      skipped.push({ record, reason: validation.reason });
-    }
-  }
-
-  return { used, skipped };
-}
+export { filterCompleteLearningRecords } from "@/lib/recommendation/recommendationLearningDiagnostics";
 
 export function buildWeightOptimizerReport(
   records: RecommendationLearningRecord[]
@@ -542,7 +504,9 @@ export function buildWeightOptimizerReport(
 
   const skipReasons: Record<string, number> = {};
   for (const entry of skipped) {
-    skipReasons[entry.reason] = (skipReasons[entry.reason] ?? 0) + 1;
+    for (const reason of inspectLearningRecordCompleteness(entry.record).skipReasons) {
+      skipReasons[reason] = (skipReasons[reason] ?? 0) + 1;
+    }
   }
 
   const sortedUsed = [...used].sort(

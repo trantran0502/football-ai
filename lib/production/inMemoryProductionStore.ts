@@ -10,7 +10,7 @@ import {
 } from "@/lib/database/matchSchema";
 import { enrichRecordWithReplayValidation } from "@/lib/replay/replayBuilder";
 import { runMatchVerification } from "@/lib/database/matchVerification";
-import { persistRecommendationLearningLocally } from "@/lib/recommendation/recommendationLearningPersistence";
+import { persistRecommendationLearningForVerifiedMatch } from "@/lib/recommendation/recommendationLearningPersistence";
 import type { AnalysisReport } from "@/lib/analysis/types";
 
 const store = new Map<string, HistoricalMatchRecord>();
@@ -150,7 +150,12 @@ export async function verifyMatchInMemory(
       })
     );
     store.set(id, verified);
-    persistRecommendationLearningLocally(verified);
+    const persistOutcome = await persistRecommendationLearningForVerifiedMatch(verified);
+    if (persistOutcome.error) {
+      console.error(
+        `[recommendation_learning] persist failed for ${verified.id}: ${persistOutcome.error}`
+      );
+    }
     return structuredClone(verified);
   } catch {
     const failed = normalizeHistoricalMatchRecord({

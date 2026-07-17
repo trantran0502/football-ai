@@ -231,7 +231,12 @@ export async function verifyMatchInSupabase(
       const { persistRecommendationLearningForVerifiedMatch } = await import(
         "@/lib/recommendation/recommendationLearningPersistence"
       );
-      await persistRecommendationLearningForVerifiedMatch(saved);
+      const persistOutcome = await persistRecommendationLearningForVerifiedMatch(saved);
+      if (persistOutcome.error) {
+        console.error(
+          `[recommendation_learning] persist failed for ${saved.id}: ${persistOutcome.error}`
+        );
+      }
     }
     return saved;
   } catch {
