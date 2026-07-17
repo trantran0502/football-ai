@@ -1,10 +1,22 @@
 import Link from "next/link";
+import { runAutomatedLearningPipeline } from "@/lib/admin/recommendationPipelineService";
 import { WeightOptimizerDashboard } from "@/components/recommendation/WeightOptimizerDashboard";
+import {
+  PipelineInspectorPanel,
+  WeightOptimizerDiagnosticsPanel,
+} from "@/components/admin/RecommendationPipelinePanels";
 import { buildWeightOptimizerReport } from "@/lib/recommendation/weightOptimizer";
-import { listRecommendationLearningRecords } from "@/lib/supabase/queries/recommendationLearning";
+import { listRecommendationLearningFromSupabase } from "@/lib/supabase/services/recommendationLearningService";
+import { withSupabaseRetry } from "@/lib/admin/supabaseRetry";
 
 export default async function WeightOptimizerAdminPage() {
-  const records = await listRecommendationLearningRecords();
+  const snapshot = await runAutomatedLearningPipeline();
+  const learningResult = await withSupabaseRetry(
+    "weight_optimizer_list_learning",
+    "GET recommendation_learning",
+    () => listRecommendationLearningFromSupabase()
+  );
+  const records = learningResult.ok ? learningResult.value : [];
   const report = buildWeightOptimizerReport(records);
 
   return (
@@ -18,29 +30,21 @@ export default async function WeightOptimizerAdminPage() {
           Analysis Mode：依 recommendation_learning 產生 Market / Team 建議權重。尚未套用正式權重。
         </p>
         <div className="mt-3 flex flex-wrap gap-3 text-sm">
-          <Link
-            href="/admin/recommendation-learning"
-            className="text-emerald-700 hover:underline dark:text-emerald-400"
-          >
-            Recommendation Learning
-          </Link>
-          <Link
-            href="/admin/recommendation-validation"
-            className="text-emerald-700 hover:underline dark:text-emerald-400"
-          >
-            Validation Dashboard
-          </Link>
-          <Link href="/admin" className="text-emerald-700 hover:underline dark:text-emerald-400">
-            Admin Home
-          </Link>
+          <Link href="/admin/system-health">System Health</Link>
+          <Link href="/admin/recommendation-learning">Recommendation Learning</Link>
+          <Link href="/admin">Admin Home</Link>
         </div>
       </header>
 
-      {report.diagnostics.recordsUsed === 0 ? (
-        <p className="text-sm text-zinc-500">尚無可用 recommendation_learning 資料。</p>
-      ) : (
+      <WeightOptimizerDiagnosticsPanel
+        diagnostics={snapshot.weightOptimizer}
+        statistics={snapshot.statistics}
+      />
+      <PipelineInspectorPanel steps={snapshot.pipeline} />
+
+      {report.diagnostics.recordsUsed > 0 ? (
         <WeightOptimizerDashboard report={report} />
-      )}
+      ) : null}
     </main>
   );
 }

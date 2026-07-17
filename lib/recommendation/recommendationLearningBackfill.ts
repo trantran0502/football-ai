@@ -1,4 +1,5 @@
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import { withSupabaseRetry } from "@/lib/admin/supabaseRetry";
 import { buildRecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningBuilder";
 import { inspectLearningRecordCompleteness } from "@/lib/recommendation/recommendationLearningDiagnostics";
 import type { RecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningTypes";
@@ -37,6 +38,7 @@ export interface RecommendationLearningBackfillResult {
   skipReasons: Record<string, number>;
   failures: RecommendationLearningBackfillFailure[];
   processingTimeMs: number;
+  retryErrors: string[];
 }
 
 function listVerifiedMatchRecords(records: HistoricalMatchRecord[]): HistoricalMatchRecord[] {
@@ -99,10 +101,28 @@ export async function scanRecommendationLearningBackfillCandidates(): Promise<Re
     };
   }
 
-  const [{ records }, existingLearning] = await Promise.all([
-    listMatchRecordsFromSupabase(),
-    listRecommendationLearningFromSupabase(),
-  ]);
+  const matchList = await withSupabaseRetry(
+    "scan_list_match_records",
+    "GET match_records",
+    async () => (await listMatchRecordsFromSupabase()).records
+  );
+  const learningList = await withSupabaseRetry(
+    "scan_list_learning",
+    "GET recommendation_learning",
+    () => listRecommendationLearningFromSupabase()
+  );
+
+  if (!matchList.ok) {
+    return {
+      verifiedRecords: 0,
+      alreadyExists: 0,
+      eligibleToCreate: 0,
+      ineligible: 0,
+    };
+  }
+
+  const records = matchList.value;
+  const existingLearning = learningList.ok ? learningList.value : [];
 
   const existingIds = new Set(existingLearning.map((record) => record.matchRecordId));
   const verifiedRecords = listVerifiedMatchRecords(records);
@@ -152,13 +172,42 @@ export async function runRecommendationLearningBackfill(): Promise<Recommendatio
       skipReasons: { supabase_unavailable: 1 },
       failures: [],
       processingTimeMs: Date.now() - startedAt,
+      retryErrors: ["supabase_unavailable"],
     };
   }
 
-  const [{ records }, existingLearning] = await Promise.all([
-    listMatchRecordsFromSupabase(),
-    listRecommendationLearningFromSupabase(),
-  ]);
+  const matchList = await withSupabaseRetry(
+    "backfill_list_match_records",
+    "GET match_records",
+    async () => (await listMatchRecordsFromSupabase()).records
+  );
+  const learningList = await withSupabaseRetry(
+    "backfill_list_learning",
+    "GET recommendation_learning",
+    () => listRecommendationLearningFromSupabase()
+  );
+
+  const retryErrors: string[] = [];
+  if (!matchList.ok) {
+    retryErrors.push(matchList.error);
+    return {
+      verifiedRecords: 0,
+      alreadyExists: 0,
+      created: 0,
+      skipped: 0,
+      failed: 0,
+      skipReasons: { fetch_match_records_failed: 1 },
+      failures: [],
+      processingTimeMs: Date.now() - startedAt,
+      retryErrors,
+    };
+  }
+  if (!learningList.ok) {
+    retryErrors.push(learningList.error);
+  }
+
+  const records = matchList.value;
+  const existingLearning = learningList.ok ? learningList.value : [];
 
   const existingIds = new Set(existingLearning.map((record) => record.matchRecordId));
   const verifiedRecords = listVerifiedMatchRecords(records);
@@ -203,16 +252,21 @@ export async function runRecommendationLearningBackfill(): Promise<Recommendatio
       continue;
     }
 
-    try {
-      await upsertRecommendationLearningToSupabase(built);
+    const upsert = await withSupabaseRetry(
+      "backfill_upsert_learning",
+      `UPSERT recommendation_learning match_record_id=${matchRecord.id}`,
+      () => upsertRecommendationLearningToSupabase(built)
+    );
+    if (upsert.ok) {
       created += 1;
       existingIds.add(matchRecord.id);
-    } catch (error) {
+    } else {
       failed += 1;
+      retryErrors.push(upsert.error);
       skipReasons.insert_failed = (skipReasons.insert_failed ?? 0) + 1;
       failures.push({
         matchRecordId: matchRecord.id,
-        reason: error instanceof Error ? error.message : String(error),
+        reason: upsert.error,
         missingFields: [],
       });
     }
@@ -227,5 +281,6 @@ export async function runRecommendationLearningBackfill(): Promise<Recommendatio
     skipReasons,
     failures,
     processingTimeMs: Date.now() - startedAt,
+    retryErrors,
   };
 }

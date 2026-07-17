@@ -1,21 +1,23 @@
 "use server";
 
-import {
-  runRecommendationLearningBackfill,
-  scanRecommendationLearningBackfillCandidates,
-  type RecommendationLearningBackfillResult,
-  type RecommendationLearningBackfillScanResult,
-} from "@/lib/recommendation/recommendationLearningBackfill";
+import { runAutomatedLearningPipeline } from "@/lib/admin/recommendationPipelineService";
 import { revalidatePath } from "next/cache";
 
-export async function scanBackfillAction(): Promise<RecommendationLearningBackfillScanResult> {
-  return scanRecommendationLearningBackfillCandidates();
+export async function refreshPipelineAction() {
+  await runAutomatedLearningPipeline();
+  revalidatePath("/admin/recommendation-learning-backfill");
+  revalidatePath("/admin/system-health");
+  revalidatePath("/admin/weight-optimizer");
+  revalidatePath("/admin/recommendation-learning-debug");
+  revalidatePath("/admin");
 }
 
-export async function runBackfillAction(): Promise<RecommendationLearningBackfillResult> {
-  const result = await runRecommendationLearningBackfill();
-  revalidatePath("/admin/recommendation-learning-debug");
-  revalidatePath("/admin/weight-optimizer");
-  revalidatePath("/admin/recommendation-learning");
-  return result;
+export async function scanBackfillAction() {
+  const snapshot = await runAutomatedLearningPipeline();
+  return snapshot.scan;
+}
+
+export async function runBackfillAction() {
+  const snapshot = await runAutomatedLearningPipeline();
+  return snapshot.backfill;
 }

@@ -1,4 +1,6 @@
 import { buildAdminDashboardResponse } from "@/lib/admin/adminDashboardService";
+import { runAutomatedLearningPipeline } from "@/lib/admin/recommendationPipelineService";
+import { SystemOverviewPanel } from "@/components/admin/RecommendationPipelinePanels";
 import type { ValidationMetricBucket } from "@/lib/validation/validationTypes";
 
 function formatPercent(value: number): string {
@@ -116,7 +118,10 @@ function BucketTable(props: {
 }
 
 export default async function AdminDashboardPage() {
-  const dashboard = await buildAdminDashboardResponse();
+  const [dashboard, pipelineSnapshot] = await Promise.all([
+    buildAdminDashboardResponse(),
+    runAutomatedLearningPipeline(),
+  ]);
 
   const marketRows = Object.entries(dashboard.byMarket).map(([key, bucket]) => ({
     key,
@@ -141,7 +146,20 @@ export default async function AdminDashboardPage() {
           <p className="text-sm text-zinc-500">
             更新時間：{new Date(dashboard.generatedAt).toLocaleString("zh-TW")}
           </p>
+          <div className="flex flex-wrap gap-3 text-sm">
+            <a href="/admin/system-health" className="text-emerald-700 hover:underline dark:text-emerald-400">
+              System Health
+            </a>
+            <a href="/admin/recommendation-learning-backfill" className="text-emerald-700 hover:underline dark:text-emerald-400">
+              Learning Backfill
+            </a>
+            <a href="/admin/weight-optimizer" className="text-emerald-700 hover:underline dark:text-emerald-400">
+              Weight Optimizer
+            </a>
+          </div>
         </header>
+
+        <SystemOverviewPanel snapshot={pipelineSnapshot} />
 
         <section>
           <h2 className="mb-3 text-lg font-semibold">系統狀態</h2>
