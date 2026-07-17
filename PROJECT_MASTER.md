@@ -29,6 +29,15 @@ Latest Commit:
 
 ==================================
 
+Repository Root
+
+- Official Git repository: this directory (`football-ai/` when cloned from GitHub).
+- Remote: `origin` → `https://github.com/trantran0502/football-ai.git`
+- Run all npm commands here (`dev`, `build`, `test`, `validate:system`, `health-check`, `health:supabase`, `health:supabase:production`, `supabase:migrate`, `check:supabase-odds`, `repair:supabase-odds`).
+- Do not use a parent `Desktop/football-ai/` wrapper with its own `.git` or stale Next.js scaffold; that outer layer is not connected to GitHub and must not host a second `package.json`.
+
+==================================
+
 Overall Progress
 
 Phase 1
