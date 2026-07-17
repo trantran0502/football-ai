@@ -36,7 +36,7 @@ Git Commit: 10eb5316bcde0a5d5a530546d2c8b550d8158d75
 
 **Root cause (resolved):** Schema probe used `select('id')` on all tables; `scheduler_state`, `admin_*`, and `security_rate_limit_buckets` use non-`id` primary keys, causing false FAIL. See `SUPABASE_HEALTH_REPORT.md` and `npm run health:supabase`.
 
-**Production CRUD:** Requires `ADMIN_API_KEY` locally to call authenticated `/api/data/health` — not configured in `.env.local`.
+**Production CRUD:** `ADMIN_API_KEY` missing from `.env.local`. After setting matching key locally + Vercel Production, deploy latest and run `npm run health:supabase:production`. See `PRODUCTION_SUPABASE_VERIFICATION.md`.
 
 ## Environment Variables
 

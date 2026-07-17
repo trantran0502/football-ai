@@ -55,6 +55,7 @@
     "validate:system": "tsx scripts/run-system-validation.ts",
     "health-check": "tsx scripts/run-production-health-check.ts",
     "health:supabase": "tsx scripts/run-supabase-health.ts",
+    "health:supabase:production": "tsx scripts/run-production-supabase-probe.ts",
     "supabase:migrate": "tsx scripts/apply-supabase-migrations.ts",
     "check:supabase-odds": "tsx scripts/check-supabase-implied-probability.ts",
     "repair:supabase-odds": "tsx scripts/repair-supabase-implied-probability.ts",

@@ -65,7 +65,10 @@ Full Production Health Check v1
 🟨 PARTIAL PASS
 
 Supabase Recovery and Verification v1
-🟨 PARTIAL PASS (Local PASS; Production CRUD requires ADMIN_API_KEY)
+🟨 PARTIAL PASS (Local PASS; Production CRUD requires ADMIN_API_KEY — see PRODUCTION_SUPABASE_VERIFICATION.md)
+
+Production Supabase Verification v1
+🟨 MANUAL ACTION REQUIRED
 
 Phase 4
 AI Learning
@@ -174,7 +177,11 @@ Fixed:
 Logical entities (fixture, market snapshot, validation, evidence, etc.) persist in JSON columns on `match_records` / `beta_recommendations` / `recommendation_learning` — not separate tables by design.
 
 Remaining:
-- Production authenticated Supabase probe needs `ADMIN_API_KEY` locally (NOT TESTABLE otherwise).
+- Production authenticated Supabase CRUD: set matching `ADMIN_API_KEY` in `.env.local` and Vercel Production, deploy latest, run `npm run health:supabase:production`.
+
+Production Verification (v1):
+- `POST /api/data/health` with `{ action: "production-crud-probe", healthCheckId }` runs insert/select/update/delete on Production Supabase (admin auth required).
+- Script: `npm run health:supabase:production` (sequential: test → build → probe).
 
 ==================================
 
@@ -190,8 +197,7 @@ Historical Data Policy
 
 Current Blocker
 
-- Local `.env.local` missing API_FOOTBALL_KEY, ADMIN_API_KEY, CRON_SECRET (production-only on Vercel)
-- Production Supabase CRUD not verified locally without ADMIN_API_KEY
+- `ADMIN_API_KEY` missing from local `.env.local` — Production CRUD verification blocked until set locally and on Vercel Production (same value).
 
 ==================================
 
