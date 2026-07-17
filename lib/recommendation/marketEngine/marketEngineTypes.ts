@@ -62,6 +62,7 @@ export interface MarketAnalysisSnapshot {
   generatedAt: string;
   engineVersion: string;
   marketEngineWeight: number;
+  knowledgeSnapshotId: string | null;
   markets: MarketAnalysis[];
 }
 

@@ -48,6 +48,7 @@ export function runMarketEngine(
     generatedAt: options.generatedAt ?? new Date().toISOString(),
     engineVersion: MARKET_ENGINE_VERSION,
     marketEngineWeight: MARKET_ENGINE_INITIAL_WEIGHT,
+    knowledgeSnapshotId: null,
     markets,
   };
 }
