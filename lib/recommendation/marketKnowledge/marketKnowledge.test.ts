@@ -220,6 +220,9 @@ function testTypes(): void {
   const pattern: PatternStatistics = {
     patternId: "HomeLowWaterBalanced",
     sampleSize: 0,
+    hitCount: 0,
+    totalProfit: 0,
+    totalStake: 0,
     hitRate: 0,
     roi: 0,
     averageOdds: 0,
@@ -227,6 +230,7 @@ function testTypes(): void {
     averageMarketScore: 0,
     bestLeague: null,
     worstLeague: null,
+    leagueHitRates: [],
     firstSeen: null,
     lastSeen: null,
   };

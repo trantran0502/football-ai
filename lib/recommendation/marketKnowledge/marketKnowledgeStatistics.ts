@@ -5,6 +5,7 @@ import type {
   MarketKnowledgeSnapshot,
   MarketStatisticsEntry,
   MarketStatisticsMap,
+  PatternLeagueHitRate,
   PatternStatistics,
   RuleStatistics,
 } from "./marketKnowledgeTypes";
@@ -109,6 +110,79 @@ function finalizeRoi(totalProfit: number, totalStake: number): number {
     return 0;
   }
   return totalProfit / totalStake;
+}
+
+type MutableLeagueHitRate = {
+  hits: number;
+  total: number;
+  profit: number;
+  stake: number;
+};
+
+function serializeLeagueHitRates(
+  leagueHitRates: Map<string, MutableLeagueHitRate>
+): PatternLeagueHitRate[] {
+  return [...leagueHitRates.entries()]
+    .map(([leagueName, leagueBucket]) => ({
+      leagueName,
+      hits: leagueBucket.hits,
+      total: leagueBucket.total,
+      profit: leagueBucket.profit,
+      stake: leagueBucket.stake,
+    }))
+    .sort((left, right) => left.leagueName.localeCompare(right.leagueName));
+}
+
+function deserializeLeagueHitRates(
+  leagueHitRates: PatternLeagueHitRate[] | undefined
+): Map<string, MutableLeagueHitRate> {
+  const map = new Map<string, MutableLeagueHitRate>();
+  for (const entry of leagueHitRates ?? []) {
+    map.set(entry.leagueName, {
+      hits: entry.hits,
+      total: entry.total,
+      profit: entry.profit,
+      stake: entry.stake,
+    });
+  }
+  return map;
+}
+
+function resolvePatternBestWorstLeagues(
+  leagueHitRates: Map<string, MutableLeagueHitRate>
+): {
+  bestLeague: string | null;
+  worstLeague: string | null;
+} {
+  let bestLeague: string | null = null;
+  let worstLeague: string | null = null;
+  let bestRate = -1;
+  let worstRate = 2;
+
+  for (const [leagueName, leagueBucket] of leagueHitRates.entries()) {
+    if (leagueBucket.total === 0) {
+      continue;
+    }
+    const rate = leagueBucket.hits / leagueBucket.total;
+    if (
+      rate > bestRate ||
+      (rate === bestRate &&
+        (bestLeague === null || leagueName.localeCompare(bestLeague) < 0))
+    ) {
+      bestRate = rate;
+      bestLeague = leagueName;
+    }
+    if (
+      rate < worstRate ||
+      (rate === worstRate &&
+        (worstLeague === null || leagueName.localeCompare(worstLeague) > 0))
+    ) {
+      worstRate = rate;
+      worstLeague = leagueName;
+    }
+  }
+
+  return { bestLeague, worstLeague };
 }
 
 function applyObservationToRuleBucket(
@@ -362,30 +436,17 @@ export function buildStatisticsFromObservations(
 
   const patternStatistics: PatternStatistics[] = [...patternBuckets.values()]
     .map((bucket) => {
-      let bestLeague: string | null = null;
-      let worstLeague: string | null = null;
-      let bestRate = -1;
-      let worstRate = 2;
-
-      for (const [leagueName, leagueBucket] of bucket.leagueHitRates.entries()) {
-        if (leagueBucket.total === 0) {
-          continue;
-        }
-        const rate = leagueBucket.hits / leagueBucket.total;
-        if (rate > bestRate) {
-          bestRate = rate;
-          bestLeague = leagueName;
-        }
-        if (rate < worstRate) {
-          worstRate = rate;
-          worstLeague = leagueName;
-        }
-      }
+      const { bestLeague, worstLeague } = resolvePatternBestWorstLeagues(
+        bucket.leagueHitRates
+      );
 
       const missCount = bucket.sampleSize - bucket.hitCount;
       return {
         patternId: bucket.patternId,
         sampleSize: bucket.sampleSize,
+        hitCount: bucket.hitCount,
+        totalProfit: bucket.totalProfit,
+        totalStake: bucket.totalStake,
         hitRate: finalizeHitRate(bucket.hitCount, missCount),
         roi: finalizeRoi(bucket.totalProfit, bucket.totalStake),
         averageOdds: bucket.sampleSize > 0 ? bucket.totalOdds / bucket.sampleSize : 0,
@@ -395,6 +456,7 @@ export function buildStatisticsFromObservations(
           bucket.sampleSize > 0 ? bucket.totalMarketScore / bucket.sampleSize : 0,
         bestLeague,
         worstLeague,
+        leagueHitRates: serializeLeagueHitRates(bucket.leagueHitRates),
         firstSeen: bucket.firstSeen,
         lastSeen: bucket.lastSeen,
       };
@@ -525,27 +587,14 @@ function ruleStatisticsToBucket(rule: RuleStatistics): MutableRuleBucket {
 }
 
 function patternStatisticsToBucket(pattern: PatternStatistics): MutablePatternBucket {
-  const hitCount = pattern.hitRate * pattern.sampleSize;
-  const leagueHitRates = new Map<
-    string,
-    { hits: number; total: number; profit: number; stake: number }
-  >();
-
-  if (pattern.bestLeague) {
-    leagueHitRates.set(pattern.bestLeague, {
-      hits: hitCount,
-      total: pattern.sampleSize,
-      profit: pattern.roi * pattern.sampleSize,
-      stake: pattern.sampleSize,
-    });
-  }
+  const leagueHitRates = deserializeLeagueHitRates(pattern.leagueHitRates);
 
   return {
     patternId: pattern.patternId,
     sampleSize: pattern.sampleSize,
-    hitCount,
-    totalProfit: pattern.roi * pattern.sampleSize,
-    totalStake: pattern.sampleSize,
+    hitCount: pattern.hitCount,
+    totalProfit: pattern.totalProfit,
+    totalStake: pattern.totalStake,
     totalOdds: pattern.averageOdds * pattern.sampleSize,
     totalConfidence: pattern.averageConfidence * pattern.sampleSize,
     totalMarketScore: pattern.averageMarketScore * pattern.sampleSize,
@@ -810,30 +859,17 @@ function finalizeBucketsToSnapshot(
 
   const patternStatistics: PatternStatistics[] = [...patternBuckets.values()]
     .map((bucket) => {
-      let bestLeague: string | null = null;
-      let worstLeague: string | null = null;
-      let bestRate = -1;
-      let worstRate = 2;
-
-      for (const [leagueName, leagueBucket] of bucket.leagueHitRates.entries()) {
-        if (leagueBucket.total === 0) {
-          continue;
-        }
-        const rate = leagueBucket.hits / leagueBucket.total;
-        if (rate > bestRate) {
-          bestRate = rate;
-          bestLeague = leagueName;
-        }
-        if (rate < worstRate) {
-          worstRate = rate;
-          worstLeague = leagueName;
-        }
-      }
+      const { bestLeague, worstLeague } = resolvePatternBestWorstLeagues(
+        bucket.leagueHitRates
+      );
 
       const missCount = bucket.sampleSize - bucket.hitCount;
       return {
         patternId: bucket.patternId,
         sampleSize: bucket.sampleSize,
+        hitCount: bucket.hitCount,
+        totalProfit: bucket.totalProfit,
+        totalStake: bucket.totalStake,
         hitRate: finalizeHitRate(bucket.hitCount, missCount),
         roi: finalizeRoi(bucket.totalProfit, bucket.totalStake),
         averageOdds: bucket.sampleSize > 0 ? bucket.totalOdds / bucket.sampleSize : 0,
@@ -843,6 +879,7 @@ function finalizeBucketsToSnapshot(
           bucket.sampleSize > 0 ? bucket.totalMarketScore / bucket.sampleSize : 0,
         bestLeague,
         worstLeague,
+        leagueHitRates: serializeLeagueHitRates(bucket.leagueHitRates),
         firstSeen: bucket.firstSeen,
         lastSeen: bucket.lastSeen,
       };

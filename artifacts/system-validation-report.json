@@ -1,0 +1,5909 @@
+{
+  "overallStatus": "FAIL",
+  "startedAt": "2026-07-17T03:59:16.044Z",
+  "completedAt": "2026-07-17T03:59:24.906Z",
+  "durationMs": 8862,
+  "gitCommit": "d71c3923f6f5ae10de768d5db0da7a7e9c516d29",
+  "fixtureCount": 12,
+  "build": {
+    "name": "Build",
+    "status": "PASS",
+    "checksPassed": 1,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "npm run build",
+        "status": "PASS"
+      }
+    ]
+  },
+  "unitTests": {
+    "name": "Unit Tests",
+    "status": "PASS",
+    "checksPassed": 1,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "npm test",
+        "status": "PASS"
+      }
+    ],
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "marketEngine": {
+    "name": "Market Engine",
+    "status": "PASS",
+    "checksPassed": 492,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "sv-fix-01 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-01.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-02.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-03.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-04.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-05.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-06.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-07.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-08.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-09.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-10.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-11.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12 market count",
+        "status": "PASS",
+        "message": "4 markets"
+      },
+      {
+        "name": "sv-fix-12.1X2 exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.riskLevel",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS exists",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.marketScore range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.confidence range",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.baseScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.finalScore",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.ruleResults",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.auditLog",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.scoreBreakdown",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.recommendation",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.riskLevel",
+        "status": "PASS"
+      }
+    ]
+  },
+  "rules": {
+    "name": "Rules",
+    "status": "PASS",
+    "checksPassed": 71,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "rule registry unique ids",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.1X2.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AH.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.O/U.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BTTS.audit count",
+        "status": "PASS"
+      },
+      {
+        "name": "LowWaterRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "LowWaterRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "HighWaterRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "HighWaterRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "BalancedMarketRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "BalancedMarketRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "ExtremeMarketRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "ExtremeMarketRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "OverroundRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "OverroundRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "FavoriteBiasRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "FavoriteBiasRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "UnderdogValueRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "UnderdogValueRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "OddsGapRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "OddsGapRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "SteamMoveRule placeholder never triggers",
+        "status": "PASS"
+      },
+      {
+        "name": "SteamMoveRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "SharpMoneyRule placeholder never triggers",
+        "status": "PASS"
+      },
+      {
+        "name": "SharpMoneyRule not triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "TrapLineRule triggered at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "TrapLineRule not triggered at least once",
+        "status": "PASS"
+      }
+    ]
+  },
+  "patterns": {
+    "name": "Patterns",
+    "status": "FAIL",
+    "checksPassed": 611,
+    "checksFailed": 3,
+    "warnings": [],
+    "errors": [
+      "HomeLowWaterBalanced matched at least once: pattern never matched across fixtures",
+      "BalancedUnderdog matched at least once: pattern never matched across fixtures",
+      "LowOverroundBalanced matched at least once: pattern never matched across fixtures"
+    ],
+    "details": [
+      {
+        "name": "pattern registry unique ids",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterFavorite.matchedRules.LowWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterFavorite.matchedRules.LowWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeFavorite.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterFavorite.matchedRules.LowWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeFavorite.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterFavorite.matchedRules.LowWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.TrapCandidate.matchedRules.TrapLineRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.TrapCandidate.matchedRules.LowWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterFavorite.matchedRules.LowWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeFavorite.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterFavorite.matchedRules.LowWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AwayHighWaterValue.matchedRules.HighWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AwayHighWaterValue.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeUnderdog.matchedRules.ExtremeMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeUnderdog.matchedRules.UnderdogValueRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HighOverroundRisk.matchedRules.OverroundRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HighOverroundRisk.matchedRules.OddsGapRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterFavorite.matchedRules.LowWaterRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterFavorite.matchedRules.FavoriteBiasRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HomeLowWaterFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.AwayHighWaterValue.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeFavorite.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.ExtremeUnderdog.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.LowOverroundBalanced.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.HighOverroundRisk.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.TrapCandidate.reason",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.BalancedFavorite.matchedRules.BalancedMarketRule",
+        "status": "PASS"
+      },
+      {
+        "name": "HomeLowWaterBalanced matched at least once",
+        "status": "FAIL",
+        "message": "pattern never matched across fixtures"
+      },
+      {
+        "name": "HomeLowWaterBalanced not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "HomeLowWaterFavorite matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "HomeLowWaterFavorite not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "AwayHighWaterValue matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "AwayHighWaterValue not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "BalancedFavorite matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "BalancedFavorite not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "BalancedUnderdog matched at least once",
+        "status": "FAIL",
+        "message": "pattern never matched across fixtures"
+      },
+      {
+        "name": "BalancedUnderdog not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "ExtremeFavorite matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "ExtremeFavorite not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "ExtremeUnderdog matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "ExtremeUnderdog not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "LowOverroundBalanced matched at least once",
+        "status": "FAIL",
+        "message": "pattern never matched across fixtures"
+      },
+      {
+        "name": "LowOverroundBalanced not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "HighOverroundRisk matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "HighOverroundRisk not matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "TrapCandidate matched at least once",
+        "status": "PASS"
+      },
+      {
+        "name": "TrapCandidate not matched at least once",
+        "status": "PASS"
+      }
+    ]
+  },
+  "knowledgeBatch": {
+    "name": "Knowledge Batch",
+    "status": "PASS",
+    "checksPassed": 44,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "ruleStatistics.BalancedMarketRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.BalancedMarketRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.ExtremeMarketRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.ExtremeMarketRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.FavoriteBiasRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.FavoriteBiasRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.HighWaterRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.HighWaterRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.LowWaterRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.LowWaterRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.OddsGapRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.OddsGapRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.OverroundRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.OverroundRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.TrapLineRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.TrapLineRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.UnderdogValueRule.sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "ruleStatistics.UnderdogValueRule.hitRate",
+        "status": "PASS"
+      },
+      {
+        "name": "marketStatistics.1X2 present",
+        "status": "PASS"
+      },
+      {
+        "name": "marketStatistics.AH present",
+        "status": "PASS"
+      },
+      {
+        "name": "marketStatistics.O/U present",
+        "status": "PASS"
+      },
+      {
+        "name": "marketStatistics.BTTS present",
+        "status": "PASS"
+      },
+      {
+        "name": "leagueStatistics.140.1X2",
+        "status": "PASS"
+      },
+      {
+        "name": "leagueStatistics.140.AH",
+        "status": "PASS"
+      },
+      {
+        "name": "leagueStatistics.140.BTTS",
+        "status": "PASS"
+      },
+      {
+        "name": "leagueStatistics.140.O/U",
+        "status": "PASS"
+      },
+      {
+        "name": "leagueStatistics.39.1X2",
+        "status": "PASS"
+      },
+      {
+        "name": "leagueStatistics.39.AH",
+        "status": "PASS"
+      },
+      {
+        "name": "leagueStatistics.39.BTTS",
+        "status": "PASS"
+      },
+      {
+        "name": "leagueStatistics.39.O/U",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.1X2.140",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.1X2.140",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.1X2.39",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.1X2.39",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.AH.140",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.AH.140",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.AH.39",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.AH.39",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.BTTS.140",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.BTTS.39",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.O/U.140",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.O/U.39",
+        "status": "PASS"
+      },
+      {
+        "name": "historicalPatterns.O/U.39",
+        "status": "PASS"
+      },
+      {
+        "name": "batch snapshot generated",
+        "status": "PASS",
+        "message": "d234453a-94d2-475d-8dc8-440bb53e4fa6"
+      }
+    ]
+  },
+  "replay": {
+    "name": "Replay",
+    "status": "PASS",
+    "checksPassed": 30,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "dryRun.matchesProcessed",
+        "status": "PASS"
+      },
+      {
+        "name": "dryRun.no writes",
+        "status": "PASS"
+      },
+      {
+        "name": "real.snapshotCount",
+        "status": "PASS"
+      },
+      {
+        "name": "real.store writes",
+        "status": "PASS"
+      },
+      {
+        "name": "step.1.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.1.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.2.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.2.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.3.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.3.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.4.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.4.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.5.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.5.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.6.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.6.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.7.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.7.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.8.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.8.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.9.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.9.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.10.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.10.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.11.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.11.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "step.12.snapshotId unique",
+        "status": "PASS"
+      },
+      {
+        "name": "step.12.audit",
+        "status": "PASS"
+      },
+      {
+        "name": "monotonic sampleSize",
+        "status": "PASS"
+      },
+      {
+        "name": "statisticsDiff",
+        "status": "PASS"
+      }
+    ]
+  },
+  "persistence": {
+    "name": "Persistence",
+    "status": "PASS",
+    "checksPassed": 14,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "saveSnapshot",
+        "status": "PASS"
+      },
+      {
+        "name": "loadSnapshot",
+        "status": "PASS"
+      },
+      {
+        "name": "loadLatestSnapshot",
+        "status": "PASS"
+      },
+      {
+        "name": "listSnapshots",
+        "status": "PASS"
+      },
+      {
+        "name": "snapshotExists",
+        "status": "PASS"
+      },
+      {
+        "name": "manifest",
+        "status": "PASS"
+      },
+      {
+        "name": "duplicate protection",
+        "status": "PASS"
+      },
+      {
+        "name": "overwrite=true",
+        "status": "PASS"
+      },
+      {
+        "name": "deterministic checksum same content",
+        "status": "PASS"
+      },
+      {
+        "name": "checksum corruption detection",
+        "status": "PASS"
+      },
+      {
+        "name": "atomic save",
+        "status": "PASS"
+      },
+      {
+        "name": "deleteSnapshot",
+        "status": "PASS"
+      },
+      {
+        "name": "rebuildManifest.invalidSnapshots",
+        "status": "PASS"
+      },
+      {
+        "name": "rebuildManifest.validSnapshots",
+        "status": "PASS",
+        "message": "0 valid"
+      }
+    ]
+  },
+  "incremental": {
+    "name": "Incremental",
+    "status": "PASS",
+    "checksPassed": 25,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "sv-fix-01.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-01.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-02.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-03.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-04.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-05.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-06.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-07.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-08.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-09.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-10.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-11.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.parentSnapshotId",
+        "status": "PASS"
+      },
+      {
+        "name": "sv-fix-12.immutable previous",
+        "status": "PASS"
+      },
+      {
+        "name": "repository count",
+        "status": "PASS"
+      }
+    ]
+  },
+  "consistency": {
+    "name": "Consistency",
+    "status": "PASS",
+    "checksPassed": 2,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "statistics deepEqual",
+        "status": "PASS"
+      },
+      {
+        "name": "normalized checksum",
+        "status": "PASS"
+      }
+    ],
+    "firstDiff": null,
+    "batchChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77",
+    "replayChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77",
+    "incrementalChecksum": "2e2c42ed9d24fa5522f6f828ec55b37a2a26b17b1344cb3ade8ff1a38c809b77"
+  },
+  "verifiedPipeline": {
+    "name": "Verified Pipeline",
+    "status": "PASS",
+    "checksPassed": 146,
+    "checksFailed": 0,
+    "warnings": [],
+    "errors": [],
+    "details": [
+      {
+        "name": "runMarketEngine",
+        "status": "PASS"
+      },
+      {
+        "name": "observations",
+        "status": "PASS"
+      },
+      {
+        "name": "triggered rules",
+        "status": "PASS"
+      },
+      {
+        "name": "matched patterns",
+        "status": "PASS",
+        "message": "AwayHighWaterValue, ExtremeUnderdog, HighOverroundRisk, HomeLowWaterFavorite, BalancedFavorite, HighOverroundRisk, BalancedFavorite"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.matchRecordId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.leagueId",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.marketType",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.odds",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.profit",
+        "status": "PASS"
+      },
+      {
+        "name": "observation.stake",
+        "status": "PASS"
+      },
+      {
+        "name": "persistence roundtrip",
+        "status": "PASS"
+      },
+      {
+        "name": "pipeline completed without exception",
+        "status": "PASS"
+      },
+      {
+        "name": "replay final snapshot",
+        "status": "PASS",
+        "message": "e2b8ada3-8ae4-45fe-a065-4d17f59a7626"
+      },
+      {
+        "name": "incremental final snapshot",
+        "status": "PASS",
+        "message": "17867d40-347e-44cb-a2ff-7c80b69765e8"
+      }
+    ]
+  }
+}

@@ -28,9 +28,20 @@ export interface RuleStatistics {
   lastUpdated: string | null;
 }
 
+export interface PatternLeagueHitRate {
+  leagueName: string;
+  hits: number;
+  total: number;
+  profit: number;
+  stake: number;
+}
+
 export interface PatternStatistics {
   patternId: string;
   sampleSize: number;
+  hitCount: number;
+  totalProfit: number;
+  totalStake: number;
   hitRate: number;
   roi: number;
   averageOdds: number;
@@ -38,6 +49,8 @@ export interface PatternStatistics {
   averageMarketScore: number;
   bestLeague: string | null;
   worstLeague: string | null;
+  /** Per-league decisive outcomes; required for incremental snapshot round-trip. */
+  leagueHitRates: PatternLeagueHitRate[];
   firstSeen: string | null;
   lastSeen: string | null;
 }
