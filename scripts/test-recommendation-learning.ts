@@ -11,6 +11,7 @@ import {
   listRecommendationLearningFromMemory,
 } from "@/lib/recommendation/recommendationLearningMemoryStore";
 import { persistRecommendationLearningLocally } from "@/lib/recommendation/recommendationLearningPersistence";
+import { validateLearningRecordForBackfill } from "@/lib/recommendation/recommendationLearningBackfill";
 import { enrichRecordWithReplayValidation } from "@/lib/replay/replayBuilder";
 import type { ProviderRecommendationDiagnostic } from "@/lib/recommendation/providerWeightEngine";
 import { createEmptyRecommendationResult } from "@/lib/recommendation/recommendationTypes";
@@ -451,6 +452,21 @@ function runTests(): void {
 
   const sorted = sortRecommendationLearningRecords(listRecommendationLearningFromMemory());
   assert(sorted.length === 2, "sorted records should preserve count");
+
+  const incomplete = buildRecommendationLearningRecord({
+    ...verified,
+    analysisSnapshot: {
+      ...verified.analysisSnapshot!,
+      recommendation: null,
+    },
+  });
+  assert(Boolean(incomplete), "builder should still return record shell");
+  const incompleteValidation = validateLearningRecordForBackfill(incomplete!);
+  assert(!incompleteValidation.eligible, "missing recommendation should skip backfill");
+  assert(
+    incompleteValidation.skipReasons.includes("missing_recommendation"),
+    "skip reason should include missing_recommendation"
+  );
 
   console.log("Recommendation Learning tests passed.");
 }

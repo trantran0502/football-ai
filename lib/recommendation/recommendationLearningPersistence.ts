@@ -1,5 +1,6 @@
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import { buildRecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningBuilder";
+import { validateLearningRecordForBackfill } from "@/lib/recommendation/recommendationLearningBackfill";
 import { saveRecommendationLearningToMemory } from "@/lib/recommendation/recommendationLearningMemoryStore";
 import type { RecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningTypes";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
@@ -32,6 +33,14 @@ export async function persistRecommendationLearningForVerifiedMatch(
     return {
       record: null,
       error: record.status !== "VERIFIED" ? "match_not_verified" : "missing_actual_result",
+    };
+  }
+
+  const validation = validateLearningRecordForBackfill(learningRecord);
+  if (!validation.eligible) {
+    return {
+      record: null,
+      error: validation.skipReasons[0] ?? "incomplete_learning_record",
     };
   }
 
@@ -80,6 +89,25 @@ export async function syncRecommendationLearningFromVerifiedMatches(): Promise<R
   for (const record of verifiedRecords) {
     if (existingIds.has(record.id)) {
       skipped += 1;
+      continue;
+    }
+
+    const built = buildRecommendationLearningRecord(record);
+    if (!built) {
+      errors.push({
+        matchRecordId: record.id,
+        reason: "learning_record_not_buildable",
+      });
+      continue;
+    }
+
+    const validation = validateLearningRecordForBackfill(built);
+    if (!validation.eligible) {
+      skipped += 1;
+      errors.push({
+        matchRecordId: record.id,
+        reason: validation.skipReasons[0] ?? "incomplete_record",
+      });
       continue;
     }
 

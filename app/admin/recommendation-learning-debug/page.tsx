@@ -10,6 +10,7 @@ export default async function RecommendationLearningDebugPage() {
         <p className="text-xs uppercase tracking-wide text-zinc-500">Admin Debug</p>
         <h1 className="text-xl font-semibold">Recommendation Learning Pipeline Debug</h1>
         <div className="mt-2 flex flex-wrap gap-3">
+          <Link href="/admin/recommendation-learning-backfill">Backfill</Link>
           <Link href="/admin/recommendation-learning">Learning Dashboard</Link>
           <Link href="/admin/weight-optimizer">Weight Optimizer</Link>
           <Link href="/admin">Admin Home</Link>
