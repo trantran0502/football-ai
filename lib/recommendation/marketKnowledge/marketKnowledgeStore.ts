@@ -44,6 +44,11 @@ export function listSnapshots(): MarketKnowledgeSnapshot[] {
   return marketKnowledgeStore.listSnapshots();
 }
 
+export function getLatestSnapshot(): MarketKnowledgeSnapshot | null {
+  const snapshots = listSnapshots();
+  return snapshots[0] ?? null;
+}
+
 export function createPlaceholderKnowledgeSnapshot(
   generatedAt = new Date().toISOString()
 ): MarketKnowledgeSnapshot {

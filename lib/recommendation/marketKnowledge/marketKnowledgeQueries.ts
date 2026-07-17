@@ -8,6 +8,7 @@ import {
   type RuleStatistics,
 } from "./marketKnowledgeTypes";
 import type { LeagueStatistics } from "./marketKnowledgeTypes";
+import { marketKnowledgeStore } from "./marketKnowledgeStore";
 
 export interface MarketKnowledgeQueries {
   getRuleStatistics(ruleId: string): MarketKnowledgeQueryResult<RuleStatistics>;
@@ -35,27 +36,102 @@ function notImplementedQueryResult<T>(): MarketKnowledgeQueryResult<T> {
   };
 }
 
-export function createNotImplementedMarketKnowledgeQueries(): MarketKnowledgeQueries {
+function availableQueryResult<T>(data: T): MarketKnowledgeQueryResult<T> {
   return {
-    getRuleStatistics() {
-      return notImplementedQueryResult<RuleStatistics>();
+    status: "available",
+    message: "Loaded from latest market knowledge snapshot.",
+    data,
+  };
+}
+
+export function createStoreBackedMarketKnowledgeQueries(
+  store: Pick<typeof marketKnowledgeStore, "listSnapshots">
+): MarketKnowledgeQueries {
+  return {
+    getRuleStatistics(ruleId) {
+      const snapshot = store.listSnapshots()[0];
+      if (!snapshot || snapshot.status !== "available") {
+        return notImplementedQueryResult<RuleStatistics>();
+      }
+      const rule = snapshot.ruleStatistics.find((item) => item.ruleId === ruleId);
+      if (!rule) {
+        return notImplementedQueryResult<RuleStatistics>();
+      }
+      return availableQueryResult(rule);
     },
-    getPatternStatistics() {
-      return notImplementedQueryResult<PatternStatistics>();
+    getPatternStatistics(patternId) {
+      const snapshot = store.listSnapshots()[0];
+      if (!snapshot || snapshot.status !== "available") {
+        return notImplementedQueryResult<PatternStatistics>();
+      }
+      const pattern = snapshot.patternStatistics.find(
+        (item) => item.patternId === patternId
+      );
+      if (!pattern) {
+        return notImplementedQueryResult<PatternStatistics>();
+      }
+      return availableQueryResult(pattern);
     },
-    getLeagueStatistics() {
-      return notImplementedQueryResult<LeagueStatistics>();
+    getLeagueStatistics(leagueId, marketType) {
+      const snapshot = store.listSnapshots()[0];
+      if (!snapshot || snapshot.status !== "available") {
+        return notImplementedQueryResult<LeagueStatistics>();
+      }
+      const league = snapshot.leagueStatistics.find(
+        (item) =>
+          item.leagueId === leagueId &&
+          (marketType ? item.marketType === marketType : true)
+      );
+      if (!league) {
+        return notImplementedQueryResult<LeagueStatistics>();
+      }
+      return availableQueryResult(league);
     },
-    getMarketStatistics() {
-      return notImplementedQueryResult<MarketStatisticsEntry>();
+    getMarketStatistics(marketType) {
+      const snapshot = store.listSnapshots()[0];
+      if (!snapshot || snapshot.status !== "available") {
+        return notImplementedQueryResult<MarketStatisticsEntry>();
+      }
+      return availableQueryResult(snapshot.marketStatistics[marketType]);
     },
-    getHistoricalPattern() {
-      return notImplementedQueryResult<HistoricalPattern>();
+    getHistoricalPattern(query) {
+      const snapshot = store.listSnapshots()[0];
+      if (!snapshot || snapshot.status !== "available") {
+        return notImplementedQueryResult<HistoricalPattern>();
+      }
+
+      const pattern = snapshot.historicalPatterns.find((item) => {
+        if (query.marketType && item.marketType !== query.marketType) {
+          return false;
+        }
+        if (query.patternId !== undefined && item.patternId !== query.patternId) {
+          return false;
+        }
+        if (query.leagueId !== undefined && item.leagueId !== query.leagueId) {
+          return false;
+        }
+        if (query.ruleIds && query.ruleIds.length > 0) {
+          return query.ruleIds.every((ruleId) => item.ruleIds.includes(ruleId));
+        }
+        return true;
+      });
+
+      if (!pattern) {
+        return notImplementedQueryResult<HistoricalPattern>();
+      }
+      return availableQueryResult(pattern);
     },
   };
 }
 
-export const marketKnowledgeQueries = createNotImplementedMarketKnowledgeQueries();
+export function createNotImplementedMarketKnowledgeQueries(): MarketKnowledgeQueries {
+  return createStoreBackedMarketKnowledgeQueries({
+    listSnapshots: () => [],
+  });
+}
+
+export const marketKnowledgeQueries =
+  createStoreBackedMarketKnowledgeQueries(marketKnowledgeStore);
 
 export function getRuleStatistics(
   ruleId: string
