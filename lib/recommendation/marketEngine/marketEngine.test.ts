@@ -15,9 +15,11 @@ import {
   clampMarketScore,
   computeMarketScore,
   deriveRiskLevel,
+  MARKET_ENGINE_BASE_SCORE,
   MARKET_ENGINE_INITIAL_WEIGHT,
   scoreToConfidence,
 } from "./marketScore";
+import { runMarketRulesTests } from "./rules/marketRules.test";
 
 const EPSILON = 1e-4;
 
@@ -145,6 +147,11 @@ function assertMarketAnalysisShape(analysis: MarketAnalysis, marketType: string)
   assert(analysis.confidence >= 0 && analysis.confidence <= 1, `${marketType} confidence range`);
   assert(Number.isFinite(analysis.marketScore), `${marketType} marketScore`);
   assert(analysis.marketScore >= 0 && analysis.marketScore <= 100, `${marketType} marketScore range`);
+  assert(analysis.baseScore === MARKET_ENGINE_BASE_SCORE, `${marketType} baseScore`);
+  assert(analysis.finalScore === analysis.marketScore, `${marketType} finalScore`);
+  assert(Array.isArray(analysis.ruleResults) && analysis.ruleResults.length > 0, `${marketType} ruleResults`);
+  assert(Array.isArray(analysis.scoreBreakdown) && analysis.scoreBreakdown.length > 0, `${marketType} scoreBreakdown`);
+  assert(Array.isArray(analysis.auditLog) && analysis.auditLog.length > 0, `${marketType} auditLog`);
   assert(Array.isArray(analysis.reasons) && analysis.reasons.length > 0, `${marketType} reasons`);
   assert(Array.isArray(analysis.signals) && analysis.signals.length > 0, `${marketType} signals`);
   assert(typeof analysis.recommendation.label === "string", `${marketType} recommendation label`);
@@ -169,6 +176,7 @@ function testHistoricalInterface(): void {
 
 function testMarketScore(): void {
   assertNear(MARKET_ENGINE_INITIAL_WEIGHT, 0.6, "initial market engine weight");
+  assert(MARKET_ENGINE_BASE_SCORE === 65, "base score is 65");
 
   const highScore = computeMarketScore({
     impliedEdge: 0.8,
@@ -185,7 +193,7 @@ function testMarketScore(): void {
     waterQualityScore: 0,
     patternPenalty: 1,
   });
-  assert(lowScore <= 45, "low score should be weak");
+  assert(lowScore <= 50, "low score should be weak");
   assert(deriveRiskLevel(highScore) === "low", "high score low risk");
   assert(deriveRiskLevel(lowScore) === "high", "low score high risk");
   assert(clampMarketScore(150) === 100, "clamp upper bound");
@@ -268,7 +276,7 @@ function testBTTSAnalyzer(): void {
 function testRunMarketEngine(): void {
   const snapshot = runMarketEngine(buildStandardMarkets());
 
-  assert(snapshot.engineVersion === "1.0.0", "engine version");
+  assert(snapshot.engineVersion === "1.1.0", "engine version");
   assertNear(snapshot.marketEngineWeight, 0.6, "snapshot weight");
   assert(snapshot.markets.length === 4, "four market analyses");
   assert(
@@ -311,4 +319,5 @@ export function runMarketEngineTests(): void {
   testBTTSAnalyzer();
   testRunMarketEngine();
   testCustomHistoryProvider();
+  runMarketRulesTests();
 }

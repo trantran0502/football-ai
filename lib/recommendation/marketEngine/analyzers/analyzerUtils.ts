@@ -6,8 +6,8 @@ import type {
   MarketRecommendation,
 } from "../marketEngineTypes";
 import { evaluateMarketOddsRules } from "../marketOddsRules";
+import { runMarketRuleEngine } from "../rules/ruleEngine";
 import {
-  computeMarketScore,
   deriveRiskLevel,
   scoreToConfidence,
 } from "../marketScore";
@@ -52,13 +52,22 @@ export function buildMarketAnalysis(
     return null;
   }
 
-  const rules = evaluateMarketOddsRules(group);
-  if (rules.selections.length === 0) {
+  const oddsContext = evaluateMarketOddsRules(group);
+  if (oddsContext.selections.length === 0) {
     return null;
   }
 
-  const marketScore = computeMarketScore(rules.scoreInput);
-  const confidence = scoreToConfidence(marketScore);
+  const ruleEngineResult = runMarketRuleEngine({
+    marketType,
+    selections: group,
+    oddsContext,
+  });
+
+  const finalScore = ruleEngineResult.finalScore;
+  const confidence = scoreToConfidence(
+    finalScore,
+    ruleEngineResult.totalConfidenceAdjustment
+  );
   const historical = historyProvider.getHistoricalPattern({
     marketType,
     line: group[0]?.line ?? null,
@@ -66,38 +75,42 @@ export function buildMarketAnalysis(
   });
 
   const reasons: string[] = [
-    `Current market pattern: ${rules.pattern}.`,
-    `Water level: ${rules.waterLevel}.`,
+    `Current market pattern: ${oddsContext.pattern}.`,
+    `Water level: ${oddsContext.waterLevel}.`,
   ];
 
-  if (rules.oddsDiff !== null) {
-    reasons.push(`Odds difference between sides: ${rules.oddsDiff.toFixed(3)}.`);
+  if (oddsContext.oddsDiff !== null) {
+    reasons.push(`Odds difference between sides: ${oddsContext.oddsDiff.toFixed(3)}.`);
   }
-  if (rules.impliedProbDiff !== null) {
+  if (oddsContext.impliedProbDiff !== null) {
     reasons.push(
-      `Implied probability gap: ${(rules.impliedProbDiff * 100).toFixed(1)}%.`
+      `Implied probability gap: ${(oddsContext.impliedProbDiff * 100).toFixed(1)}%.`
     );
   }
-  if (rules.isBalanced) {
-    reasons.push("Market looks balanced.");
-  }
-  if (rules.isExtreme) {
-    reasons.push("Market shows extreme pricing.");
-  }
-  if (rules.isTrapSuspected) {
-    reasons.push("Trap pattern rule triggered (placeholder rule).");
+
+  for (const entry of ruleEngineResult.auditLog) {
+    if (!entry.triggered) {
+      continue;
+    }
+    const sign = entry.scoreAdjustment >= 0 ? "+" : "";
+    reasons.push(`${entry.ruleName}: ${entry.reason} (${sign}${entry.scoreAdjustment})`);
   }
 
   return {
     marketType,
     confidence,
-    marketScore,
+    marketScore: finalScore,
+    baseScore: ruleEngineResult.baseScore,
+    finalScore,
     historicalConfidence: historical.confidence,
     historicalSample: historical.sampleSize,
-    recommendation: recommendationBuilder(group, rules),
+    recommendation: recommendationBuilder(group, oddsContext),
     reasons,
-    signals: rules.signals,
-    riskLevel: deriveRiskLevel(marketScore),
+    signals: oddsContext.signals,
+    ruleResults: ruleEngineResult.ruleResults,
+    scoreBreakdown: ruleEngineResult.scoreBreakdown,
+    auditLog: ruleEngineResult.auditLog,
+    riskLevel: deriveRiskLevel(finalScore),
     line: group[0]?.line ?? null,
     period: group[0]?.period ?? "full",
   };

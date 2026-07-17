@@ -1,3 +1,9 @@
+import type {
+  MarketRuleAuditEntry,
+  MarketRuleSignal,
+  ScoreBreakdownEntry,
+} from "./rules/ruleTypes";
+
 export type MarketEngineType = "1X2" | "AH" | "O/U" | "BTTS";
 
 export type MarketRiskLevel = "low" | "medium" | "high";
@@ -29,11 +35,16 @@ export interface MarketAnalysis {
   marketType: MarketEngineType;
   confidence: number;
   marketScore: number;
+  baseScore: number;
+  finalScore: number;
   historicalConfidence: number | null;
   historicalSample: number | null;
   recommendation: MarketRecommendation;
   reasons: string[];
   signals: MarketSignal[];
+  ruleResults: MarketRuleSignal[];
+  scoreBreakdown: ScoreBreakdownEntry[];
+  auditLog: MarketRuleAuditEntry[];
   riskLevel: MarketRiskLevel;
   line: number | null;
   period: string;

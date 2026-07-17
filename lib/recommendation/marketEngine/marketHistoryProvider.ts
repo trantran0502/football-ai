@@ -1,4 +1,10 @@
 import type { HistoricalPatternResult, MarketEngineType } from "./marketEngineTypes";
+import type {
+  MarketRuleHistoryProvider,
+  RuleHistoricalPatternResult,
+  RuleHistoricalQuery,
+} from "./rules/ruleTypes";
+import { NOT_IMPLEMENTED_RULE_HISTORICAL_PATTERN } from "./rules/ruleTypes";
 
 export interface MarketHistoryQuery {
   marketType: MarketEngineType;
@@ -7,9 +13,11 @@ export interface MarketHistoryQuery {
   side?: string | null;
 }
 
-export interface MarketHistoryProvider {
+export interface MarketHistoryProvider extends MarketRuleHistoryProvider {
   getHistoricalPattern(query: MarketHistoryQuery): HistoricalPatternResult;
 }
+
+export type { RuleHistoricalPatternResult, RuleHistoricalQuery };
 
 export const NOT_IMPLEMENTED_HISTORICAL_PATTERN: HistoricalPatternResult = {
   status: "notImplemented",
@@ -24,6 +32,12 @@ export function createNotImplementedMarketHistoryProvider(): MarketHistoryProvid
   return {
     getHistoricalPattern() {
       return { ...NOT_IMPLEMENTED_HISTORICAL_PATTERN };
+    },
+    getRuleHistoricalPattern(query: RuleHistoricalQuery): RuleHistoricalPatternResult {
+      return {
+        ...NOT_IMPLEMENTED_RULE_HISTORICAL_PATTERN,
+        ruleId: query.ruleId,
+      };
     },
   };
 }

@@ -14,7 +14,7 @@ import type {
 } from "./marketEngineTypes";
 import { MARKET_ENGINE_INITIAL_WEIGHT } from "./marketScore";
 
-export const MARKET_ENGINE_VERSION = "1.0.0";
+export const MARKET_ENGINE_VERSION = "1.1.0";
 
 export const MARKET_ENGINE_ANALYZERS: MarketAnalyzer[] = [
   MoneylineAnalyzer,
