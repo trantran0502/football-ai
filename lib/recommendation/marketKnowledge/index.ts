@@ -79,3 +79,19 @@ export {
   createEmptyMarketKnowledgeSnapshot,
   createEmptyMarketStatisticsMap,
 } from "./marketKnowledgeTypes";
+export {
+  replayMarketKnowledge,
+  runMarketKnowledgeReplay,
+  validateReplay,
+  validateReplayResult,
+  validateReplaySnapshots,
+  buildStatisticsDiff,
+  compareKnowledgeSnapshots,
+  type ReplayAuditEntry,
+  type ReplayMarketKnowledgeOptions,
+  type ReplayMarketKnowledgeResult,
+  type ReplayReport,
+  type ReplayStep,
+  type ReplayValidationResult,
+  type StatisticsDiff,
+} from "./replay";
