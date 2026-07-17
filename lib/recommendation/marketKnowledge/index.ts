@@ -41,6 +41,7 @@ export {
   buildPatternStatisticsFromObservations,
   buildRuleStatisticsFromObservations,
   buildStatisticsFromObservations,
+  incrementMarketKnowledgeSnapshotFromObservations,
 } from "./marketKnowledgeStatistics";
 export {
   attachKnowledgeSnapshotId,
@@ -121,3 +122,13 @@ export {
   type ReplayValidationResult,
   type StatisticsDiff,
 } from "./replay";
+export {
+  updateMarketKnowledgeIncrementally,
+  validateIncrementalUpdate,
+  buildIncrementalReport,
+  createBaselineSnapshot,
+  MarketKnowledgeIncrementalValidationError,
+  type UpdateMarketKnowledgeIncrementallyOptions,
+  type UpdateMarketKnowledgeIncrementallyResult,
+  type MarketKnowledgeIncrementalReport,
+} from "./incremental";

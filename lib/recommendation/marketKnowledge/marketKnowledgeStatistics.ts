@@ -3,6 +3,7 @@ import type {
   KnowledgeMarketType,
   LeagueStatistics,
   MarketKnowledgeSnapshot,
+  MarketStatisticsEntry,
   MarketStatisticsMap,
   PatternStatistics,
   RuleStatistics,
@@ -504,4 +505,426 @@ export function buildMarketStatisticsFromObservations(
     "temp",
     new Date().toISOString()
   ).marketStatistics;
+}
+
+function ruleStatisticsToBucket(rule: RuleStatistics): MutableRuleBucket {
+  return {
+    ruleId: rule.ruleId,
+    sampleSize: rule.sampleSize,
+    hitCount: rule.hitCount,
+    missCount: rule.missCount,
+    pushCount: rule.pushCount,
+    totalProfit: rule.roi * rule.sampleSize,
+    totalStake: rule.sampleSize,
+    totalOdds: rule.averageOdds * rule.sampleSize,
+    totalConfidence: rule.averageConfidence * rule.sampleSize,
+    totalMarketScore: rule.averageMarketScore * rule.sampleSize,
+    firstSeen: rule.firstSeen,
+    lastSeen: rule.lastSeen,
+  };
+}
+
+function patternStatisticsToBucket(pattern: PatternStatistics): MutablePatternBucket {
+  const hitCount = pattern.hitRate * pattern.sampleSize;
+  const leagueHitRates = new Map<
+    string,
+    { hits: number; total: number; profit: number; stake: number }
+  >();
+
+  if (pattern.bestLeague) {
+    leagueHitRates.set(pattern.bestLeague, {
+      hits: hitCount,
+      total: pattern.sampleSize,
+      profit: pattern.roi * pattern.sampleSize,
+      stake: pattern.sampleSize,
+    });
+  }
+
+  return {
+    patternId: pattern.patternId,
+    sampleSize: pattern.sampleSize,
+    hitCount,
+    totalProfit: pattern.roi * pattern.sampleSize,
+    totalStake: pattern.sampleSize,
+    totalOdds: pattern.averageOdds * pattern.sampleSize,
+    totalConfidence: pattern.averageConfidence * pattern.sampleSize,
+    totalMarketScore: pattern.averageMarketScore * pattern.sampleSize,
+    leagueHitRates,
+    firstSeen: pattern.firstSeen,
+    lastSeen: pattern.lastSeen,
+  };
+}
+
+function leagueStatisticsToBucket(league: LeagueStatistics): MutableLeagueBucket {
+  const missCount = league.sampleSize - Math.round(league.hitRate * league.sampleSize);
+  const hitCount = league.sampleSize - missCount;
+  return {
+    leagueId: league.leagueId,
+    leagueName: league.leagueName,
+    marketType: league.marketType,
+    sampleSize: league.sampleSize,
+    hitCount,
+    totalProfit: league.roi * league.sampleSize,
+    totalStake: league.sampleSize,
+    totalOdds: league.averageOdds * league.sampleSize,
+    firstSeen: null,
+    lastSeen: null,
+  };
+}
+
+function marketStatisticsToBucket(entry: MarketStatisticsEntry): MutableMarketBucket {
+  const missCount = entry.sampleSize - Math.round(entry.hitRate * entry.sampleSize);
+  const hitCount = entry.sampleSize - missCount;
+  return {
+    marketType: entry.marketType,
+    sampleSize: entry.sampleSize,
+    hitCount,
+    totalProfit: entry.roi * entry.sampleSize,
+    totalStake: entry.sampleSize,
+    totalOdds: entry.averageOdds * entry.sampleSize,
+    totalMarketScore: entry.averageMarketScore * entry.sampleSize,
+  };
+}
+
+function historicalPatternToKey(pattern: HistoricalPattern): string {
+  return [
+    pattern.marketType,
+    pattern.patternId ?? "none",
+    "none",
+    pattern.leagueId ?? "none",
+    pattern.oddsRange ?? "none",
+    pattern.waterRange ?? "none",
+  ].join("|");
+}
+
+function historicalPatternToBucket(pattern: HistoricalPattern): MutableHistoricalBucket {
+  const missCount = pattern.sampleSize - Math.round(pattern.hitRate * pattern.sampleSize);
+  const hitCount = pattern.sampleSize - missCount;
+  const key = historicalPatternToKey(pattern);
+
+  return {
+    key,
+    marketType: pattern.marketType,
+    patternId: pattern.patternId,
+    ruleIds: pattern.ruleIds,
+    leagueId: pattern.leagueId,
+    oddsRange: pattern.oddsRange,
+    waterRange: pattern.waterRange,
+    sampleSize: pattern.sampleSize,
+    hitCount,
+    totalProfit: pattern.roi * pattern.sampleSize,
+    totalStake: pattern.sampleSize,
+    totalConfidence: pattern.confidence * pattern.sampleSize,
+  };
+}
+
+function isEmptyKnowledgeSnapshot(snapshot: MarketKnowledgeSnapshot): boolean {
+  return (
+    snapshot.ruleStatistics.length === 0 &&
+    snapshot.patternStatistics.length === 0 &&
+    snapshot.leagueStatistics.length === 0 &&
+    snapshot.historicalPatterns.length === 0 &&
+    Object.values(snapshot.marketStatistics).every((entry) => entry.sampleSize === 0)
+  );
+}
+
+function loadBucketsFromSnapshot(snapshot: MarketKnowledgeSnapshot): {
+  ruleBuckets: Map<string, MutableRuleBucket>;
+  patternBuckets: Map<string, MutablePatternBucket>;
+  leagueBuckets: Map<string, MutableLeagueBucket>;
+  mutableMarketBuckets: Record<KnowledgeMarketType, MutableMarketBucket>;
+  historicalBuckets: Map<string, MutableHistoricalBucket>;
+} {
+  const ruleBuckets = new Map(
+    snapshot.ruleStatistics.map((rule) => [rule.ruleId, ruleStatisticsToBucket(rule)])
+  );
+  const patternBuckets = new Map(
+    snapshot.patternStatistics.map((pattern) => [
+      pattern.patternId,
+      patternStatisticsToBucket(pattern),
+    ])
+  );
+  const leagueBuckets = new Map(
+    snapshot.leagueStatistics.map((league) => [
+      `${league.leagueId}|${league.marketType}`,
+      leagueStatisticsToBucket(league),
+    ])
+  );
+  const mutableMarketBuckets: Record<KnowledgeMarketType, MutableMarketBucket> = {
+    "1X2": marketStatisticsToBucket(snapshot.marketStatistics["1X2"]),
+    AH: marketStatisticsToBucket(snapshot.marketStatistics.AH),
+    "O/U": marketStatisticsToBucket(snapshot.marketStatistics["O/U"]),
+    BTTS: marketStatisticsToBucket(snapshot.marketStatistics.BTTS),
+  };
+  const historicalBuckets = new Map(
+    snapshot.historicalPatterns.map((pattern) => {
+      const bucket = historicalPatternToBucket(pattern);
+      return [bucket.key, bucket];
+    })
+  );
+
+  return {
+    ruleBuckets,
+    patternBuckets,
+    leagueBuckets,
+    mutableMarketBuckets,
+    historicalBuckets,
+  };
+}
+
+function applyObservationToBuckets(
+  observation: MarketKnowledgeObservation,
+  buckets: ReturnType<typeof loadBucketsFromSnapshot>
+): void {
+  const {
+    ruleBuckets,
+    patternBuckets,
+    leagueBuckets,
+    mutableMarketBuckets,
+    historicalBuckets,
+  } = buckets;
+
+  if (observation.ruleId) {
+    const bucket =
+      ruleBuckets.get(observation.ruleId) ??
+      ({
+        ruleId: observation.ruleId,
+        sampleSize: 0,
+        hitCount: 0,
+        missCount: 0,
+        pushCount: 0,
+        totalProfit: 0,
+        totalStake: 0,
+        totalOdds: 0,
+        totalConfidence: 0,
+        totalMarketScore: 0,
+        firstSeen: null,
+        lastSeen: null,
+      } satisfies MutableRuleBucket);
+    applyObservationToRuleBucket(bucket, observation);
+    ruleBuckets.set(observation.ruleId, bucket);
+  }
+
+  if (observation.patternId) {
+    const bucket =
+      patternBuckets.get(observation.patternId) ??
+      ({
+        patternId: observation.patternId,
+        sampleSize: 0,
+        hitCount: 0,
+        totalProfit: 0,
+        totalStake: 0,
+        totalOdds: 0,
+        totalConfidence: 0,
+        totalMarketScore: 0,
+        leagueHitRates: new Map(),
+        firstSeen: null,
+        lastSeen: null,
+      } satisfies MutablePatternBucket);
+    applyObservationToPatternBucket(bucket, observation);
+    patternBuckets.set(observation.patternId, bucket);
+  }
+
+  if (!observation.ruleId && !observation.patternId) {
+    const leagueKey = `${observation.leagueId ?? observation.leagueName}|${observation.marketType}`;
+    const leagueBucket =
+      leagueBuckets.get(leagueKey) ??
+      ({
+        leagueId: observation.leagueId ?? observation.leagueName,
+        leagueName: observation.leagueName,
+        marketType: observation.marketType,
+        sampleSize: 0,
+        hitCount: 0,
+        totalProfit: 0,
+        totalStake: 0,
+        totalOdds: 0,
+        firstSeen: null,
+        lastSeen: null,
+      } satisfies MutableLeagueBucket);
+    applyObservationToLeagueBucket(leagueBucket, observation);
+    leagueBuckets.set(leagueKey, leagueBucket);
+
+    applyObservationToMarketBucket(
+      mutableMarketBuckets[observation.marketType],
+      observation
+    );
+
+    const historicalKey = [
+      observation.marketType,
+      observation.patternId ?? "none",
+      observation.ruleId ?? "none",
+      observation.leagueId ?? observation.leagueName,
+      resolveOddsRange(observation.odds),
+      observation.waterLevel,
+    ].join("|");
+
+    const historicalBucket =
+      historicalBuckets.get(historicalKey) ??
+      ({
+        key: historicalKey,
+        marketType: observation.marketType,
+        patternId: observation.patternId,
+        ruleIds: observation.triggeredRuleIds,
+        leagueId: observation.leagueId,
+        oddsRange: resolveOddsRange(observation.odds),
+        waterRange: observation.waterLevel,
+        sampleSize: 0,
+        hitCount: 0,
+        totalProfit: 0,
+        totalStake: 0,
+        totalConfidence: 0,
+      } satisfies MutableHistoricalBucket);
+    applyObservationToHistoricalBucket(historicalBucket, observation);
+    historicalBuckets.set(historicalKey, historicalBucket);
+  }
+}
+
+function finalizeBucketsToSnapshot(
+  buckets: ReturnType<typeof loadBucketsFromSnapshot>,
+  snapshotId: string,
+  generatedAt: string,
+  version: string
+): MarketKnowledgeSnapshot {
+  const { ruleBuckets, patternBuckets, leagueBuckets, mutableMarketBuckets, historicalBuckets } =
+    buckets;
+
+  const ruleStatistics: RuleStatistics[] = [...ruleBuckets.values()]
+    .map((bucket) => ({
+      ruleId: bucket.ruleId,
+      sampleSize: bucket.sampleSize,
+      hitCount: bucket.hitCount,
+      missCount: bucket.missCount,
+      pushCount: bucket.pushCount,
+      hitRate: finalizeHitRate(bucket.hitCount, bucket.missCount),
+      roi: finalizeRoi(bucket.totalProfit, bucket.totalStake),
+      averageOdds: bucket.sampleSize > 0 ? bucket.totalOdds / bucket.sampleSize : 0,
+      averageConfidence:
+        bucket.sampleSize > 0 ? bucket.totalConfidence / bucket.sampleSize : 0,
+      averageMarketScore:
+        bucket.sampleSize > 0 ? bucket.totalMarketScore / bucket.sampleSize : 0,
+      firstSeen: bucket.firstSeen,
+      lastSeen: bucket.lastSeen,
+      lastUpdated: generatedAt,
+    }))
+    .sort((left, right) => left.ruleId.localeCompare(right.ruleId));
+
+  const patternStatistics: PatternStatistics[] = [...patternBuckets.values()]
+    .map((bucket) => {
+      let bestLeague: string | null = null;
+      let worstLeague: string | null = null;
+      let bestRate = -1;
+      let worstRate = 2;
+
+      for (const [leagueName, leagueBucket] of bucket.leagueHitRates.entries()) {
+        if (leagueBucket.total === 0) {
+          continue;
+        }
+        const rate = leagueBucket.hits / leagueBucket.total;
+        if (rate > bestRate) {
+          bestRate = rate;
+          bestLeague = leagueName;
+        }
+        if (rate < worstRate) {
+          worstRate = rate;
+          worstLeague = leagueName;
+        }
+      }
+
+      const missCount = bucket.sampleSize - bucket.hitCount;
+      return {
+        patternId: bucket.patternId,
+        sampleSize: bucket.sampleSize,
+        hitRate: finalizeHitRate(bucket.hitCount, missCount),
+        roi: finalizeRoi(bucket.totalProfit, bucket.totalStake),
+        averageOdds: bucket.sampleSize > 0 ? bucket.totalOdds / bucket.sampleSize : 0,
+        averageConfidence:
+          bucket.sampleSize > 0 ? bucket.totalConfidence / bucket.sampleSize : 0,
+        averageMarketScore:
+          bucket.sampleSize > 0 ? bucket.totalMarketScore / bucket.sampleSize : 0,
+        bestLeague,
+        worstLeague,
+        firstSeen: bucket.firstSeen,
+        lastSeen: bucket.lastSeen,
+      };
+    })
+    .sort((left, right) => left.patternId.localeCompare(right.patternId));
+
+  const leagueStatistics: LeagueStatistics[] = [...leagueBuckets.values()]
+    .map((bucket) => ({
+      leagueId: bucket.leagueId,
+      leagueName: bucket.leagueName,
+      marketType: bucket.marketType,
+      sampleSize: bucket.sampleSize,
+      hitRate: finalizeHitRate(bucket.hitCount, bucket.sampleSize - bucket.hitCount),
+      roi: finalizeRoi(bucket.totalProfit, bucket.totalStake),
+      averageOdds: bucket.sampleSize > 0 ? bucket.totalOdds / bucket.sampleSize : 0,
+    }))
+    .sort((left, right) =>
+      `${left.leagueName}:${left.marketType}`.localeCompare(
+        `${right.leagueName}:${right.marketType}`
+      )
+    );
+
+  const marketStatistics: MarketStatisticsMap = {
+    "1X2": finalizeMarketBucket(mutableMarketBuckets["1X2"]),
+    AH: finalizeMarketBucket(mutableMarketBuckets.AH),
+    "O/U": finalizeMarketBucket(mutableMarketBuckets["O/U"]),
+    BTTS: finalizeMarketBucket(mutableMarketBuckets.BTTS),
+  };
+
+  const historicalPatterns: HistoricalPattern[] = [...historicalBuckets.values()]
+    .map((bucket) => ({
+      marketType: bucket.marketType,
+      patternId: bucket.patternId,
+      ruleIds: bucket.ruleIds,
+      leagueId: bucket.leagueId,
+      oddsRange: bucket.oddsRange,
+      waterRange: bucket.waterRange,
+      sampleSize: bucket.sampleSize,
+      hitRate: finalizeHitRate(bucket.hitCount, bucket.sampleSize - bucket.hitCount),
+      roi: finalizeRoi(bucket.totalProfit, bucket.totalStake),
+      confidence: bucket.sampleSize > 0 ? bucket.totalConfidence / bucket.sampleSize : 0,
+    }))
+    .sort((left, right) =>
+      `${left.marketType}:${left.patternId}:${left.leagueId}`.localeCompare(
+        `${right.marketType}:${right.patternId}:${right.leagueId}`
+      )
+    );
+
+  const snapshot = createEmptyMarketKnowledgeSnapshot(snapshotId, generatedAt);
+  snapshot.status = "available";
+  snapshot.message = undefined;
+  snapshot.version = version;
+  snapshot.ruleStatistics = ruleStatistics;
+  snapshot.patternStatistics = patternStatistics;
+  snapshot.marketStatistics = marketStatistics;
+  snapshot.leagueStatistics = leagueStatistics;
+  snapshot.historicalPatterns = historicalPatterns;
+  return snapshot;
+}
+
+export function incrementMarketKnowledgeSnapshotFromObservations(
+  baseSnapshot: MarketKnowledgeSnapshot,
+  observations: MarketKnowledgeObservation[],
+  options: { snapshotId: string; generatedAt: string; version?: string }
+): MarketKnowledgeSnapshot {
+  if (isEmptyKnowledgeSnapshot(baseSnapshot)) {
+    return buildStatisticsFromObservations(
+      observations,
+      options.snapshotId,
+      options.generatedAt
+    );
+  }
+
+  const buckets = loadBucketsFromSnapshot(baseSnapshot);
+  for (const observation of observations) {
+    applyObservationToBuckets(observation, buckets);
+  }
+
+  return finalizeBucketsToSnapshot(
+    buckets,
+    options.snapshotId,
+    options.generatedAt,
+    options.version ?? baseSnapshot.version
+  );
 }
