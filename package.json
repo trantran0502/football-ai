@@ -29,6 +29,7 @@
     "test:feature-fusion": "tsx scripts/test-feature-fusion.ts",
     "test:recommendation": "tsx scripts/test-recommendation-engine.ts",
     "test:provider-weighting": "tsx scripts/test-provider-weighting.ts",
+    "test:weight-optimizer": "tsx scripts/run-weight-optimizer-tests.ts",
     "test:recommendation-validation-dashboard": "tsx scripts/test-recommendation-validation-dashboard.ts",
     "test:recommendation-learning": "tsx scripts/test-recommendation-learning.ts",
     "test:recommendation-ui": "tsx scripts/test-recommendation-ui.ts",

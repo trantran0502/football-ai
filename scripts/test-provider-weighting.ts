@@ -5,6 +5,7 @@ import {
   type ProviderRecommendationDiagnostic,
 } from "@/lib/recommendation/providerWeightEngine";
 import { DEFAULT_PROVIDER_WEIGHTS } from "@/lib/recommendation/providerWeights";
+import { runWeightOptimizerTests } from "./test-weight-optimizer";
 import type { ProviderResolutionAudit } from "@/lib/providers/teamProfile/teamProfileProviderPipeline";
 import type { FeatureProviderKey, ProviderDataSource } from "@/lib/providers/registry/types";
 import { FEATURE_PROVIDER_KEYS } from "@/lib/providers/registry/types";
@@ -141,6 +142,7 @@ function runTests(): void {
   );
 
   console.log("Provider weighting tests passed.");
+  runWeightOptimizerTests();
 }
 
 runTests();
