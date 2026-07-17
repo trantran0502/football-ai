@@ -15,33 +15,10 @@ import {
 } from "@/lib/supabase/services/matchRecordService";
 import type { HealthCheckItem, HealthCheckStatus } from "@/lib/healthCheck/types";
 
-const MIGRATED_TABLES = [
-  "match_records",
-  "beta_recommendations",
-  "beta_rolling_reports",
-  "recommendation_learning",
-  "team_profiles",
-  "execution_logs",
-  "scheduler_state",
-  "admin_daily_summaries",
-  "admin_system_snapshots",
-  "admin_error_logs",
-  "security_rate_limit_buckets",
-] as const;
-
-const LEGACY_EXPECTED_TABLES = [
-  "fixtures",
-  "market_snapshots",
-  "recommendations",
-  "validation_results",
-  "evidence_reports",
-  "evidence_performance",
-  "evidence_weight_reports",
-  "ai_learning_reports",
-  "provider_performance",
-  "historical_fundamentals",
-  "scheduler_runs",
-] as const;
+import {
+  SUPABASE_TABLE_REGISTRY,
+} from "@/lib/supabase/schemaRegistry";
+import type { SupabaseTableSpec } from "@/lib/supabase/schemaRegistry";
 
 function item(
   section: string,
@@ -60,9 +37,12 @@ function item(
   };
 }
 
-async function probeTableExists(table: string): Promise<boolean> {
+async function probeTableExists(spec: SupabaseTableSpec): Promise<boolean> {
   const supabase = getSupabaseAdmin();
-  const result = await supabase.from(table as "match_records").select("id").limit(1);
+  const result = await supabase
+    .from(spec.name as "match_records")
+    .select(spec.probeColumn)
+    .limit(1);
   if (result.error) {
     const code = result.error.code ?? "";
     const message = result.error.message ?? "";
@@ -178,28 +158,14 @@ export async function runSupabaseHealthChecks(): Promise<{
     return { items, connected, crudPassed };
   }
 
-  for (const table of MIGRATED_TABLES) {
-    const exists = await probeTableExists(table);
+  for (const spec of SUPABASE_TABLE_REGISTRY) {
+    const exists = await probeTableExists(spec);
     items.push(
       item(
         "Supabase Schema",
-        table,
+        spec.name,
         exists ? "PASS" : "FAIL",
-        exists ? "SELECT probe succeeded" : "Table missing or inaccessible"
-      )
-    );
-  }
-
-  for (const table of LEGACY_EXPECTED_TABLES) {
-    const exists = await probeTableExists(table);
-    items.push(
-      item(
-        "Supabase Schema",
-        `${table} (legacy spec)`,
-        exists ? "PASS" : "WARNING",
-        exists
-          ? "Table exists"
-          : "Not migrated; data stored in JSON columns or in-memory engines"
+        exists ? "SELECT probe succeeded" : `Table missing — apply ${spec.migrationFile}`
       )
     );
   }

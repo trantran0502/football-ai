@@ -54,6 +54,8 @@
     "test": "tsx scripts/test-market-engine.ts && tsx scripts/test-market-knowledge.ts && tsx lib/evidence/evidenceEngine.test.ts && tsx lib/evidence/evidenceValidation.test.ts && tsx lib/evidence/evidenceWeightOptimizer.test.ts && tsx lib/evidence/evidenceLearningIntegration.test.ts && tsx lib/learning/aiLearningEngine.test.ts && tsx lib/fundamentalsBacktest/fundamentalsBacktest.test.ts && tsx lib/systemValidation/systemValidation.test.ts",
     "validate:system": "tsx scripts/run-system-validation.ts",
     "health-check": "tsx scripts/run-production-health-check.ts",
+    "health:supabase": "tsx scripts/run-supabase-health.ts",
+    "supabase:migrate": "tsx scripts/apply-supabase-migrations.ts",
     "check:supabase-odds": "tsx scripts/check-supabase-implied-probability.ts",
     "repair:supabase-odds": "tsx scripts/repair-supabase-implied-probability.ts",
     "test:repair-api": "tsx scripts/test-repair-api.ts",
@@ -68,10 +70,12 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "pg": "^8.22.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.4",
     "typescript": "^5"

@@ -1,8 +1,8 @@
 # Full Production Health Check Report v1
 
-Generated: 2026-07-17T06:31:51.872Z
-Duration: 35253ms
-Git Commit: a4fe3851886514a225629d6b5b82ce13e774ad05
+Generated: 2026-07-17T06:47:50.857Z
+Duration: 25159ms
+Git Commit: 10eb5316bcde0a5d5a530546d2c8b550d8158d75
 
 ## Overall Status
 
@@ -10,19 +10,33 @@ Git Commit: a4fe3851886514a225629d6b5b82ce13e774ad05
 
 - Critical Issues: 0
 - High Issues: 0
-- Medium Issues: 1
+- Medium Issues: 0
 - Low Issues: 6
 
 ## Service Summary
 
 | Service | Status |
 |---------|--------|
-| Supabase | FAIL |
+| Supabase | PASS |
 | API-Football | NOT CONFIGURED |
 | Gemini | NOT CONFIGURED |
 | Scheduler | NOT CONFIGURED |
 | Pipeline | PASS |
 | Production | PASS |
+
+## Supabase Recovery (v1)
+
+| Check | Status |
+|-------|--------|
+| Supabase (health-check) | PASS |
+| Migration | PASS |
+| Local CRUD | PASS |
+| Production CRUD | NOT TESTABLE |
+| RLS | PASS |
+
+**Root cause (resolved):** Schema probe used `select('id')` on all tables; `scheduler_state`, `admin_*`, and `security_rate_limit_buckets` use non-`id` primary keys, causing false FAIL. See `SUPABASE_HEALTH_REPORT.md` and `npm run health:supabase`.
+
+**Production CRUD:** Requires `ADMIN_API_KEY` locally to call authenticated `/api/data/health` — not configured in `.env.local`.
 
 ## Environment Variables
 
@@ -50,7 +64,7 @@ Git Commit: a4fe3851886514a225629d6b5b82ce13e774ad05
 
 - **npm test**: PASS — exit 0
 - **npm run build**: PASS — exit 0
-- **npm run lint**: WARNING — errors=3 warnings=70
+- **npm run lint**: WARNING — errors=3 warnings=71
 - **npm run validate:system**: PASS — overall=PASS
 
 ### Pipeline
@@ -97,9 +111,29 @@ Git Commit: a4fe3851886514a225629d6b5b82ce13e774ad05
 
 ### Supabase
 
-- **Connection probe**: FAIL — TypeError: fetch failed
-- **Schema tables**: NOT TESTABLE (Connection failed)
-- **CRUD test**: NOT TESTABLE (Connection failed)
+- **Connection probe**: PASS — host=qjzuledpatlbjsymqtbb.supabase.co rows=1
+- **Embedded models note**: WARNING — Fixture/Market/Evidence/Learning reports are JSON-embedded, not separate tables
+
+### Supabase Schema
+
+- **match_records**: PASS — SELECT probe succeeded
+- **beta_recommendations**: PASS — SELECT probe succeeded
+- **beta_rolling_reports**: PASS — SELECT probe succeeded
+- **recommendation_learning**: PASS — SELECT probe succeeded
+- **team_profiles**: PASS — SELECT probe succeeded
+- **execution_logs**: PASS — SELECT probe succeeded
+- **scheduler_state**: PASS — SELECT probe succeeded
+- **admin_daily_summaries**: PASS — SELECT probe succeeded
+- **admin_system_snapshots**: PASS — SELECT probe succeeded
+- **admin_error_logs**: PASS — SELECT probe succeeded
+- **security_rate_limit_buckets**: PASS — SELECT probe succeeded
+
+### Supabase CRUD
+
+- **insert match_records**: PASS — id=2f12fff4-f35c-4c54-a6d7-9154b94fea82
+- **select match_records**: PASS — league=HEALTH_CHECK
+- **update match_records**: PASS — HEALTH_CHECK_UPDATED
+- **delete match_records**: PASS — test row removed
 
 ### API-Football
 
@@ -111,14 +145,14 @@ Git Commit: a4fe3851886514a225629d6b5b82ce13e774ad05
 
 ### Database Quality
 
-- **Active match_records reachable**: WARNING — count=unknown
+- **Active match_records reachable**: PASS — count=102
 - **Stale pending fixtures sample**: PASS — sample=0
 
 ### Deployment
 
-- **Homepage**: PASS — status=200 latencyMs=217 url=https://football-ai-ten.vercel.app/
-- **Admin dashboard**: PASS — status=200 latencyMs=224 url=https://football-ai-ten.vercel.app/admin
-- **Health API (public)**: PASS — status=200 latencyMs=289 url=https://football-ai-ten.vercel.app/api/data/health
+- **Homepage**: PASS — status=200 latencyMs=914 url=https://football-ai-ten.vercel.app/
+- **Admin dashboard**: PASS — status=200 latencyMs=1052 url=https://football-ai-ten.vercel.app/admin
+- **Health API (public)**: PASS — status=200 latencyMs=659 url=https://football-ai-ten.vercel.app/api/data/health
 
 ### Dashboard
 
@@ -142,7 +176,7 @@ Git Commit: a4fe3851886514a225629d6b5b82ce13e774ad05
 
 ## Required Fixes
 
-- [Supabase] Connection probe: TypeError: fetch failed
+- None blocking at this time.
 
 ## Deferred Improvements
 
@@ -151,4 +185,4 @@ Git Commit: a4fe3851886514a225629d6b5b82ce13e774ad05
 - [LocalStorage] football-ai-beta-recommendations
 - [LocalStorage] football-ai-beta-rolling-reports
 - [LocalStorage] Cross-device sync
-- [Database Quality] Active match_records reachable
+- [Supabase] Embedded models note

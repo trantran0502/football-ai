@@ -1,0 +1,284 @@
+{
+  "version": "v1",
+  "startedAt": "2026-07-17T06:46:50.263Z",
+  "completedAt": "2026-07-17T06:46:59.751Z",
+  "durationMs": 9488,
+  "overallStatus": "PARTIAL PASS",
+  "rootCauses": [],
+  "migrationStatus": "PASS",
+  "localCrudStatus": "PASS",
+  "productionCrudStatus": "NOT TESTABLE",
+  "rlsStatus": "PASS",
+  "manualActionRequired": false,
+  "manualSteps": [],
+  "sections": [
+    {
+      "name": "Environment URL format",
+      "status": "PASS",
+      "evidence": "host=qjzuledpatlbjsymqtbb.supabase.co"
+    },
+    {
+      "name": "Service role key format",
+      "status": "PASS",
+      "evidence": "format=sb_secret"
+    },
+    {
+      "name": "Connection",
+      "status": "PASS",
+      "evidence": "match_records reachable"
+    },
+    {
+      "name": "Schema table match_records",
+      "status": "PASS",
+      "evidence": "001_initial_p0.sql"
+    },
+    {
+      "name": "Schema table beta_recommendations",
+      "status": "PASS",
+      "evidence": "001_initial_p0.sql"
+    },
+    {
+      "name": "Schema table beta_rolling_reports",
+      "status": "PASS",
+      "evidence": "001_initial_p0.sql"
+    },
+    {
+      "name": "Schema table recommendation_learning",
+      "status": "PASS",
+      "evidence": "008_recommendation_learning.sql"
+    },
+    {
+      "name": "Schema table team_profiles",
+      "status": "PASS",
+      "evidence": "005_team_profiles.sql"
+    },
+    {
+      "name": "Schema table execution_logs",
+      "status": "PASS",
+      "evidence": "003_scheduler.sql"
+    },
+    {
+      "name": "Schema table scheduler_state",
+      "status": "PASS",
+      "evidence": "003_scheduler.sql"
+    },
+    {
+      "name": "Schema table admin_daily_summaries",
+      "status": "PASS",
+      "evidence": "002_admin_dashboard.sql"
+    },
+    {
+      "name": "Schema table admin_system_snapshots",
+      "status": "PASS",
+      "evidence": "002_admin_dashboard.sql"
+    },
+    {
+      "name": "Schema table admin_error_logs",
+      "status": "PASS",
+      "evidence": "002_admin_dashboard.sql"
+    },
+    {
+      "name": "Schema table security_rate_limit_buckets",
+      "status": "PASS",
+      "evidence": "004_security_rate_limits.sql"
+    },
+    {
+      "name": "Logical entity fixture",
+      "status": "PASS",
+      "evidence": "match_records.fixture_id + analysis_snapshot",
+      "message": "fixture_id column; full fixture context in analysis_snapshot JSON"
+    },
+    {
+      "name": "Logical entity market_snapshot",
+      "status": "PASS",
+      "evidence": "match_records.market_selections + analysis_snapshot.marketAnalysis",
+      "message": "Raw odds text + normalized markets in JSON"
+    },
+    {
+      "name": "Logical entity recommendation",
+      "status": "PASS",
+      "evidence": "beta_recommendations.candidate + match_record_id FK",
+      "message": "Also mirrored in match_records.candidates / analysis_snapshot"
+    },
+    {
+      "name": "Logical entity validation_result",
+      "status": "PASS",
+      "evidence": "match_records.verification_result",
+      "message": "Post-match validation JSON on match_records"
+    },
+    {
+      "name": "Logical entity evidence_report",
+      "status": "PASS",
+      "evidence": "match_records.analysis_snapshot / candidates evidence fields",
+      "message": "Evidence engine output embedded in analysis snapshot"
+    },
+    {
+      "name": "Logical entity ai_learning_report",
+      "status": "PASS",
+      "evidence": "recommendation_learning.provider_diagnostics + recommendation JSON",
+      "message": "Analysis-only AI learning suggestions stay in-memory; verified learning persists here"
+    },
+    {
+      "name": "Logical entity historical_fundamentals",
+      "status": "PASS",
+      "evidence": "match_records.analysis_snapshot (dataMode=historical_fundamentals)",
+      "message": "Backtest snapshots only; excluded from market ROI learning"
+    },
+    {
+      "name": "Logical entity scheduler_runs",
+      "status": "PASS",
+      "evidence": "execution_logs.job_name + started_at + context",
+      "message": "Legacy spec name; code uses execution_logs"
+    },
+    {
+      "name": "RLS policy model",
+      "status": "PASS",
+      "evidence": "All tables use RLS enabled with no anon/authenticated policies; service_role only"
+    },
+    {
+      "name": "Browser client key usage",
+      "status": "PASS",
+      "evidence": "No NEXT_PUBLIC Supabase keys; browser uses localStorage + admin API routes"
+    },
+    {
+      "name": "CRUD fixture (match_records insert)",
+      "status": "PASS",
+      "evidence": "id=50f5030b-ac20-4892-886f-f897196c7bdd fixtureId=999051220"
+    },
+    {
+      "name": "CRUD market snapshot (raw_odds + market_selections)",
+      "status": "PASS",
+      "evidence": "rawOdds length=49 markets=0"
+    },
+    {
+      "name": "CRUD fixture (match_records select)",
+      "status": "PASS",
+      "evidence": "fixture_id present"
+    },
+    {
+      "name": "CRUD match_records update",
+      "status": "PASS",
+      "evidence": "HEALTH_CHECK_UPDATED"
+    },
+    {
+      "name": "CRUD validation (verification_result update)",
+      "status": "PASS",
+      "evidence": "jsonb column writable"
+    },
+    {
+      "name": "CRUD evidence (analysis_snapshot)",
+      "status": "PASS",
+      "evidence": "Embedded JSON column available; null snapshot accepted for health-check row"
+    },
+    {
+      "name": "CRUD fixture (match_records delete)",
+      "status": "PASS",
+      "evidence": "removed"
+    },
+    {
+      "name": "CRUD scheduler_runs (execution_logs insert)",
+      "status": "PASS",
+      "evidence": "id=130cb68c-864d-450e-b4b3-a1b1aa4cc3c1"
+    },
+    {
+      "name": "CRUD scheduler_state upsert",
+      "status": "PASS",
+      "evidence": "health-check:d337454a-cf0b-428b-8d7e-042e4e964ba8"
+    },
+    {
+      "name": "CRUD scheduler cleanup",
+      "status": "PASS",
+      "evidence": "execution_logs + scheduler_state removed"
+    },
+    {
+      "name": "CRUD admin_error_logs insert",
+      "status": "PASS",
+      "evidence": "2fe4cb64-117d-4fda-aa0e-be02636812d6"
+    },
+    {
+      "name": "CRUD security_rate_limit_buckets upsert",
+      "status": "PASS",
+      "evidence": "health-check:d337454a-cf0b-428b-8d7e-042e4e964ba8"
+    },
+    {
+      "name": "CRUD ai_learning_report (recommendation_learning insert)",
+      "status": "PASS",
+      "evidence": "c7899d3e-9d20-447d-8fa9-518e5ef50e36"
+    },
+    {
+      "name": "CRUD historical_fundamentals (embedded snapshot)",
+      "status": "PASS",
+      "evidence": "Stored as match_records.analysis_snapshot; no separate table by design"
+    },
+    {
+      "name": "Relation FK match_records → recommendation_learning",
+      "status": "PASS",
+      "evidence": "match_record_id=fc1d8a0b-125f-4526-acd8-34d40b56eccd"
+    },
+    {
+      "name": "CRUD learning cleanup",
+      "status": "PASS",
+      "evidence": "orphan check passed"
+    },
+    {
+      "name": "Local CRUD summary",
+      "status": "PASS",
+      "evidence": "healthCheckId=d337454a-cf0b-428b-8d7e-042e4e964ba8"
+    },
+    {
+      "name": "Production Supabase (authenticated health)",
+      "status": "NOT TESTABLE",
+      "message": "ADMIN_API_KEY not configured locally; public health only returns ok:true"
+    },
+    {
+      "name": "Production API route connectivity",
+      "status": "PASS",
+      "evidence": "status=200 ok=true"
+    },
+    {
+      "name": "Migration file 001_initial_p0.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 002_admin_dashboard.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 003_scheduler.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 004_security_rate_limits.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 005_team_profiles.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 006_team_profile_season_metadata.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 007_historical_match_backfill.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 008_recommendation_learning.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 009_schema_recovery_verify.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    }
+  ]
+}

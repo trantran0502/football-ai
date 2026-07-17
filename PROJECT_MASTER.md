@@ -25,7 +25,7 @@ Current Tag:
 v1.0.0
 
 Latest Commit:
-779c7b872fe014adfd5fb6aee8b14aa626cec3b5
+10eb5316bcde0a5d5a530546d2c8b550d8158d75
 
 ==================================
 
@@ -63,6 +63,9 @@ Historical Fundamentals Backtest v1
 
 Full Production Health Check v1
 🟨 PARTIAL PASS
+
+Supabase Recovery and Verification v1
+🟨 PARTIAL PASS (Local PASS; Production CRUD requires ADMIN_API_KEY)
 
 Phase 4
 AI Learning
@@ -140,16 +143,38 @@ Completed
 - AI Learning v1
 - Historical Fundamentals Backtest v1
 - Full Production Health Check v1 (PARTIAL PASS — see HEALTH_CHECK_REPORT.md)
+- Supabase Recovery v1 (Local CRUD PASS — see SUPABASE_HEALTH_REPORT.md)
 
 ==================================
 
 Health Check Policy (v1)
 
 - Run: `npm run health-check`
-- Report: `HEALTH_CHECK_REPORT.md` + `artifacts/health-check-report.json`
+- Supabase: `npm run health:supabase`
+- Migrations (optional): `npm run supabase:migrate` with SUPABASE_DB_URL
+- Report: `HEALTH_CHECK_REPORT.md`, `SUPABASE_HEALTH_REPORT.md`
 - Full PASS requires: test, build, validate:system, Supabase CRUD, pipeline, production routes, no critical security/leakage
-- NOT TESTABLE ≠ PASS; missing local provider keys or unapplied migrations → PARTIAL PASS
+- NOT TESTABLE ≠ PASS; missing local provider keys → PARTIAL PASS
 - Do not fake PASS without evidence
+
+==================================
+
+Supabase Recovery Notes (v1)
+
+Root cause of prior FAIL:
+- Schema health probe incorrectly used `select('id')` on every table.
+- Tables with non-uuid PKs (`scheduler_state.state_key`, `admin_daily_summaries.summary_date`, `admin_system_snapshots.snapshot_key`, `security_rate_limit_buckets.bucket_key`) were reported missing although they exist.
+- Intermittent `TypeError: fetch failed` under concurrent `next build` + health-check load.
+
+Fixed:
+- `lib/supabase/schemaRegistry.ts` — table probe columns aligned with actual PKs.
+- `lib/supabase/supabaseHealthRunner.ts` — full CRUD + relation tests (`npm run health:supabase`).
+- `supabase/migrations/009_schema_recovery_verify.sql` — idempotent recovery for admin/scheduler/security tables.
+
+Logical entities (fixture, market snapshot, validation, evidence, etc.) persist in JSON columns on `match_records` / `beta_recommendations` / `recommendation_learning` — not separate tables by design.
+
+Remaining:
+- Production authenticated Supabase probe needs `ADMIN_API_KEY` locally (NOT TESTABLE otherwise).
 
 ==================================
 
@@ -166,7 +191,7 @@ Historical Data Policy
 Current Blocker
 
 - Local `.env.local` missing API_FOOTBALL_KEY, ADMIN_API_KEY, CRON_SECRET (production-only on Vercel)
-- Supabase project missing migrations: scheduler_state, admin_* tables, security_rate_limit_buckets (see HEALTH_CHECK_REPORT.md)
+- Production Supabase CRUD not verified locally without ADMIN_API_KEY
 
 ==================================
 
