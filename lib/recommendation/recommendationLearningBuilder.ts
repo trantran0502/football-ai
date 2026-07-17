@@ -5,6 +5,10 @@ import type {
   RecommendationLearningMarketOutcome,
   RecommendationLearningRecord,
 } from "@/lib/recommendation/recommendationLearningTypes";
+import {
+  validateVerifiedMatch,
+  validateVerifiedMatchFromPipeline,
+} from "@/lib/validation/validationEngine";
 import type { ValidationMarketKey } from "@/lib/validation/validationTypes";
 
 function createLearningId(matchRecordId: string): string {
@@ -70,15 +74,59 @@ function resolveRecommendation(record: HistoricalMatchRecord) {
 }
 
 function buildMarketOutcomes(record: HistoricalMatchRecord): RecommendationLearningMarketOutcome[] {
-  const entries = record.verificationResult?.recommendationValidation?.entries ?? [];
-  return entries.map((entry) => ({
-    marketKey: toLearningMarketKey(entry.marketKey),
-    hit: entry.evaluation.hit,
-    profit: entry.evaluation.profit,
-    stake: entry.evaluation.stake,
-    confidence: entry.evaluation.confidence,
-    result: entry.evaluation.result,
-  }));
+  const storedEntries =
+    record.verificationResult?.recommendationValidation?.entries ?? [];
+  if (storedEntries.length > 0) {
+    return storedEntries.map((entry) => ({
+      marketKey: toLearningMarketKey(entry.marketKey),
+      hit: entry.evaluation.hit,
+      profit: entry.evaluation.profit,
+      stake: entry.evaluation.stake,
+      confidence: entry.evaluation.confidence,
+      result: entry.evaluation.result,
+    }));
+  }
+
+  const replayEntries = record.analysisSnapshot?.replay?.validation?.entries ?? [];
+  if (replayEntries.length > 0) {
+    return replayEntries.map((entry) => ({
+      marketKey: toLearningMarketKey(entry.marketKey),
+      hit: entry.evaluation.hit,
+      profit: entry.evaluation.profit,
+      stake: entry.evaluation.stake,
+      confidence: entry.evaluation.confidence,
+      result: entry.evaluation.result,
+    }));
+  }
+
+  const storedRecommendation = record.analysisSnapshot?.recommendation?.result ?? null;
+  if (storedRecommendation && record.result) {
+    const validation = validateVerifiedMatch(record, storedRecommendation);
+    if (validation.entries.length > 0) {
+      return validation.entries.map((entry) => ({
+        marketKey: toLearningMarketKey(entry.marketKey),
+        hit: entry.evaluation.hit,
+        profit: entry.evaluation.profit,
+        stake: entry.evaluation.stake,
+        confidence: entry.evaluation.confidence,
+        result: entry.evaluation.result,
+      }));
+    }
+  }
+
+  if (record.result) {
+    const pipelineValidation = validateVerifiedMatchFromPipeline(record);
+    return pipelineValidation.entries.map((entry) => ({
+      marketKey: toLearningMarketKey(entry.marketKey),
+      hit: entry.evaluation.hit,
+      profit: entry.evaluation.profit,
+      stake: entry.evaluation.stake,
+      confidence: entry.evaluation.confidence,
+      result: entry.evaluation.result,
+    }));
+  }
+
+  return [];
 }
 
 function resolveMatchHit(marketOutcomes: RecommendationLearningMarketOutcome[]): boolean {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type {
   RecommendationLearningBackfillResult,
   RecommendationLearningBackfillScanResult,
@@ -15,6 +15,16 @@ export function RecommendationLearningBackfillPanel() {
     useState<RecommendationLearningBackfillResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    startTransition(async () => {
+      try {
+        setBackfillResult(await runBackfillAction());
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+      }
+    });
+  }, []);
 
   function handleScan() {
     setError(null);
