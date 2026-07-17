@@ -49,6 +49,7 @@ export function runMarketKnowledgeReplay(
   const startedAt = Date.now();
   const dryRun = options.dryRun ?? false;
   const store = options.store ?? marketKnowledgeStore;
+  const repository = options.repository;
   const { slice } = resolveReplayRange(
     options.matches,
     options.startIndex,
@@ -83,7 +84,19 @@ export function runMarketKnowledgeReplay(
     };
 
     if (!dryRun) {
-      store.saveSnapshot(snapshot);
+      if (repository) {
+        repository.saveSnapshot(snapshot, {
+          metadata: {
+            source: "REPLAY",
+            matchCount: cumulativeMatches.length,
+            firstMatchId: cumulativeMatches[0]?.id ?? null,
+            lastMatchId: match.id,
+            parentSnapshotId: previousSnapshot?.id ?? null,
+          },
+        });
+      } else {
+        store.saveSnapshot(snapshot);
+      }
     }
 
     steps.push(step);

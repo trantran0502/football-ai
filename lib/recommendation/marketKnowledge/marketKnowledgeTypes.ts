@@ -1,5 +1,7 @@
 import type { MarketEngineType } from "@/lib/recommendation/marketEngine/marketEngineTypes";
 
+import type { MarketKnowledgeSnapshotMetadata } from "./persistence/marketKnowledgePersistenceTypes";
+
 export type KnowledgeMarketType = MarketEngineType;
 
 export type KnowledgeStatus = "notImplemented" | "available";
@@ -80,6 +82,7 @@ export interface MarketKnowledgeSnapshot {
   version: string;
   status: KnowledgeStatus;
   message?: string;
+  metadata?: MarketKnowledgeSnapshotMetadata;
   ruleStatistics: RuleStatistics[];
   patternStatistics: PatternStatistics[];
   marketStatistics: MarketStatisticsMap;

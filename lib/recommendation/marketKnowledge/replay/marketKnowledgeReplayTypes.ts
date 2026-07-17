@@ -1,5 +1,6 @@
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import type { MarketKnowledgeStore } from "../marketKnowledgeStore";
+import type { MarketKnowledgeRepository } from "../persistence/marketKnowledgeRepository";
 import type { KnowledgeMarketType, MarketKnowledgeSnapshot } from "../marketKnowledgeTypes";
 
 export interface ReplayMarketKnowledgeOptions {
@@ -8,6 +9,7 @@ export interface ReplayMarketKnowledgeOptions {
   endIndex?: number;
   dryRun?: boolean;
   store?: MarketKnowledgeStore;
+  repository?: MarketKnowledgeRepository;
 }
 
 export interface ReplayStatChange {
