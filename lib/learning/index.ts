@@ -33,6 +33,22 @@ export type {
 export { DEFAULT_LEARNING_ENGINE_CONFIG } from "@/lib/learning/learningTypes";
 export { buildLearningEngineReport } from "@/lib/learning/learningEngine";
 export {
+  buildAiLearningReport,
+  buildImprovementCandidates,
+  computeAiLearningConfidence,
+} from "@/lib/learning/aiLearningEngine";
+export type {
+  AiLearningAction,
+  AiLearningDashboardStats,
+  AiLearningEngineInput,
+  AiLearningReport,
+  AiLearningRuleSummary,
+  AiLearningSuggestion,
+  AiLearningSuggestionGroups,
+  AiLearningTargetType,
+  ImprovementCandidate,
+} from "@/lib/learning/aiLearningTypes";
+export {
   collectLearningInputFromRecords,
   resolveFeatureContributionScore,
   resolveModelVersion,

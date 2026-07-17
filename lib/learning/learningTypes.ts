@@ -88,6 +88,7 @@ export interface LearningEngineReport {
   evidencePerformance: EvidencePerformanceReport;
   evidenceWeightSuggestions: EvidenceWeightOptimizerReport;
   evidenceLearning: EvidenceLearningInsights;
+  aiLearning: import("@/lib/learning/aiLearningTypes").AiLearningReport;
 }
 
 export interface LearningEngineInput {

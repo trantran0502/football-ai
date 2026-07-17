@@ -1,6 +1,7 @@
 import { buildAdminDashboardResponse } from "@/lib/admin/adminDashboardService";
 import { runAutomatedLearningPipeline } from "@/lib/admin/recommendationPipelineService";
 import { SystemOverviewPanel } from "@/components/admin/RecommendationPipelinePanels";
+import { AiLearningDashboard } from "@/components/admin/AiLearningDashboard";
 import type { ValidationMetricBucket } from "@/lib/validation/validationTypes";
 import type { EvidencePerformanceStats } from "@/lib/evidence/evidenceValidation";
 import type { EvidenceWeightSuggestion } from "@/lib/evidence/evidenceWeightOptimizerTypes";
@@ -436,6 +437,9 @@ export default async function AdminDashboardPage() {
             <a href="/admin/weight-optimizer" className="text-emerald-700 hover:underline dark:text-emerald-400">
               Weight Optimizer
             </a>
+            <a href="/admin/ai-learning" className="text-emerald-700 hover:underline dark:text-emerald-400">
+              AI Learning
+            </a>
           </div>
         </header>
 
@@ -728,6 +732,8 @@ export default async function AdminDashboardPage() {
         <EvidenceWeightSuggestionsTable
           suggestions={dashboard.learning.evidenceWeightSuggestions.suggestions}
         />
+
+        <AiLearningDashboard report={dashboard.learning.aiLearning} />
 
         <section className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">

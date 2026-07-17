@@ -21,6 +21,7 @@ import { buildWeightSuggestions } from "@/lib/learning/weightSuggestions";
 import { buildEvidencePerformanceFromHistory, buildEvidencePerformanceReport } from "@/lib/evidence/evidenceValidation";
 import { buildEvidenceWeightOptimizerReport } from "@/lib/evidence/evidenceWeightOptimizer";
 import { buildEvidenceLearningInsights } from "@/lib/evidence/evidenceLearningIntegration";
+import { buildAiLearningReport } from "@/lib/learning/aiLearningEngine";
 import { buildRecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningBuilder";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import {
@@ -102,9 +103,12 @@ export function buildLearningEngineReport(
     config,
   });
 
+  const evidenceWeightSuggestions = buildEvidenceWeightOptimizerReport(evidencePerformance);
+  const sampleSize = buildSampleSize(learningInput);
+
   return {
     generatedAt: new Date().toISOString(),
-    sampleSize: buildSampleSize(learningInput),
+    sampleSize,
     features,
     rules,
     byLeague,
@@ -114,8 +118,20 @@ export function buildLearningEngineReport(
     suggestions,
     rankings,
     evidencePerformance,
-    evidenceWeightSuggestions: buildEvidenceWeightOptimizerReport(evidencePerformance),
+    evidenceWeightSuggestions,
     evidenceLearning,
+    aiLearning: buildAiLearningReport({
+      recommendationHistory: learningInput.recommendationHistory,
+      validationResults: learningInput.validationResults,
+      evidenceLearning,
+      weightOptimizerReport: evidenceWeightSuggestions,
+      rules,
+      byLeague,
+      byMarket,
+      rankings,
+      sampleSize,
+      minSampleSize: config.minSampleSize,
+    }),
   };
 }
 
