@@ -49,6 +49,8 @@
     "test:learning": "tsx scripts/test-learning.ts",
     "test:security": "tsx scripts/test-security.ts",
     "test:odds-knowledge": "tsx scripts/test-odds-knowledge.ts",
+    "test:market-engine": "tsx scripts/test-market-engine.ts",
+    "test": "tsx scripts/test-market-engine.ts",
     "check:supabase-odds": "tsx scripts/check-supabase-implied-probability.ts",
     "repair:supabase-odds": "tsx scripts/repair-supabase-implied-probability.ts",
     "test:repair-api": "tsx scripts/test-repair-api.ts",
