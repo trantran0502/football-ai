@@ -1,6 +1,7 @@
 import type { FeatureProviderKey } from "@/lib/providers/registry/types";
 import type { RecommendationLearningMarketKey } from "@/lib/recommendation/recommendationLearningTypes";
 import type { EvidencePerformanceReport } from "@/lib/evidence/evidenceValidation";
+import type { EvidenceWeightOptimizerReport } from "@/lib/evidence/evidenceWeightOptimizerTypes";
 
 export const DEFAULT_MARKET_GROUP_WEIGHT = 0.6;
 export const DEFAULT_TEAM_GROUP_WEIGHT = 0.4;
@@ -61,4 +62,5 @@ export interface WeightOptimizerReport {
   providers: WeightOptimizerProviderAnalysis[];
   byMarketType: WeightOptimizerMarketTypeAnalysis[];
   evidencePerformance: EvidencePerformanceReport;
+  evidenceWeightSuggestions: EvidenceWeightOptimizerReport;
 }

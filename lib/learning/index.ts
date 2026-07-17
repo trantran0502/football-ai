@@ -19,6 +19,10 @@ export type {
   EvidencePerformanceReport,
   EvidencePerformanceStats,
 } from "@/lib/evidence/evidenceValidation";
+export type {
+  EvidenceWeightOptimizerReport,
+  EvidenceWeightSuggestion,
+} from "@/lib/evidence/evidenceWeightOptimizerTypes";
 
 export { DEFAULT_LEARNING_ENGINE_CONFIG } from "@/lib/learning/learningTypes";
 export { buildLearningEngineReport } from "@/lib/learning/learningEngine";

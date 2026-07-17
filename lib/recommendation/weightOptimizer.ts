@@ -6,6 +6,7 @@ import type {
 } from "@/lib/recommendation/recommendationLearningTypes";
 import { filterCompleteLearningRecords, inspectLearningRecordCompleteness } from "@/lib/recommendation/recommendationLearningDiagnostics";
 import { buildEvidencePerformanceReport } from "@/lib/evidence/evidenceValidation";
+import { buildEvidenceWeightOptimizerReport } from "@/lib/evidence/evidenceWeightOptimizer";
 import {
   DEFAULT_MARKET_GROUP_WEIGHT,
   DEFAULT_TEAM_GROUP_WEIGHT,
@@ -560,6 +561,8 @@ export function buildWeightOptimizerReport(
     1 - MIN_MARKET_GROUP_WEIGHT
   );
 
+  const evidencePerformance = buildEvidencePerformanceReport(used);
+
   return {
     diagnostics,
     overall: { market, team },
@@ -567,7 +570,8 @@ export function buildWeightOptimizerReport(
       (left, right) => right.roi - left.roi
     ),
     byMarketType: buildMarketTypeAnalysis(used, overallSampleSize),
-    evidencePerformance: buildEvidencePerformanceReport(used),
+    evidencePerformance,
+    evidenceWeightSuggestions: buildEvidenceWeightOptimizerReport(evidencePerformance),
   };
 }
 

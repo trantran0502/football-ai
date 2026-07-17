@@ -3,6 +3,7 @@ import type {
   EvidencePerformanceReport,
   EvidencePerformanceStats,
 } from "@/lib/evidence/evidenceValidation";
+import type { EvidenceWeightOptimizerReport } from "@/lib/evidence/evidenceWeightOptimizerTypes";
 import type { ValidationMarketKey, ValidationMetricBucket } from "@/lib/validation/validationTypes";
 
 export interface FeaturePerformanceStats {
@@ -83,6 +84,7 @@ export interface LearningEngineReport {
   suggestions: LearningSuggestions;
   rankings: LearningEngineRankings;
   evidencePerformance: EvidencePerformanceReport;
+  evidenceWeightSuggestions: EvidenceWeightOptimizerReport;
 }
 
 export interface LearningEngineInput {

@@ -19,6 +19,7 @@ import type {
 import { DEFAULT_LEARNING_ENGINE_CONFIG } from "@/lib/learning/learningTypes";
 import { buildWeightSuggestions } from "@/lib/learning/weightSuggestions";
 import { buildEvidencePerformanceFromHistory, buildEvidencePerformanceReport } from "@/lib/evidence/evidenceValidation";
+import { buildEvidenceWeightOptimizerReport } from "@/lib/evidence/evidenceWeightOptimizer";
 import { buildRecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningBuilder";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import {
@@ -107,6 +108,7 @@ export function buildLearningEngineReport(
     suggestions,
     rankings,
     evidencePerformance,
+    evidenceWeightSuggestions: buildEvidenceWeightOptimizerReport(evidencePerformance),
   };
 }
 

@@ -36,3 +36,19 @@ export type {
   EvidenceValidationEntry,
   EvidenceValidationRecord,
 } from "@/lib/evidence/evidenceValidation";
+export {
+  buildEvidenceWeightOptimizerReport,
+} from "@/lib/evidence/evidenceWeightOptimizer";
+export {
+  DEFAULT_EVIDENCE_WEIGHTS,
+  sumEvidenceWeights,
+} from "@/lib/evidence/evidenceWeights";
+export type { TrackedEvidenceCategory } from "@/lib/evidence/evidenceWeights";
+export type {
+  EvidenceWeightOptimizerReport,
+  EvidenceWeightSuggestion,
+} from "@/lib/evidence/evidenceWeightOptimizerTypes";
+export {
+  EVIDENCE_MAX_WEIGHT_CHANGE,
+  EVIDENCE_MIN_SAMPLE_FOR_INCREASE,
+} from "@/lib/evidence/evidenceWeightOptimizerTypes";

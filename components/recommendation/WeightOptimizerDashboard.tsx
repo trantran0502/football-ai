@@ -184,6 +184,43 @@ export function WeightOptimizerDashboard(props: { report: WeightOptimizerReport 
       </section>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <h2 className="mb-3 text-lg font-semibold">Evidence Weight Suggestions（唯讀）</h2>
+        <p className="mb-4 text-sm text-zinc-500">
+          Analysis-only · optimizerMode={report.evidenceWeightSuggestions.optimizerMode} ·
+          weightsApplied={String(report.evidenceWeightSuggestions.weightsApplied)}
+        </p>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-800">
+                <th className="px-2 py-2">Provider</th>
+                <th className="px-2 py-2">Current Weight</th>
+                <th className="px-2 py-2">Suggested Weight</th>
+                <th className="px-2 py-2">Change</th>
+                <th className="px-2 py-2">Reliability</th>
+                <th className="px-2 py-2">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.evidenceWeightSuggestions.suggestions.map((row) => (
+                <tr
+                  key={row.category}
+                  className="border-b border-zinc-100 dark:border-zinc-900"
+                >
+                  <td className="px-2 py-2 font-medium">{row.label}</td>
+                  <td className="px-2 py-2">{formatWeight(row.currentWeight)}</td>
+                  <td className="px-2 py-2">{formatWeight(row.suggestedWeight)}</td>
+                  <td className="px-2 py-2">{formatWeight(row.weightChange)}</td>
+                  <td className="px-2 py-2">{formatPercent(row.reliability)}</td>
+                  <td className="px-2 py-2 text-zinc-600 dark:text-zinc-300">{row.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h2 className="mb-3 text-lg font-semibold">Diagnostics</h2>
         <dl className="grid gap-3 text-sm md:grid-cols-2">
           <div>
