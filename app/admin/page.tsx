@@ -440,6 +440,9 @@ export default async function AdminDashboardPage() {
             <a href="/admin/ai-learning" className="text-emerald-700 hover:underline dark:text-emerald-400">
               AI Learning
             </a>
+            <a href="/admin/historical-backtest" className="text-emerald-700 hover:underline dark:text-emerald-400">
+              Historical Backtest
+            </a>
           </div>
         </header>
 

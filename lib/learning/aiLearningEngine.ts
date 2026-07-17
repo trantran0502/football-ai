@@ -452,7 +452,30 @@ export function buildAiLearningReport(input: AiLearningEngineInput): AiLearningR
     evidenceSuggestions: buildEvidenceSuggestions(input.weightOptimizerReport, minSampleSize),
   };
 
+  if (input.fundamentalsBacktest) {
+    for (const provider of input.fundamentalsBacktest.evidenceProviderRanking) {
+      suggestions.evidenceSuggestions.push(
+        buildSuggestion({
+          target: provider.category,
+          targetType: "evidence",
+          action:
+            provider.hitRate >= AI_LEARNING_HIGH_HIT_RATE
+              ? "promote"
+              : provider.hitRate <= AI_LEARNING_LOW_HIT_RATE
+                ? "decrease"
+                : "monitor",
+          reason: `Historical fundamentals accuracy ${formatRate(provider.hitRate)} · calibration gap ${formatRate(provider.confidenceCalibrationGap)} · n=${provider.usageCount}`,
+          sampleSize: provider.usageCount,
+          hitRate: provider.hitRate,
+          roi: 0,
+          minSampleSize,
+        })
+      );
+    }
+  }
+
   const improvementCandidates = buildImprovementCandidates(suggestions);
+
   const allSuggestions = [
     ...suggestions.ruleSuggestions,
     ...suggestions.marketSuggestions,

@@ -58,6 +58,9 @@ Evidence Learning Integration
 AI Learning v1
 ✅ Completed
 
+Historical Fundamentals Backtest v1
+✅ Completed
+
 Phase 4
 AI Learning
 🟨 In Progress
@@ -132,6 +135,17 @@ Completed
 - Evidence Weight Optimizer
 - Evidence Learning Integration
 - AI Learning v1
+- Historical Fundamentals Backtest v1
+
+==================================
+
+Historical Data Policy
+
+- Historical fundamentals may be used for backtesting
+- Historical odds are NOT a system dependency
+- Odds data is accumulated only after the system starts operating
+- Historical Fundamentals learning and Live Market learning must remain permanently separated
+- Data Leakage is strictly forbidden (dataTimestamp must be before fixtureDate)
 
 ==================================
 

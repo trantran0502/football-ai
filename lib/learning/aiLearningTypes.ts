@@ -8,6 +8,7 @@ import type {
 } from "@/lib/learning/learningTypes";
 import type { RecommendationValidationEntry } from "@/lib/validation/validationTypes";
 import type { ValidationMarketKey, ValidationMetricBucket } from "@/lib/validation/validationTypes";
+import type { FundamentalsBacktestReport } from "@/lib/fundamentalsBacktest/fundamentalsBacktestTypes";
 
 export type AiLearningTargetType = "rule" | "market" | "league" | "evidence";
 
@@ -92,6 +93,7 @@ export interface AiLearningEngineInput {
   rankings: LearningEngineRankings;
   sampleSize: LearningEngineSampleSize;
   minSampleSize?: number;
+  fundamentalsBacktest?: FundamentalsBacktestReport | null;
 }
 
 export const AI_LEARNING_MIN_SAMPLE = 5;

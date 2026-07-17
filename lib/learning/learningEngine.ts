@@ -22,6 +22,7 @@ import { buildEvidencePerformanceFromHistory, buildEvidencePerformanceReport } f
 import { buildEvidenceWeightOptimizerReport } from "@/lib/evidence/evidenceWeightOptimizer";
 import { buildEvidenceLearningInsights } from "@/lib/evidence/evidenceLearningIntegration";
 import { buildAiLearningReport } from "@/lib/learning/aiLearningEngine";
+import { buildHistoricalFundamentalsBacktestFromRecords } from "@/lib/fundamentalsBacktest/historicalBacktestLoader";
 import { buildRecommendationLearningRecord } from "@/lib/recommendation/recommendationLearningBuilder";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import {
@@ -105,6 +106,9 @@ export function buildLearningEngineReport(
 
   const evidenceWeightSuggestions = buildEvidenceWeightOptimizerReport(evidencePerformance);
   const sampleSize = buildSampleSize(learningInput);
+  const fundamentalsBacktest = Array.isArray(input)
+    ? buildHistoricalFundamentalsBacktestFromRecords(input)
+    : null;
 
   return {
     generatedAt: new Date().toISOString(),
@@ -131,7 +135,9 @@ export function buildLearningEngineReport(
       rankings,
       sampleSize,
       minSampleSize: config.minSampleSize,
+      fundamentalsBacktest,
     }),
+    fundamentalsBacktest,
   };
 }
 
