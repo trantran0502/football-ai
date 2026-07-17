@@ -51,21 +51,40 @@ export async function POST(request: Request) {
     return badRequestResponse("Invalid JSON body.");
   }
 
-  if (body.action !== "production-crud-probe") {
-    return badRequestResponse("Unsupported action.");
+  if (body.action === "production-crud-probe") {
+    const healthCheckId = body.healthCheckId?.trim() ?? "";
+    if (!isValidProductionHealthCheckId(healthCheckId)) {
+      return badRequestResponse("Invalid healthCheckId.");
+    }
+
+    const result = await runProductionCrudProbe(healthCheckId);
+    return NextResponse.json(
+      {
+        ok: result.passed,
+        probe: result,
+      },
+      { status: result.passed ? 200 : 503 }
+    );
   }
 
-  const healthCheckId = body.healthCheckId?.trim() ?? "";
-  if (!isValidProductionHealthCheckId(healthCheckId)) {
-    return badRequestResponse("Invalid healthCheckId.");
+  if (body.action === "production-api-football-probe") {
+    const healthCheckId = body.healthCheckId?.trim() ?? "";
+    if (!healthCheckId || healthCheckId.length > 128) {
+      return badRequestResponse("Invalid healthCheckId.");
+    }
+
+    const { runProductionApiFootballProbe } = await import(
+      "@/lib/providers/apiFootball/productionApiFootballProbe"
+    );
+    const result = await runProductionApiFootballProbe(healthCheckId);
+    return NextResponse.json(
+      {
+        ok: result.passed,
+        probe: result,
+      },
+      { status: result.passed ? 200 : 503 }
+    );
   }
 
-  const result = await runProductionCrudProbe(healthCheckId);
-  return NextResponse.json(
-    {
-      ok: result.passed,
-      probe: result,
-    },
-    { status: result.passed ? 200 : 503 }
-  );
+  return badRequestResponse("Unsupported action.");
 }

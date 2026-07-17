@@ -163,11 +163,42 @@ Health Check Policy (v1)
 
 - Run: `npm run health-check`
 - Supabase: `npm run health:supabase`
+- API-Football: `npm run health:api-football`
 - Migrations (optional): `npm run supabase:migrate` with SUPABASE_DB_URL
-- Report: `HEALTH_CHECK_REPORT.md`, `SUPABASE_HEALTH_REPORT.md`
-- Full PASS requires: test, build, validate:system, Supabase CRUD, pipeline, production routes, no critical security/leakage
+- Report: `HEALTH_CHECK_REPORT.md`, `SUPABASE_HEALTH_REPORT.md`, `API_FOOTBALL_HEALTH_REPORT.md`
+- Full PASS requires: test, build, validate:system, Supabase CRUD, API-Football provider probe, pipeline, production routes, no critical security/leakage
 - NOT TESTABLE ≠ PASS; missing local provider keys → PARTIAL PASS
 - Do not fake PASS without evidence
+
+==================================
+
+API-Football Verification (v1)
+
+Environment:
+- Required: `API_FOOTBALL_KEY` (server-only; never `NEXT_PUBLIC_*`)
+- Optional: `API_FOOTBALL_BASE_URL` (default `https://v3.football.api-sports.io`)
+- Auth header: `x-apisports-key`
+
+Local verification:
+- Script: `npm run health:api-football`
+- Runner: `lib/providers/apiFootball/apiFootballHealthRunner.ts`
+- Entry script: `scripts/run-api-football-health.ts`
+- Low-cost probe: `GET /timezone`
+- Provider integration: team lookup, fixture lookup, recent form via `ApiFootballClient`
+- Cache probe: in-memory `ApiFootballCacheStore` write/read
+- Quota: provider response headers + local `apiFootballQuota` gate (100/day, 10/min)
+
+Production verification:
+- Script: `npm run health:api-football:production` (sequential: test → build → authenticated probe)
+- Route: `POST /api/data/health` with `{ action: "production-api-football-probe", healthCheckId }` (admin auth required)
+- Runner: `lib/providers/apiFootball/productionApiFootballVerification.ts`
+- Report: `PRODUCTION_API_FOOTBALL_VERIFICATION.md`
+- Vercel Production must have `API_FOOTBALL_KEY` configured server-side; redeploy after env changes
+
+Provider implementation:
+- Client: `lib/providers/apiFootball/apiFootballClient.ts`
+- Service/cache/quota: `lib/providers/apiFootball/apiFootballService.ts`, `apiFootballCache.ts`, `apiFootballQuota.ts`
+- Registry fallback chain includes `apiFootball` after Supabase cache and team profile
 
 ==================================
 
