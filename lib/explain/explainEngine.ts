@@ -3,6 +3,19 @@ import { buildSummary } from "@/lib/explain/summaryBuilder";
 import type { ExplainReport } from "@/lib/explain/types";
 import type { AnalysisReport } from "@/lib/analysis/types";
 
+function buildExplainEvidenceSummary(report: AnalysisReport): string[] {
+  const recommendation = report.recommendation.result;
+  if (!recommendation) {
+    return [];
+  }
+
+  if (recommendation.evidenceSummary.length > 0) {
+    return recommendation.evidenceSummary;
+  }
+
+  return [];
+}
+
 /**
  * Explain Engine：將 AnalysisReport 轉為可審計的結構化解釋。
  * 不產生自然語言長文，只輸出 ExplainReport JSON。
@@ -17,5 +30,6 @@ export function explainAnalysis(report: AnalysisReport): ExplainReport {
     ruleReasons,
     conflicts,
     confidenceReason,
+    evidenceSummary: buildExplainEvidenceSummary(report),
   };
 }

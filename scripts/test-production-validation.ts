@@ -145,6 +145,8 @@ async function runTests(): Promise<void> {
         confidence: "high",
         expectedValue: 0.05,
         score: 60,
+        marketScore: 60,
+        evidenceScore: 0,
         reasons: ["Production validation reason"],
         warnings: [],
         supportingFeatures: ["Win Rate", "Recent Form"],

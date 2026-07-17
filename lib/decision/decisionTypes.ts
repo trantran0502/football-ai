@@ -26,6 +26,17 @@ export interface DecisionFeatureView {
   source: "prediction" | "value" | "risk" | "market";
 }
 
+export interface DecisionExplanation {
+  supporting: string[];
+  opposing: string[];
+  summary: string;
+}
+
+export interface EvidenceImpact {
+  supporting: string[];
+  opposing: string[];
+}
+
 export interface DecisionResult {
   decision: DecisionLevel;
   market: MarketType | null;
@@ -40,15 +51,10 @@ export interface DecisionResult {
   objections: string[];
   supportingFeatures: string[];
   opposingFeatures: string[];
+  evidenceImpact: EvidenceImpact;
   warnings: string[];
   explanation: DecisionExplanation;
   generatedAt: string;
-}
-
-export interface DecisionExplanation {
-  supporting: string[];
-  opposing: string[];
-  summary: string;
 }
 
 export interface ValueAssessmentResult {

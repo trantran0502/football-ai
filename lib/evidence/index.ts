@@ -1,12 +1,19 @@
+export * from "@/lib/evidence/evidenceEngine";
 export {
-  EvidenceEngine,
-  buildEvidenceReport,
-  collectEvidence,
-  summarizeEvidenceCategories,
-} from "@/lib/evidence/evidenceEngine";
+  buildEvidenceBreakdown,
+  buildEvidenceImpact,
+  buildEvidenceSummaryLines,
+  integrateEvidenceForSelection,
+  integrateEvidenceGlobally,
+  listAllEvidenceItems,
+  EVIDENCE_NEUTRAL_THRESHOLD,
+} from "@/lib/evidence/evidenceIntegration";
 export type {
   EvidenceCategory,
+  EvidenceBreakdownItem,
   EvidenceEngineInput,
+  EvidenceImpactDirection,
+  EvidenceIntegrationResult,
   EvidenceItem,
   EvidenceReport,
 } from "@/lib/evidence/evidenceTypes";

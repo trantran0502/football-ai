@@ -29,6 +29,10 @@ import {
   buildMarketAnalysisIndex,
   runMarketEngineForRecommendations,
 } from "@/lib/recommendation/marketEngineIntegration";
+import {
+  integrateEvidenceForSelection,
+  integrateEvidenceGlobally,
+} from "@/lib/evidence/evidenceIntegration";
 import type { MarketSelection } from "@/types/match";
 
 const SUPPORTED_MARKET_TYPES = new Set([
@@ -77,6 +81,7 @@ export function generateRecommendations(
   const fusionWarnings = buildFusionWarnings(effectiveFusion);
   const marketEngineSnapshot = runMarketEngineForRecommendations(marketSelections);
   const marketAnalysisByType = buildMarketAnalysisIndex(marketEngineSnapshot);
+  const globalEvidence = integrateEvidenceGlobally(options.evidenceReport ?? null);
 
   const candidates = marketSelections
     .filter((selection) => isSupportedSelection(selection))
@@ -88,7 +93,8 @@ export function generateRecommendations(
         passGate.pass,
         fusionWarnings,
         passGate.reason,
-        marketAnalysisByType
+        marketAnalysisByType,
+        options.evidenceReport ?? null
       )
     );
 
@@ -101,6 +107,10 @@ export function generateRecommendations(
     providerDiagnostics: weighting?.diagnostics ?? [],
     providerOverallConfidence: weighting?.overallConfidence ?? null,
     evidenceReport: options.evidenceReport ?? null,
+    evidenceScore: globalEvidence.evidenceScore,
+    evidenceConfidence: globalEvidence.evidenceConfidence,
+    evidenceSummary: globalEvidence.evidenceSummary,
+    evidenceBreakdown: globalEvidence.evidenceBreakdown,
   };
 }
 
@@ -127,7 +137,8 @@ function buildCandidate(
   globalPass: boolean,
   fusionWarnings: string[],
   passReason: string | null,
-  marketAnalysisByType: ReturnType<typeof buildMarketAnalysisIndex>
+  marketAnalysisByType: ReturnType<typeof buildMarketAnalysisIndex>,
+  evidenceReport: RecommendationEngineInput["evidenceReport"]
 ): RecommendationCandidate {
   const direction = directionalMultiplier(selection.side, selection.marketType);
   const scored = scoreSelection(selection, fusion, direction, weighting?.normalizedWeights ?? null);
@@ -137,12 +148,26 @@ function buildCandidate(
     marketAnalysisByType,
     globalPass,
   });
-  const level = scoreToLevel(marketAdjusted.blendedScore, fusion.overallConfidence, globalPass);
+  const marketScore = globalPass ? 0 : clampScore(marketAdjusted.blendedScore);
+  const evidenceIntegration = integrateEvidenceForSelection(
+    evidenceReport ?? null,
+    direction
+  );
+  const evidenceScore = globalPass ? 0 : evidenceIntegration.evidenceScore;
+  const finalScore = globalPass ? 0 : clampScore(marketScore + evidenceScore);
+  const level = scoreToLevel(finalScore, fusion.overallConfidence, globalPass);
   const expectedValue =
     globalPass || level === "pass"
       ? 0
-      : computeExpectedValue(selection, marketAdjusted.blendedScore);
+      : computeExpectedValue(selection, finalScore);
 
+  const reasons = globalPass
+    ? []
+    : [
+        ...scored.reasons,
+        ...marketAdjusted.reasons,
+        ...evidenceIntegration.evidenceSummary,
+      ];
   const warnings = [...fusionWarnings, ...marketAdjusted.warnings];
   if (globalPass && passReason) {
     warnings.unshift(passReason);
@@ -162,8 +187,10 @@ function buildCandidate(
     selection,
     confidence: level,
     expectedValue,
-    score: globalPass ? 0 : clampScore(marketAdjusted.blendedScore),
-    reasons: globalPass ? [] : [...scored.reasons, ...marketAdjusted.reasons],
+    score: finalScore,
+    marketScore,
+    evidenceScore,
+    reasons: uniqueStrings(reasons),
     warnings: uniqueStrings(warnings),
     supportingFeatures: globalPass ? [] : scored.supportingFeatures,
   };

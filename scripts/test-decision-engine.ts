@@ -46,6 +46,8 @@ function buildCandidate(
     confidence,
     expectedValue,
     score,
+    marketScore: score,
+    evidenceScore: 0,
     reasons: ["Recent Form positive"],
     warnings: [],
     supportingFeatures: ["Recent Form"],

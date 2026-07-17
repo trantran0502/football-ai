@@ -162,6 +162,8 @@ async function testFeatureStatsShape(): Promise<void> {
         confidence: "high",
         expectedValue: 0.05,
         score: 60,
+        marketScore: 60,
+        evidenceScore: 0,
         reasons: ["Learning test reason"],
         warnings: [],
         supportingFeatures: ["Win Rate", "Recent Form"],

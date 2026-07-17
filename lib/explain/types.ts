@@ -31,4 +31,5 @@ export interface ExplainReport {
   ruleReasons: RuleReason[];
   conflicts: ExplainConflict[];
   confidenceReason: string;
+  evidenceSummary: string[];
 }

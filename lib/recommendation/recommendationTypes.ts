@@ -1,5 +1,8 @@
 import type { FeatureFusionResult } from "@/lib/analysis/featureScore/fusion/fusionTypes";
-import type { EvidenceReport } from "@/lib/evidence/evidenceTypes";
+import type {
+  EvidenceBreakdownItem,
+  EvidenceReport,
+} from "@/lib/evidence/evidenceTypes";
 import type { MarketSelection, MarketType } from "@/types/match";
 import type { ProviderRecommendationDiagnostic } from "@/lib/recommendation/providerWeightEngine";
 
@@ -11,6 +14,8 @@ export interface RecommendationCandidate {
   confidence: RecommendationLevel;
   expectedValue: number;
   score: number;
+  marketScore: number;
+  evidenceScore: number;
   reasons: string[];
   warnings: string[];
   supportingFeatures: string[];
@@ -31,6 +36,10 @@ export interface RecommendationEngineResult {
   providerDiagnostics: ProviderRecommendationDiagnostic[];
   providerOverallConfidence: number | null;
   evidenceReport: EvidenceReport | null;
+  evidenceScore: number | null;
+  evidenceConfidence: number | null;
+  evidenceSummary: string[];
+  evidenceBreakdown: EvidenceBreakdownItem[];
 }
 
 export interface RecommendationEngineOptions {
@@ -54,6 +63,10 @@ export function createEmptyRecommendationResult(
     providerDiagnostics: [],
     providerOverallConfidence: null,
     evidenceReport: null,
+    evidenceScore: null,
+    evidenceConfidence: null,
+    evidenceSummary: [],
+    evidenceBreakdown: [],
     ...overrides,
   };
 }

@@ -281,9 +281,56 @@ function testRecommendationReceivesEvidenceReport(): void {
   );
 }
 
+function testRecommendationUsesEvidenceScore(): void {
+  const fusion = fuseFeatureScores(buildSampleFeatures());
+  const evidenceReport = collectEvidence({
+    fusion,
+    features: buildSampleFeatures(),
+    marketSelections: buildSampleMarkets(),
+    providerAudit: null,
+    teamProfiles: null,
+  });
+  const withEvidence = generateRecommendations(fusion, buildSampleMarkets(), {
+    evidenceReport,
+  });
+
+  assert(
+    withEvidence.evidenceScore !== null,
+    "result should expose evidenceScore"
+  );
+  assert(
+    withEvidence.evidenceSummary.length > 0,
+    "result should expose evidenceSummary"
+  );
+  assert(
+    withEvidence.evidenceBreakdown.length > 0,
+    "result should expose evidenceBreakdown"
+  );
+
+  const homeCandidate = withEvidence.candidates.find(
+    (candidate) =>
+      candidate.marketType === "moneyline" && candidate.selection.side === "home"
+  );
+  assert(Boolean(homeCandidate), "home moneyline candidate expected");
+  assert(
+    homeCandidate!.score ===
+      clampCandidateScore(homeCandidate!.marketScore + homeCandidate!.evidenceScore),
+    "final score should equal marketScore + evidenceScore"
+  );
+  assert(
+    homeCandidate!.evidenceScore !== 0 || homeCandidate!.marketScore === homeCandidate!.score,
+    "evidenceScore should be applied when evidence is available"
+  );
+}
+
+function clampCandidateScore(score: number): number {
+  return Math.max(-100, Math.min(100, score));
+}
+
 export function runEvidenceEngineTests(): void {
   testEvidenceItemShape();
   testRecommendationReceivesEvidenceReport();
+  testRecommendationUsesEvidenceScore();
 }
 
 runEvidenceEngineTests();

@@ -18,6 +18,35 @@ import {
 } from "@/lib/decision/marketSelection";
 import { assessRisk } from "@/lib/decision/riskAssessment";
 import { assessValueForCandidate } from "@/lib/decision/valueAssessment";
+import { buildEvidenceImpact } from "@/lib/evidence/evidenceIntegration";
+import type { RecommendationCandidate } from "@/lib/recommendation/recommendationTypes";
+
+function resolveEvidenceImpact(
+  input: BuildDecisionInput,
+  candidate: RecommendationCandidate | null
+): { supporting: string[]; opposing: string[] } {
+  const fromResult = input.recommendationResult?.evidenceSummary ?? [];
+  if (fromResult.length > 0) {
+    return {
+      supporting: fromResult.filter((line) => line.startsWith("+")),
+      opposing: fromResult.filter((line) => line.startsWith("-")),
+    };
+  }
+
+  const direction =
+    candidate?.selection.side === "away" ||
+    candidate?.selection.side === "under" ||
+    candidate?.selection.side === "no"
+      ? -1
+      : candidate?.selection.side === "draw"
+        ? 0
+        : 1;
+
+  return buildEvidenceImpact(
+    input.recommendationResult?.evidenceReport ?? null,
+    direction
+  );
+}
 
 const SUPPORTING_FEATURE_LABELS = [
   "Recent Form",
@@ -40,13 +69,16 @@ function buildExplanation(input: {
   objections: string[];
   supportingFeatures: string[];
   opposingFeatures: string[];
+  evidenceImpact: { supporting: string[]; opposing: string[] };
   decision: DecisionResult["decision"];
 }): DecisionExplanation {
   const supporting = [
+    ...input.evidenceImpact.supporting,
     ...input.supportingFeatures.map((item) => `+ ${item}`),
     ...input.reasons.filter((reason) => !reason.startsWith("-")).slice(0, 5),
   ];
   const opposing = [
+    ...input.evidenceImpact.opposing,
     ...input.opposingFeatures.map((item) => `- ${item}`),
     ...input.objections.map((item) => `- ${item}`),
   ];
@@ -138,6 +170,7 @@ function buildPassDecision(
     bettingIntelligence: input.bettingIntelligence,
     candidate: null,
   });
+  const evidenceImpact = resolveEvidenceImpact(input, null);
 
   return {
     decision: "PASS",
@@ -153,12 +186,14 @@ function buildPassDecision(
     objections: [reason, ...aggregateRisk.objections],
     supportingFeatures: [],
     opposingFeatures: collectOpposingFeatures(aggregateRisk.objections, []),
+    evidenceImpact,
     warnings: aggregateRisk.warnings,
     explanation: buildExplanation({
       reasons: [],
       objections: [reason],
       supportingFeatures: [],
       opposingFeatures: [],
+      evidenceImpact,
       decision: "PASS",
     }),
     generatedAt: capturedAt,
@@ -232,6 +267,7 @@ export function buildDecision(input: BuildDecisionInput): DecisionResult {
     risk.objections,
     best.candidate.warnings
   );
+  const evidenceImpact = resolveEvidenceImpact(input, best.candidate);
 
   const warnings = [...best.candidate.warnings, ...risk.warnings];
   const confidence = computeConfidence(decisionScore, value.valueScore, risk.riskScore);
@@ -250,12 +286,14 @@ export function buildDecision(input: BuildDecisionInput): DecisionResult {
     objections,
     supportingFeatures,
     opposingFeatures,
+    evidenceImpact,
     warnings,
     explanation: buildExplanation({
       reasons,
       objections,
       supportingFeatures,
       opposingFeatures,
+      evidenceImpact,
       decision,
     }),
     generatedAt: capturedAt,

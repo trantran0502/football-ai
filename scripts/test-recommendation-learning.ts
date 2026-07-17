@@ -51,6 +51,8 @@ function buildVerifiedRecord(input: {
             confidence: "high",
             expectedValue: 0.08,
             score: 70,
+            marketScore: 70,
+            evidenceScore: 0,
             reasons: ["Recent form"],
             warnings: [],
             supportingFeatures: ["recentForm"],

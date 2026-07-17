@@ -37,6 +37,26 @@ export interface EvidenceItem {
   details: Record<string, unknown>;
 }
 
+export type EvidenceImpactDirection = "support" | "oppose" | "neutral";
+
+export interface EvidenceBreakdownItem {
+  evidenceId: string;
+  category: EvidenceCategory;
+  rawScore: number;
+  adjustedScore: number;
+  confidence: number;
+  impact: EvidenceImpactDirection;
+  source: string;
+  summary: string;
+}
+
+export interface EvidenceIntegrationResult {
+  evidenceScore: number;
+  evidenceConfidence: number;
+  evidenceSummary: string[];
+  evidenceBreakdown: EvidenceBreakdownItem[];
+}
+
 export interface EvidenceReport {
   overallEvidenceScore: number;
   overallConfidence: number;
