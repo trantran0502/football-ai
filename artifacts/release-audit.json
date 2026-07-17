@@ -1,0 +1,554 @@
+{
+  "meta": {
+    "title": "Football AI v1.0 RC1 — Master Validation",
+    "generatedAt": "2026-07-17T04:00:00.000Z",
+    "gitCommit": "d71c3923f6f5ae10de768d5db0da7a7e9c516d29",
+    "projectRoot": "C:\\Users\\user\\Desktop\\football-ai\\football-ai",
+    "scope": [
+      "app/",
+      "lib/",
+      "database/",
+      "scripts/",
+      "data/",
+      "types/",
+      "package.json"
+    ],
+    "constraints": "Validate / Audit / Report only — no code changes"
+  },
+  "overall": {
+    "status": "FAIL",
+    "architectureScore": 64,
+    "maintainabilityScore": 61,
+    "readyForRelease": false
+  },
+  "severityCounts": {
+    "critical": 2,
+    "high": 5,
+    "medium": 12,
+    "low": 9
+  },
+  "executiveSummary": "Build, unit tests, parser scripts, and most market-engine/knowledge subsystems pass. System validation FAILs on Patterns (3/10 patterns never match fixtures) and Consistency (Batch/Replay agree; Incremental diverges on patternStatistics bestLeague/worstLeague). Dual-stack architecture (live recommendation vs market-engine/knowledge) is not wired into production pipeline. Parent folder contains stale duplicate Next.js scaffold.",
+  "sections": {
+    "projectAudit": {
+      "status": "WARN",
+      "checks": {
+        "duplicateFolders": {
+          "status": "FAIL",
+          "findings": [
+            "Parent C:\\Users\\user\\Desktop\\football-ai\\ contains stale Next 15 scaffold (package.json, src/app/) separate from canonical repo football-ai/football-ai/",
+            "components/ vs app/components/ — 5 admin/replay components at root components/, 2 at app/components/",
+            "database/ (1 file: bettingHistory.ts) vs lib/database/ (11 modules)",
+            "types/ (analysis.ts) vs per-module types scattered in lib/**"
+          ]
+        },
+        "secondFootballAiProject": {
+          "status": "FAIL",
+          "findings": [
+            "Duplicate project at parent: package.json (Next 15.3.3), src/app/page.tsx, src/app/layout.tsx — not referenced by canonical repo"
+          ]
+        },
+        "orphanFiles": {
+          "status": "WARN",
+          "findings": [
+            "types/analysis.ts — zero imports across codebase",
+            "database/bettingHistory.ts — isolated from lib/database/ stack",
+            "18 scripts/*.ts not wired in package.json (e.g. validate-special-parsers.ts, debug-parser.ts, test-backtest-engine.ts)"
+          ]
+        },
+        "unreferencedModules": {
+          "status": "WARN",
+          "findings": [
+            "types/analysis.ts unreferenced",
+            "runMarketEngine used only by marketKnowledgeAccumulator + systemValidation — not by live recommendationEngine pipeline"
+          ]
+        },
+        "duplicateInterfaces": {
+          "status": "WARN",
+          "findings": [
+            "MatchRecordVerifyResult duplicated in lib/database/supabaseMatchApi.ts and lib/database/compositeMatchStorage.ts",
+            "MarketAnalysis name used only in marketEngineTypes (no cross-file duplicate export found)",
+            "ReplayStep / MarketType / MatchStatus — semantic collisions across lib/replay/ vs marketKnowledge/replay/"
+          ]
+        },
+        "circularDependency": {
+          "status": "PASS",
+          "findings": [
+            "No automated madge scan run; manual review of marketEngine → rules/patterns → marketEngineTypes shows acyclic layering",
+            "matchSchema.ts imports replay builder — upward coupling noted, not a runtime cycle"
+          ]
+        },
+        "unusedExports": {
+          "status": "WARN",
+          "findings": [
+            "types/analysis.ts exports (HomeAwayStats, TeamStats, AsianHandicapMarket, etc.) — no consumers",
+            "createPlaceholderKnowledgeSnapshot exported but production path uses accumulator when verified"
+          ]
+        },
+        "deadCode": {
+          "status": "WARN",
+          "findings": [
+            "lib/knowledge/* interpret* functions — legacy knowledge layer parallel to marketEngine",
+            "SteamMoveRule, SharpMoneyRule — intentional placeholders, never trigger",
+            "marketHistoryProvider returns Not Implemented for all historical lookups"
+          ]
+        },
+        "placeholders": {
+          "status": "WARN",
+          "count": 8,
+          "findings": [
+            "SteamMoveRule — placeholder, not implemented",
+            "SharpMoneyRule — placeholder, not implemented",
+            "marketHistoryProvider — Not Implemented",
+            "NOT_IMPLEMENTED_KNOWLEDGE_MESSAGE in marketKnowledgeTypes",
+            "createPlaceholderKnowledgeSnapshot in marketKnowledgeStore",
+            "TrapLineRule — partial placeholder metadata",
+            "scheduler buildSchedulerPlaceholderOdds for unmapped fixtures",
+            "0 TODO/FIXME comments in source (clean)"
+          ]
+        },
+        "todoFixme": {
+          "status": "PASS",
+          "count": 0
+        }
+      }
+    },
+    "architectureAudit": {
+      "status": "WARN",
+      "score": 64,
+      "modules": {
+        "recommendation": {
+          "coupling": "medium",
+          "notes": "Feature fusion → recommendation engine → validation; well-layered but separate from marketEngine stack"
+        },
+        "validation": {
+          "coupling": "low",
+          "notes": "lib/validation/, recommendationValidation — used by admin dashboard"
+        },
+        "replay": {
+          "coupling": "high",
+          "notes": "Two namespaces: lib/replay/ (match UI replay) vs marketKnowledge/replay/ (statistics replay)"
+        },
+        "learning": {
+          "coupling": "high",
+          "notes": "lib/learning/ + recommendationLearning* + weightOptimizer — overlapping responsibility"
+        },
+        "weightOptimizer": {
+          "coupling": "medium",
+          "notes": "Admin-only; reads recommendation learning outcomes"
+        },
+        "marketEngine": {
+          "coupling": "low-internal",
+          "notes": "Clean analyzer → rule → pattern layering; NOT connected to production recommendation pipeline"
+        },
+        "ruleEngine": {
+          "coupling": "low",
+          "notes": "Inside marketEngine/rules/"
+        },
+        "patternEngine": {
+          "coupling": "low",
+          "notes": "Inside marketEngine/patterns/; 3 patterns never fire on validation fixtures"
+        },
+        "knowledge": {
+          "coupling": "medium",
+          "notes": "marketKnowledge batch/replay/incremental/persistence — cohesive submodule"
+        },
+        "persistence": {
+          "coupling": "low",
+          "notes": "File + InMemory repositories; checksum/manifest validated PASS"
+        },
+        "incremental": {
+          "coupling": "medium",
+          "notes": "Section PASS individually; Consistency vs Batch FAIL"
+        }
+      },
+      "findings": [
+        "Dual-stack: live pipeline (parser → features → recommendationEngine) vs market stack (marketEngine → marketKnowledge) — no production bridge",
+        "Duplicate responsibility: lib/knowledge vs marketEngine analyzers",
+        "Naming inconsistency: MarketAnalysis (engine) vs analysis types in types/analysis.ts",
+        "Module merge candidates: marketKnowledgeStore vs persistence/ repository layer",
+        "Dependency direction violation: matchSchema → replay builder (domain schema depends on replay)"
+      ]
+    },
+    "parserValidation": {
+      "status": "PASS",
+      "scripts": {
+        "validate-special-parsers.ts": "PASS — All parser validation checks passed",
+        "test-partial-markets.ts": "PASS — Partial market handling tests passed"
+      },
+      "markets": {
+        "asianHandicap": "PASS",
+        "overUnder": "PASS",
+        "btts": "PASS",
+        "moneyline": "PASS",
+        "waterLevel": "PASS",
+        "halfWin": "PASS",
+        "halfLoss": "PASS",
+        "drawNoBet": "PASS",
+        "handicapLines": "PASS"
+      },
+      "notes": "lib/parser/parser.ts (897 lines) — primary parser; settlement via backtest engine scripts not in default npm test"
+    },
+    "recommendationValidation": {
+      "status": "PASS",
+      "scripts": {
+        "test-recommendation-engine.ts": "PASS",
+        "test-production-validation.ts": "PASS (with missing_market_outcomes warnings on 2 learning records)"
+      },
+      "fields": {
+        "candidate": "PASS — generated with market/selection metadata",
+        "recommendation": "PASS — engine output structurally valid",
+        "confidence": "PASS — bounded 0–1 in validation fixtures",
+        "reason": "PASS — non-empty reason strings",
+        "score": "PASS — feature fusion + recommendation scores present"
+      }
+    },
+    "marketEngineValidation": {
+      "status": "PASS",
+      "source": "artifacts/system-validation-report.json — marketEngine section",
+      "checksPassed": 492,
+      "checksFailed": 0,
+      "markets": {
+        "AH": "PASS — analyzer, rules, patterns, audit, score breakdown, risk level",
+        "OU": "PASS",
+        "BTTS": "PASS",
+        "1X2": "PASS"
+      },
+      "patterns": {
+        "status": "FAIL",
+        "checksPassed": 611,
+        "checksFailed": 3,
+        "neverMatched": [
+          "HomeLowWaterBalanced",
+          "BalancedUnderdog",
+          "LowOverroundBalanced"
+        ]
+      }
+    },
+    "knowledgeValidation": {
+      "status": "PASS",
+      "subsections": {
+        "batch": { "status": "PASS", "checksPassed": 44, "checksFailed": 0 },
+        "replay": { "status": "PASS" },
+        "incremental": { "status": "PASS", "checksPassed": 24, "checksFailed": 0 },
+        "statistics": { "status": "PASS" },
+        "snapshot": { "status": "PASS" },
+        "manifest": { "status": "PASS" },
+        "checksum": { "status": "PASS" },
+        "repository": { "status": "PASS" },
+        "recovery": { "status": "PASS" }
+      }
+    },
+    "consistencyValidation": {
+      "status": "FAIL",
+      "batchVsReplay": "MATCH — checksum 1a4e03c3146477a5bfda2c56e7b416891b8ca172c6716a3946a2397d489a2af7",
+      "batchVsIncremental": "MISMATCH",
+      "firstDiff": {
+        "path": "patternStatistics[0].AwayHighWaterValue",
+        "field": "bestLeague / worstLeague",
+        "batch": { "bestLeague": "Premier League", "worstLeague": "La Liga" },
+        "incremental": { "bestLeague": "La Liga", "worstLeague": "Premier League" },
+        "rootCause": "Incremental snapshot reconstruction from finalized stats loses leagueHitRates tie-break detail; best/worst league derived differently than batch path"
+      },
+      "additionalDiffs": [
+        "HighOverroundRisk — same bestLeague/worstLeague swap",
+        "HomeLowWaterFavorite.roi — float drift possible at scale (0.18142857142857147 vs 0.18142857142857144)"
+      ],
+      "checksums": {
+        "batch": "1a4e03c3146477a5bfda2c56e7b416891b8ca172c6716a3946a2397d489a2af7",
+        "replay": "1a4e03c3146477a5bfda2c56e7b416891b8ca172c6716a3946a2397d489a2af7",
+        "incremental": "51db64c1c179e10e10dd5362a656a9fc50bdd10412541fbce35bd44e19974655"
+      }
+    },
+    "websiteValidation": {
+      "status": "PASS",
+      "build": "PASS — 25 routes compiled",
+      "routes": {
+        "pages": [
+          "/",
+          "/admin",
+          "/admin/recommendation-learning",
+          "/admin/recommendation-learning-backfill",
+          "/admin/recommendation-learning-debug",
+          "/admin/recommendation-validation",
+          "/admin/system-health",
+          "/admin/weight-optimizer",
+          "/replay/[matchId]"
+        ],
+        "api": [
+          "/api/admin/cron/daily-analysis",
+          "/api/admin/cron/daily-summary",
+          "/api/admin/cron/historical-match-backfill",
+          "/api/admin/cron/result-update",
+          "/api/admin/dashboard",
+          "/api/admin/learning-report",
+          "/api/admin/repair-implied-probability",
+          "/api/admin/scheduler",
+          "/api/data/beta-recommendations",
+          "/api/data/beta-rolling-reports",
+          "/api/data/health",
+          "/api/data/import",
+          "/api/data/match-records",
+          "/api/football/team-data",
+          "/api/replay/[matchId]"
+        ]
+      },
+      "brokenRoutes": [],
+      "localStorage": "test-localstorage-persistence.ts available (not in default npm test)",
+      "admin": "6 admin pages present in build output"
+    },
+    "performanceAudit": {
+      "status": "WARN",
+      "largeFiles": [
+        { "path": "scripts/test-team-profile.ts", "lines": 1815 },
+        { "path": "scripts/test-scheduler.ts", "lines": 1514 },
+        { "path": "lib/systemValidation/systemValidationRunner.ts", "lines": 1154 },
+        { "path": "lib/teamProfile/teamProfileDataSource.ts", "lines": 1149 },
+        { "path": "lib/recommendation/marketKnowledge/marketKnowledgeStatistics.ts", "lines": 931 },
+        { "path": "lib/parser/parser.ts", "lines": 897 }
+      ],
+      "longFunctions": [
+        "marketKnowledgeStatistics.ts — finalize/merge statistics blocks",
+        "parser.ts — monolithic parse dispatch",
+        "teamProfileDataSource.ts — multi-source fetch aggregation"
+      ],
+      "duplicateComputation": [
+        "Batch and incremental both re-run marketEngine per fixture — expected but expensive at scale",
+        "Feature collectors may re-fetch team profile slices per match in scheduler path"
+      ],
+      "cacheOpportunities": [
+        "Team profile API responses in dailyScheduler",
+        "Market engine snapshot per fixture hash during replay/incremental",
+        "Implied probability repair — batch cursor already exists"
+      ],
+      "potentialON2": [
+        "marketKnowledgeStatistics pattern/rule aggregation over growing observation lists",
+        "systemValidationRunner nested fixture × market × rule × pattern checks (validation-only)"
+      ]
+    },
+    "releaseAudit": {
+      "status": "FAIL",
+      "automatedGates": {
+        "npmTest": "PASS",
+        "npmBuild": "PASS",
+        "validateSystem": "FAIL",
+        "validateSpecialParsers": "PASS",
+        "testPartialMarkets": "PASS",
+        "testRecommendationEngine": "PASS",
+        "testProductionValidation": "PASS"
+      },
+      "blockers": [
+        "Consistency: Batch ≠ Incremental",
+        "Patterns: 3/10 patterns never match validation fixtures",
+        "Market engine stack not integrated into production recommendation path"
+      ],
+      "uncommittedWork": [
+        "lib/systemValidation/* staged but not committed",
+        "artifacts/system-validation-report.* modified"
+      ]
+    }
+  },
+  "issues": [
+    {
+      "id": "RC1-001",
+      "severity": "critical",
+      "section": "consistencyValidation",
+      "title": "Batch/Replay vs Incremental checksum mismatch",
+      "detail": "patternStatistics bestLeague/worstLeague swapped for AwayHighWaterValue and HighOverroundRisk; incremental checksum 51db64c1… vs batch 1a4e03c3…"
+    },
+    {
+      "id": "RC1-002",
+      "severity": "critical",
+      "section": "architectureAudit",
+      "title": "Market Engine not wired to production recommendation pipeline",
+      "detail": "runMarketEngine only consumed by marketKnowledgeAccumulator and systemValidation; live recommendationEngine path bypasses market stack entirely"
+    },
+    {
+      "id": "RC1-003",
+      "severity": "high",
+      "section": "marketEngineValidation",
+      "title": "Three patterns never match validation fixtures",
+      "detail": "HomeLowWaterBalanced, BalancedUnderdog, LowOverroundBalanced — pattern never matched across 12 fixtures"
+    },
+    {
+      "id": "RC1-004",
+      "severity": "high",
+      "section": "projectAudit",
+      "title": "Duplicate football-ai project at parent directory",
+      "detail": "C:\\Users\\user\\Desktop\\football-ai\\package.json + src/app/ stale Next 15 scaffold alongside canonical football-ai/football-ai/"
+    },
+    {
+      "id": "RC1-005",
+      "severity": "high",
+      "section": "architectureAudit",
+      "title": "Dual learning/knowledge stacks",
+      "detail": "lib/learning + recommendationLearning vs marketKnowledge + lib/knowledge — overlapping domains, unclear ownership"
+    },
+    {
+      "id": "RC1-006",
+      "severity": "high",
+      "section": "architectureAudit",
+      "title": "Dual replay namespaces",
+      "detail": "lib/replay/ (UI match replay) vs marketKnowledge/replay/ (statistics) — naming collision on ReplayStep"
+    },
+    {
+      "id": "RC1-007",
+      "severity": "high",
+      "section": "releaseAudit",
+      "title": "validate:system overall FAIL",
+      "detail": "System validation gate fails Patterns + Consistency sections"
+    },
+    {
+      "id": "RC1-008",
+      "severity": "medium",
+      "section": "projectAudit",
+      "title": "Orphan types/analysis.ts",
+      "detail": "120-line analysis type definitions with zero imports"
+    },
+    {
+      "id": "RC1-009",
+      "severity": "medium",
+      "section": "projectAudit",
+      "title": "Duplicate MatchRecordVerifyResult interface",
+      "detail": "Defined separately in supabaseMatchApi.ts and compositeMatchStorage.ts"
+    },
+    {
+      "id": "RC1-010",
+      "severity": "medium",
+      "section": "projectAudit",
+      "title": "Split component directories",
+      "detail": "components/ and app/components/ both hold UI modules"
+    },
+    {
+      "id": "RC1-011",
+      "severity": "medium",
+      "section": "projectAudit",
+      "title": "18 unwired script entry points",
+      "detail": "Including validate-special-parsers.ts, debug-parser.ts, test-backtest-engine.ts"
+    },
+    {
+      "id": "RC1-012",
+      "severity": "medium",
+      "section": "projectAudit",
+      "title": "Placeholder rules and historical provider",
+      "detail": "SteamMoveRule, SharpMoneyRule, marketHistoryProvider Not Implemented — documented placeholders"
+    },
+    {
+      "id": "RC1-013",
+      "severity": "medium",
+      "section": "performanceAudit",
+      "title": "Monolithic parser.ts (897 lines)",
+      "detail": "Single file handles all market parse branches — maintainability risk"
+    },
+    {
+      "id": "RC1-014",
+      "severity": "medium",
+      "section": "performanceAudit",
+      "title": "marketKnowledgeStatistics.ts (931 lines)",
+      "detail": "Large statistics finalization module — incremental consistency sensitive"
+    },
+    {
+      "id": "RC1-015",
+      "severity": "medium",
+      "section": "architectureAudit",
+      "title": "matchSchema couples to replay builder",
+      "detail": "Domain schema layer imports replay construction utilities"
+    },
+    {
+      "id": "RC1-016",
+      "severity": "medium",
+      "section": "releaseAudit",
+      "title": "System validation module uncommitted",
+      "detail": "lib/systemValidation/* staged on branch; RC1 gate artifact not in d71c392 commit"
+    },
+    {
+      "id": "RC1-017",
+      "severity": "medium",
+      "section": "recommendationValidation",
+      "title": "Learning persist warnings in production validation",
+      "detail": "missing_market_outcomes for 2 records during test-production-validation.ts"
+    },
+    {
+      "id": "RC1-018",
+      "severity": "medium",
+      "section": "projectAudit",
+      "title": "database/bettingHistory.ts isolated",
+      "detail": "Legacy file outside lib/database/ module structure"
+    },
+    {
+      "id": "RC1-019",
+      "severity": "medium",
+      "section": "consistencyValidation",
+      "title": "ROI float drift on incremental path",
+      "detail": "HomeLowWaterFavorite.roi differs at 17th decimal place between paths"
+    },
+    {
+      "id": "RC1-020",
+      "severity": "low",
+      "section": "performanceAudit",
+      "title": "Oversized test scripts",
+      "detail": "test-team-profile.ts 1815 lines, test-scheduler.ts 1514 lines"
+    },
+    {
+      "id": "RC1-021",
+      "severity": "low",
+      "section": "performanceAudit",
+      "title": "Repeated marketEngine execution",
+      "detail": "Batch + incremental both full-scan fixtures without shared memoization"
+    },
+    {
+      "id": "RC1-022",
+      "severity": "low",
+      "section": "websiteValidation",
+      "title": "LocalStorage test not in default npm test",
+      "detail": "Persistence validated only via standalone script"
+    },
+    {
+      "id": "RC1-023",
+      "severity": "low",
+      "section": "projectAudit",
+      "title": "Parent Next 15 vs canonical Next 16.2.10",
+      "detail": "Version skew between duplicate scaffolds"
+    },
+    {
+      "id": "RC1-024",
+      "severity": "low",
+      "section": "architectureAudit",
+      "title": "marketKnowledgeStore vs persistence overlap",
+      "detail": "Two persistence abstractions for knowledge snapshots"
+    },
+    {
+      "id": "RC1-025",
+      "severity": "low",
+      "section": "performanceAudit",
+      "title": "Team profile fetch duplication in scheduler",
+      "detail": "Potential repeated API calls without cross-match cache"
+    },
+    {
+      "id": "RC1-026",
+      "severity": "low",
+      "section": "projectAudit",
+      "title": "npm warn devdir env config",
+      "detail": "Non-blocking npmrc warning on all script runs"
+    },
+    {
+      "id": "RC1-027",
+      "severity": "low",
+      "section": "performanceAudit",
+      "title": "systemValidationRunner 1154 lines",
+      "detail": "Large validation orchestrator — acceptable for RC1 gate but hard to extend"
+    },
+    {
+      "id": "RC1-028",
+      "severity": "low",
+      "section": "architectureAudit",
+      "title": "TrapLineRule partial placeholder",
+      "detail": "Rule fires but metadata marks placeholder when not triggered"
+    }
+  ],
+  "reportPaths": {
+    "releaseAuditMd": "artifacts/release-audit.md",
+    "releaseAuditJson": "artifacts/release-audit.json",
+    "systemValidationMd": "artifacts/system-validation-report.md",
+    "systemValidationJson": "artifacts/system-validation-report.json"
+  }
+}

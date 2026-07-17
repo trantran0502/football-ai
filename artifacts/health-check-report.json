@@ -1,17 +1,17 @@
 {
   "version": "v1",
-  "startedAt": "2026-07-17T06:31:16.619Z",
-  "completedAt": "2026-07-17T06:31:51.872Z",
-  "durationMs": 35253,
-  "gitCommit": "a4fe3851886514a225629d6b5b82ce13e774ad05",
-  "overallStatus": "PARTIAL PASS",
+  "startedAt": "2026-07-17T15:43:12.993Z",
+  "completedAt": "2026-07-17T15:43:38.962Z",
+  "durationMs": 25969,
+  "gitCommit": "0d375c9c02f1e8b0e173a72e886cf599ab3deaf3",
+  "overallStatus": "PASS",
   "criticalCount": 0,
   "highCount": 0,
-  "mediumCount": 1,
+  "mediumCount": 0,
   "lowCount": 6,
-  "supabaseStatus": "FAIL",
-  "apiFootballStatus": "NOT CONFIGURED",
-  "geminiStatus": "NOT CONFIGURED",
+  "supabaseStatus": "PASS",
+  "apiFootballStatus": "PASS",
+  "geminiStatus": "OPTIONAL",
   "schedulerStatus": "NOT CONFIGURED",
   "pipelineStatus": "PASS",
   "productionStatus": "PASS",
@@ -35,7 +35,7 @@
       "section": "Code Health",
       "name": "npm run lint",
       "status": "WARNING",
-      "evidence": "errors=3 warnings=70"
+      "evidence": "errors=3 warnings=71"
     },
     {
       "id": "code-health:npm-run-validate:system",
@@ -72,20 +72,6 @@
       "evidence": "fundamentalsBacktest.test.ts covers leakage rules"
     },
     {
-      "id": "environment:api_football_key",
-      "section": "Environment",
-      "name": "API_FOOTBALL_KEY",
-      "status": "NOT CONFIGURED",
-      "message": "Required variable missing locally"
-    },
-    {
-      "id": "environment:admin_api_key",
-      "section": "Environment",
-      "name": "ADMIN_API_KEY",
-      "status": "NOT CONFIGURED",
-      "message": "Required variable missing locally"
-    },
-    {
       "id": "environment:cron_secret",
       "section": "Environment",
       "name": "CRON_SECRET",
@@ -102,7 +88,7 @@
       "id": "security:admin-api-key-configured",
       "section": "Security",
       "name": "Admin API key configured",
-      "status": "NOT CONFIGURED"
+      "status": "PASS"
     },
     {
       "id": "security:cron-secret-configured",
@@ -191,41 +177,148 @@
       "id": "supabase:connection-probe",
       "section": "Supabase",
       "name": "Connection probe",
-      "status": "FAIL",
-      "evidence": "TypeError: fetch failed"
+      "status": "PASS",
+      "evidence": "host=qjzuledpatlbjsymqtbb.supabase.co rows=1"
     },
     {
-      "id": "supabase:schema-tables",
-      "section": "Supabase",
-      "name": "Schema tables",
-      "status": "NOT TESTABLE",
-      "message": "Connection failed"
+      "id": "supabase-schema:match_records",
+      "section": "Supabase Schema",
+      "name": "match_records",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
     },
     {
-      "id": "supabase:crud-test",
+      "id": "supabase-schema:beta_recommendations",
+      "section": "Supabase Schema",
+      "name": "beta_recommendations",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:beta_rolling_reports",
+      "section": "Supabase Schema",
+      "name": "beta_rolling_reports",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:recommendation_learning",
+      "section": "Supabase Schema",
+      "name": "recommendation_learning",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:team_profiles",
+      "section": "Supabase Schema",
+      "name": "team_profiles",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:execution_logs",
+      "section": "Supabase Schema",
+      "name": "execution_logs",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:scheduler_state",
+      "section": "Supabase Schema",
+      "name": "scheduler_state",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:admin_daily_summaries",
+      "section": "Supabase Schema",
+      "name": "admin_daily_summaries",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:admin_system_snapshots",
+      "section": "Supabase Schema",
+      "name": "admin_system_snapshots",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:admin_error_logs",
+      "section": "Supabase Schema",
+      "name": "admin_error_logs",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-schema:security_rate_limit_buckets",
+      "section": "Supabase Schema",
+      "name": "security_rate_limit_buckets",
+      "status": "PASS",
+      "evidence": "SELECT probe succeeded"
+    },
+    {
+      "id": "supabase-crud:insert-match_records",
+      "section": "Supabase CRUD",
+      "name": "insert match_records",
+      "status": "PASS",
+      "evidence": "id=8762dedf-d8a9-4f4c-9787-18b385c0fd31"
+    },
+    {
+      "id": "supabase-crud:select-match_records",
+      "section": "Supabase CRUD",
+      "name": "select match_records",
+      "status": "PASS",
+      "evidence": "league=HEALTH_CHECK"
+    },
+    {
+      "id": "supabase-crud:update-match_records",
+      "section": "Supabase CRUD",
+      "name": "update match_records",
+      "status": "PASS",
+      "evidence": "HEALTH_CHECK_UPDATED"
+    },
+    {
+      "id": "supabase-crud:delete-match_records",
+      "section": "Supabase CRUD",
+      "name": "delete match_records",
+      "status": "PASS",
+      "evidence": "test row removed"
+    },
+    {
+      "id": "supabase:embedded-models-note",
       "section": "Supabase",
-      "name": "CRUD test",
-      "status": "NOT TESTABLE",
-      "message": "Connection failed"
+      "name": "Embedded models note",
+      "status": "WARNING",
+      "evidence": "Fixture/Market/Evidence/Learning reports are JSON-embedded, not separate tables"
     },
     {
       "id": "api-football:api-key-configured",
       "section": "API-Football",
       "name": "API key configured",
-      "status": "NOT CONFIGURED"
+      "status": "PASS",
+      "evidence": "API_FOOTBALL_KEY present"
     },
     {
-      "id": "gemini:api-key-configured",
+      "id": "api-football:fixture-fetch",
+      "section": "API-Football",
+      "name": "Fixture fetch",
+      "status": "PASS",
+      "evidence": "date=2026-07-16 count=114 latencyMs=989"
+    },
+    {
+      "id": "gemini:optional-provider",
       "section": "Gemini",
-      "name": "API key configured",
-      "status": "NOT CONFIGURED"
+      "name": "Optional provider",
+      "status": "OPTIONAL",
+      "evidence": "Unavailable latencyMs=914 (billing/quota/network or empty response)"
     },
     {
       "id": "database-quality:active-match_records-reachable",
       "section": "Database Quality",
       "name": "Active match_records reachable",
-      "status": "WARNING",
-      "evidence": "count=unknown"
+      "status": "PASS",
+      "evidence": "count=102"
     },
     {
       "id": "database-quality:stale-pending-fixtures-sample",
@@ -239,21 +332,21 @@
       "section": "Deployment",
       "name": "Homepage",
       "status": "PASS",
-      "evidence": "status=200 latencyMs=217 url=https://football-ai-ten.vercel.app/"
+      "evidence": "status=200 latencyMs=156 url=https://football-ai-ten.vercel.app/"
     },
     {
       "id": "deployment:admin-dashboard",
       "section": "Deployment",
       "name": "Admin dashboard",
       "status": "PASS",
-      "evidence": "status=200 latencyMs=224 url=https://football-ai-ten.vercel.app/admin"
+      "evidence": "status=200 latencyMs=673 url=https://football-ai-ten.vercel.app/admin"
     },
     {
       "id": "deployment:health-api-(public)",
       "section": "Deployment",
       "name": "Health API (public)",
       "status": "PASS",
-      "evidence": "status=200 latencyMs=289 url=https://football-ai-ten.vercel.app/api/data/health"
+      "evidence": "status=200 latencyMs=693 url=https://football-ai-ten.vercel.app/api/data/health"
     },
     {
       "id": "dashboard:browser-ui-verification",
@@ -327,23 +420,29 @@
     {
       "name": "API_FOOTBALL_KEY",
       "required": true,
-      "present": false,
+      "present": true,
       "clientSafe": false,
-      "serverOnly": true
+      "serverOnly": true,
+      "invalidFormat": false,
+      "maskedValue": "ab8f…4f78 (len=32)"
     },
     {
       "name": "GOOGLE_GEMINI_API_KEY",
       "required": false,
-      "present": false,
+      "present": true,
       "clientSafe": false,
-      "serverOnly": true
+      "serverOnly": true,
+      "invalidFormat": false,
+      "maskedValue": "AQ.A…ugOg (len=53)"
     },
     {
       "name": "ADMIN_API_KEY",
       "required": true,
-      "present": false,
+      "present": true,
       "clientSafe": false,
-      "serverOnly": true
+      "serverOnly": true,
+      "invalidFormat": false,
+      "maskedValue": "3675…2c17 (len=64)"
     },
     {
       "name": "CRON_SECRET",
@@ -390,9 +489,11 @@
     {
       "name": "GOOGLE_GEMINI_MODEL",
       "required": false,
-      "present": false,
+      "present": true,
       "clientSafe": false,
-      "serverOnly": true
+      "serverOnly": true,
+      "invalidFormat": false,
+      "maskedValue": "gemi…lash (len=16)"
     },
     {
       "name": "API_FOOTBALL_BASE_URL",

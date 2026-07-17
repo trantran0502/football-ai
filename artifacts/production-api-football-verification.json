@@ -1,0 +1,104 @@
+{
+  "version": "v1",
+  "completedAt": "2026-07-17T15:15:04.377Z",
+  "overallStatus": "PASS",
+  "productionDeployment": "PASS",
+  "environmentVariables": "NOT TESTABLE",
+  "authenticatedHealthRoute": "PASS",
+  "providerRawEndpoint": "PASS",
+  "providerTeamLookup": "PASS",
+  "providerFixtureLookup": "PASS",
+  "manualActionRequired": false,
+  "manualSteps": [
+    "Verify Vercel Production has server-only API_FOOTBALL_KEY configured (not NEXT_PUBLIC_*).",
+    "Optional: API_FOOTBALL_BASE_URL=https://v3.football.api-sports.io if using the default api-sports endpoint.",
+    "Vercel Production env vars cannot be read from this environment — confirm API_FOOTBALL_KEY in Vercel Dashboard."
+  ],
+  "productionUrl": "https://football-ai-ten.vercel.app",
+  "healthCheckId": "production-api-football-2026-07-17T15-15-00-924Z",
+  "probeResult": {
+    "healthCheckId": "production-api-football-2026-07-17T15-15-00-924Z",
+    "passed": true,
+    "keyConfigured": true,
+    "baseUrl": "https://v3.football.api-sports.io",
+    "httpStatus": 200,
+    "schemaValid": true,
+    "quotaHeaders": {
+      "requestsLimit": "100",
+      "requestsRemaining": "99"
+    },
+    "teamLookupStatus": "PASS",
+    "fixtureLookupStatus": "PASS",
+    "rawEndpointStatus": "PASS",
+    "fixtureCount": 57,
+    "teamId": 42,
+    "teamName": "Arsenal",
+    "latencyMs": 1075,
+    "diagnostics": {
+      "rawEndpoint": {
+        "endpoint": "/timezone",
+        "httpStatus": 200,
+        "topLevelKeys": [
+          "get",
+          "parameters",
+          "errors",
+          "results",
+          "paging",
+          "response"
+        ],
+        "resultsCount": 427,
+        "errorsSummary": null,
+        "responseLength": 427,
+        "envelopeValid": true,
+        "schemaValidationReason": "valid API-Football v3 envelope",
+        "outcome": "PASS",
+        "gateReason": "HTTP 200 with valid API-Football envelope and no provider errors"
+      },
+      "teamLookup": {
+        "endpoint": "/teams",
+        "httpStatus": 200,
+        "topLevelKeys": [
+          "get",
+          "parameters",
+          "errors",
+          "results",
+          "paging",
+          "response"
+        ],
+        "resultsCount": 1,
+        "errorsSummary": null,
+        "responseLength": 1,
+        "envelopeValid": true,
+        "schemaValidationReason": "team id and name returned via ApiFootballClient.getTeamById",
+        "queryParameters": {
+          "id": 42
+        },
+        "outcome": "PASS",
+        "gateReason": "team=Arsenal id=42"
+      },
+      "fixtureLookup": {
+        "endpoint": "/fixtures",
+        "httpStatus": 200,
+        "topLevelKeys": [
+          "get",
+          "parameters",
+          "errors",
+          "results",
+          "paging",
+          "response"
+        ],
+        "resultsCount": 57,
+        "errorsSummary": null,
+        "responseLength": 57,
+        "envelopeValid": true,
+        "schemaValidationReason": "fixture id, teams and goals mapped via ApiFootballClient.getFixturesByTeamSeason",
+        "queryParameters": {
+          "team": 42,
+          "season": 2023
+        },
+        "outcome": "PASS",
+        "gateReason": "season=2023 count=57"
+      }
+    }
+  }
+}

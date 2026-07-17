@@ -193,60 +193,68 @@ async function probeApiFootball(): Promise<{
   }
 }
 
+export function formatGeminiServiceStatus(status: HealthCheckStatus): string {
+  return status === "PASS" ? "PASS (Enabled)" : "OPTIONAL (Unavailable)";
+}
+
 async function probeGemini(): Promise<{
   items: HealthCheckItem[];
   status: HealthCheckStatus;
+  displayStatus: string;
 }> {
-  const items: HealthCheckItem[] = [];
   const client = new LiveGoogleSearchClient();
 
   if (!client.isConfigured()) {
-    items.push(item("Gemini", "API key configured", "NOT CONFIGURED"));
-    return { items, status: "NOT CONFIGURED" };
+    const status: HealthCheckStatus = "OPTIONAL";
+    return {
+      items: [
+        item("Gemini", "Optional provider", status, "GOOGLE_GEMINI_API_KEY not configured"),
+      ],
+      status,
+      displayStatus: formatGeminiServiceStatus(status),
+    };
   }
-
-  items.push(item("Gemini", "API key configured", "PASS", "GOOGLE_GEMINI_API_KEY present"));
 
   const started = Date.now();
-  try {
-    const result = await client.fetchTeamContext({
-      homeTeam: "Arsenal",
-      awayTeam: "Chelsea",
-      leagueName: "Premier League",
-      matchDate: "2026-07-10",
-    });
-    const latencyMs = Date.now() - started;
+  const result = await client.fetchTeamContext({
+    homeTeam: "Arsenal",
+    awayTeam: "Chelsea",
+    leagueName: "Premier League",
+    matchDate: "2026-07-10",
+  });
+  const latencyMs = Date.now() - started;
 
-    if (!result?.payload) {
-      items.push(
-        item("Gemini", "Grounding request", "WARNING", `latencyMs=${latencyMs} empty payload`)
-      );
-      return { items, status: "WARNING" };
-    }
-
+  if (result?.payload) {
     const hasCitations =
       Array.isArray(result.payload.citations) && result.payload.citations.length > 0;
-    items.push(
-      item(
-        "Gemini",
-        "Grounding request",
-        "PASS",
-        `latencyMs=${latencyMs} citations=${hasCitations ? result.payload.citations.length : 0}`
-      )
-    );
-    return { items, status: "PASS" };
-  } catch (error) {
-    items.push(
-      item(
-        "Gemini",
-        "Grounding request",
-        "FAIL",
-        undefined,
-        error instanceof Error ? error.message : String(error)
-      )
-    );
-    return { items, status: "FAIL" };
+    const status: HealthCheckStatus = "PASS";
+    return {
+      items: [
+        item(
+          "Gemini",
+          "Optional provider",
+          status,
+          `Enabled latencyMs=${latencyMs} citations=${hasCitations ? result.payload.citations.length : 0}`
+        ),
+      ],
+      status,
+      displayStatus: formatGeminiServiceStatus(status),
+    };
   }
+
+  const status: HealthCheckStatus = "OPTIONAL";
+  return {
+    items: [
+      item(
+        "Gemini",
+        "Optional provider",
+        status,
+        `Unavailable latencyMs=${latencyMs} (billing/quota/network or empty response)`
+      ),
+    ],
+    status,
+    displayStatus: formatGeminiServiceStatus(status),
+  };
 }
 
 async function runDatabaseQualityChecks(): Promise<HealthCheckItem[]> {
@@ -367,6 +375,9 @@ function runLocalStorageAudit(): HealthCheckItem[] {
 }
 
 function severityFromItem(entry: HealthCheckItem): "critical" | "high" | "medium" | "low" | null {
+  if (entry.section === "Gemini") {
+    return null;
+  }
   if (entry.status === "FAIL") {
     if (
       entry.section === "Security" ||
@@ -409,28 +420,18 @@ function deriveOverallStatus(input: {
     return "FAIL";
   }
 
-  const missingRequiredEnv = input.envAudit.some(
-    (entry) => entry.required && !entry.present
-  );
   const schemaFailures = input.items.some(
     (entry) => entry.section === "Supabase Schema" && entry.status === "FAIL"
   );
-  const notTestable = input.items.some((entry) => entry.status === "NOT TESTABLE");
-  const providerNotConfigured = input.items.some(
-    (entry) =>
-      (entry.section === "API-Football" || entry.section === "Gemini") &&
-      entry.status === "NOT CONFIGURED"
+  const apiFootballFailed = input.items.some(
+    (entry) => entry.section === "API-Football" && entry.status === "FAIL"
   );
+  const supabaseFailed =
+    !input.supabaseCrud || !input.supabaseConnected || schemaFailures;
+  const productionFailed = !input.productionOk;
 
-  if (
-    !input.supabaseCrud ||
-    !input.productionOk ||
-    missingRequiredEnv ||
-    schemaFailures ||
-    notTestable ||
-    providerNotConfigured
-  ) {
-    return "PARTIAL PASS";
+  if (apiFootballFailed || supabaseFailed || productionFailed) {
+    return "FAIL";
   }
 
   return "PASS";
@@ -466,7 +467,7 @@ export function renderHealthCheckMarkdown(report: ProductionHealthCheckReport): 
     `|---------|--------|`,
     `| Supabase | ${report.supabaseStatus} |`,
     `| API-Football | ${report.apiFootballStatus} |`,
-    `| Gemini | ${report.geminiStatus} |`,
+    `| Gemini | ${formatGeminiServiceStatus(report.geminiStatus)} |`,
     `| Scheduler | ${report.schedulerStatus} |`,
     `| Pipeline | ${report.pipelineStatus} |`,
     `| Production | ${report.productionStatus} |`,

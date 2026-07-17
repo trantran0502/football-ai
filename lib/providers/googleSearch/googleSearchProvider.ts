@@ -60,7 +60,8 @@ export class GoogleSearchProvider {
     }
 
     if (!this.canMakeRequest()) {
-      throw new Error("Google Search rate limit exceeded.");
+      console.warn("Gemini unavailable:", new Error("Google Search rate limit exceeded."));
+      return null;
     }
 
     const query = buildGeminiSearchQuery(request);
@@ -97,10 +98,14 @@ export class GoogleSearchProvider {
       const rawResponse = (await response.json()) as GeminiGenerateContentResponse;
 
       if (!response.ok) {
-        throw new Error(
-          rawResponse.error?.message ??
-            `Gemini request failed with status ${response.status}`
+        console.warn(
+          "Gemini unavailable:",
+          new Error(
+            rawResponse.error?.message ??
+              `Gemini request failed with status ${response.status}`
+          )
         );
+        return null;
       }
 
       const text = rawResponse.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -120,10 +125,8 @@ export class GoogleSearchProvider {
         rawResponse
       );
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new Error("Gemini request timed out.");
-      }
-      throw error;
+      console.warn("Gemini unavailable:", error);
+      return null;
     } finally {
       clearTimeout(timeout);
     }

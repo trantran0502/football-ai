@@ -3,7 +3,8 @@ export type HealthCheckStatus =
   | "FAIL"
   | "WARNING"
   | "NOT CONFIGURED"
-  | "NOT TESTABLE";
+  | "NOT TESTABLE"
+  | "OPTIONAL";
 
 export interface HealthCheckItem {
   id: string;

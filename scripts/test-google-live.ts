@@ -287,18 +287,12 @@ async function runTests(): Promise<void> {
     awayTeam: AWAY,
     matchDate: MATCH_DATE,
   });
-  let rateLimitHit = false;
-  try {
-    await limitedProvider.fetchTeamContext({
-      homeTeam: HOME,
-      awayTeam: AWAY,
-      matchDate: MATCH_DATE,
-    });
-  } catch (error) {
-    rateLimitHit =
-      error instanceof Error && error.message.includes("rate limit");
-  }
-  assert(rateLimitHit, "rate limit should block repeated Gemini requests");
+  const rateLimited = await limitedProvider.fetchTeamContext({
+    homeTeam: HOME,
+    awayTeam: AWAY,
+    matchDate: MATCH_DATE,
+  });
+  assert(rateLimited === null, "rate limit should return null without throwing");
 
   setGeminiFetchForTests(
     (_url, init) =>
@@ -316,17 +310,12 @@ async function runTests(): Promise<void> {
     apiKey: "test-key",
     timeoutMs: 20,
   });
-  let timeoutHit = false;
-  try {
-    await timeoutProvider.fetchTeamContext({
-      homeTeam: HOME,
-      awayTeam: AWAY,
-      matchDate: MATCH_DATE,
-    });
-  } catch (error) {
-    timeoutHit = error instanceof Error && error.message.includes("timed out");
-  }
-  assert(timeoutHit, "timeout should abort Gemini request");
+  const timedOut = await timeoutProvider.fetchTeamContext({
+    homeTeam: HOME,
+    awayTeam: AWAY,
+    matchDate: MATCH_DATE,
+  });
+  assert(timedOut === null, "timeout should return null without throwing");
 
   resetGoogleSearchCacheForTests();
   resetGoogleSearchProviderForTests();

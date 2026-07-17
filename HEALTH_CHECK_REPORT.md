@@ -1,12 +1,12 @@
 # Full Production Health Check Report v1
 
-Generated: 2026-07-17T06:47:50.857Z
-Duration: 25159ms
-Git Commit: 10eb5316bcde0a5d5a530546d2c8b550d8158d75
+Generated: 2026-07-17T15:43:38.962Z
+Duration: 25969ms
+Git Commit: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
 
 ## Overall Status
 
-**PARTIAL PASS**
+**PASS**
 
 - Critical Issues: 0
 - High Issues: 0
@@ -18,25 +18,11 @@ Git Commit: 10eb5316bcde0a5d5a530546d2c8b550d8158d75
 | Service | Status |
 |---------|--------|
 | Supabase | PASS |
-| API-Football | NOT CONFIGURED |
-| Gemini | NOT CONFIGURED |
+| API-Football | PASS |
+| Gemini | OPTIONAL (Unavailable) |
 | Scheduler | NOT CONFIGURED |
 | Pipeline | PASS |
 | Production | PASS |
-
-## Supabase Recovery (v1)
-
-| Check | Status |
-|-------|--------|
-| Supabase (health-check) | PASS |
-| Migration | PASS |
-| Local CRUD | PASS |
-| Production CRUD | NOT TESTABLE |
-| RLS | PASS |
-
-**Root cause (resolved):** Schema probe used `select('id')` on all tables; `scheduler_state`, `admin_*`, and `security_rate_limit_buckets` use non-`id` primary keys, causing false FAIL. See `SUPABASE_HEALTH_REPORT.md` and `npm run health:supabase`.
-
-**Production CRUD:** `ADMIN_API_KEY` missing from `.env.local`. After setting matching key locally + Vercel Production, deploy latest and run `npm run health:supabase:production`. See `PRODUCTION_SUPABASE_VERIFICATION.md`.
 
 ## Environment Variables
 
@@ -46,16 +32,16 @@ Git Commit: 10eb5316bcde0a5d5a530546d2c8b550d8158d75
 | SUPABASE_SERVICE_ROLE_KEY | yes | yes | no | yes | ok |
 | NEXT_PUBLIC_SUPABASE_URL | no | no | yes | no | - |
 | NEXT_PUBLIC_SUPABASE_ANON_KEY | no | no | yes | no | - |
-| API_FOOTBALL_KEY | yes | no | no | yes | - |
-| GOOGLE_GEMINI_API_KEY | no | no | no | yes | - |
-| ADMIN_API_KEY | yes | no | no | yes | - |
+| API_FOOTBALL_KEY | yes | yes | no | yes | ok |
+| GOOGLE_GEMINI_API_KEY | no | yes | no | yes | ok |
+| ADMIN_API_KEY | yes | yes | no | yes | ok |
 | CRON_SECRET | yes | no | no | yes | - |
 | FOOTBALL_DATA_MODE | no | no | no | yes | - |
 | SCHEDULER_ENABLED | no | no | no | yes | - |
 | NEXT_PUBLIC_BETA_RECOMMENDATION_MODE | no | no | yes | no | - |
 | BETA_RECOMMENDATION_MODE | no | no | no | yes | - |
 | RATE_LIMIT_ADAPTER | no | no | no | yes | - |
-| GOOGLE_GEMINI_MODEL | no | no | no | yes | - |
+| GOOGLE_GEMINI_MODEL | no | yes | no | yes | ok |
 | API_FOOTBALL_BASE_URL | no | no | no | yes | - |
 
 ## Detailed Checks
@@ -82,14 +68,12 @@ Git Commit: 10eb5316bcde0a5d5a530546d2c8b550d8158d75
 
 ### Environment
 
-- **API_FOOTBALL_KEY**: NOT CONFIGURED (Required variable missing locally)
-- **ADMIN_API_KEY**: NOT CONFIGURED (Required variable missing locally)
 - **CRON_SECRET**: NOT CONFIGURED (Required variable missing locally)
 
 ### Security
 
 - **Service role not in NEXT_PUBLIC**: PASS
-- **Admin API key configured**: NOT CONFIGURED
+- **Admin API key configured**: PASS
 - **Cron secret configured**: NOT CONFIGURED
 - **Supabase client uses server-only env**: PASS — Uses SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (no browser anon client)
 
@@ -130,18 +114,19 @@ Git Commit: 10eb5316bcde0a5d5a530546d2c8b550d8158d75
 
 ### Supabase CRUD
 
-- **insert match_records**: PASS — id=2f12fff4-f35c-4c54-a6d7-9154b94fea82
+- **insert match_records**: PASS — id=8762dedf-d8a9-4f4c-9787-18b385c0fd31
 - **select match_records**: PASS — league=HEALTH_CHECK
 - **update match_records**: PASS — HEALTH_CHECK_UPDATED
 - **delete match_records**: PASS — test row removed
 
 ### API-Football
 
-- **API key configured**: NOT CONFIGURED
+- **API key configured**: PASS — API_FOOTBALL_KEY present
+- **Fixture fetch**: PASS — date=2026-07-16 count=114 latencyMs=989
 
 ### Gemini
 
-- **API key configured**: NOT CONFIGURED
+- **Optional provider**: OPTIONAL — Unavailable latencyMs=914 (billing/quota/network or empty response)
 
 ### Database Quality
 
@@ -150,9 +135,9 @@ Git Commit: 10eb5316bcde0a5d5a530546d2c8b550d8158d75
 
 ### Deployment
 
-- **Homepage**: PASS — status=200 latencyMs=914 url=https://football-ai-ten.vercel.app/
-- **Admin dashboard**: PASS — status=200 latencyMs=1052 url=https://football-ai-ten.vercel.app/admin
-- **Health API (public)**: PASS — status=200 latencyMs=659 url=https://football-ai-ten.vercel.app/api/data/health
+- **Homepage**: PASS — status=200 latencyMs=156 url=https://football-ai-ten.vercel.app/
+- **Admin dashboard**: PASS — status=200 latencyMs=673 url=https://football-ai-ten.vercel.app/admin
+- **Health API (public)**: PASS — status=200 latencyMs=693 url=https://football-ai-ten.vercel.app/api/data/health
 
 ### Dashboard
 

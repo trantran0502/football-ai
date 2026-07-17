@@ -1,0 +1,97 @@
+{
+  "version": "v1",
+  "startedAt": "2026-07-17T14:56:25.686Z",
+  "completedAt": "2026-07-17T14:56:30.178Z",
+  "durationMs": 4492,
+  "overallStatus": "FAIL",
+  "environmentVariableName": "API_FOOTBALL_KEY",
+  "optionalEnvironmentVariableName": "API_FOOTBALL_BASE_URL",
+  "baseUrl": "https://v3.football.api-sports.io",
+  "keyConfigured": true,
+  "quotaHeaders": {
+    "requestsLimit": "100",
+    "requestsRemaining": "99"
+  },
+  "localQuotaSnapshot": {
+    "dailyCount": 0,
+    "minuteCount": 0,
+    "dailyLimit": 100,
+    "minuteLimit": 10,
+    "canRequest": true
+  },
+  "sections": [
+    {
+      "name": "Environment",
+      "status": "PASS",
+      "evidence": "present (value redacted)",
+      "message": "API_FOOTBALL_KEY configured"
+    },
+    {
+      "name": "Security",
+      "status": "PASS",
+      "evidence": "API_FOOTBALL_KEY is server-only; no NEXT_PUBLIC_API_FOOTBALL_* found",
+      "message": "Secret exposure"
+    },
+    {
+      "name": "Raw endpoint",
+      "status": "FAIL",
+      "evidence": "provider errors present: access: Your account is suspended, check on https://dashboard.api-football.com.",
+      "message": "GET /timezone"
+    },
+    {
+      "name": "Provider",
+      "status": "FAIL",
+      "evidence": "API-Football error: {\"access\":\"Your account is suspended, check on https://dashboard.api-football.com.\"}",
+      "message": "Team lookup"
+    },
+    {
+      "name": "Provider",
+      "status": "FAIL",
+      "evidence": "API-Football error: {\"access\":\"Your account is suspended, check on https://dashboard.api-football.com.\"}",
+      "message": "Fixture lookup"
+    },
+    {
+      "name": "Quota",
+      "status": "PASS",
+      "evidence": "limit=100 remaining=99",
+      "message": "Provider rate-limit headers"
+    },
+    {
+      "name": "Security",
+      "status": "PASS",
+      "evidence": "invalid key rejected with HTTP 403",
+      "message": "Invalid key handling"
+    },
+    {
+      "name": "Quota",
+      "status": "PASS",
+      "evidence": "daily_limit",
+      "message": "Local quota block"
+    },
+    {
+      "name": "Provider",
+      "status": "NOT TESTABLE",
+      "evidence": "team id unavailable",
+      "message": "Recent form"
+    },
+    {
+      "name": "Cache",
+      "status": "PASS",
+      "evidence": "teamId=42",
+      "message": "Write and read"
+    },
+    {
+      "name": "Provider",
+      "status": "PASS",
+      "evidence": "unconfigured client returns null bundle",
+      "message": "Missing-data behavior"
+    }
+  ],
+  "manualActionRequired": false,
+  "manualSteps": [],
+  "rootCauses": [
+    "provider errors present: access: Your account is suspended, check on https://dashboard.api-football.com.",
+    "API-Football error: {\"access\":\"Your account is suspended, check on https://dashboard.api-football.com.\"}",
+    "API-Football error: {\"access\":\"Your account is suspended, check on https://dashboard.api-football.com.\"}"
+  ]
+}

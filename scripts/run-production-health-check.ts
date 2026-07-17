@@ -1,4 +1,5 @@
 import {
+  formatGeminiServiceStatus,
   loadEnvLocal,
   runProductionHealthCheck,
   writeProductionHealthCheckArtifacts,
@@ -18,7 +19,7 @@ async function main(): Promise<void> {
   console.log(`High: ${report.highCount}`);
   console.log(`Supabase: ${report.supabaseStatus}`);
   console.log(`API-Football: ${report.apiFootballStatus}`);
-  console.log(`Gemini: ${report.geminiStatus}`);
+  console.log(`Gemini: ${formatGeminiServiceStatus(report.geminiStatus)}`);
   console.log(`Scheduler: ${report.schedulerStatus}`);
   console.log(`Pipeline: ${report.pipelineStatus}`);
   console.log(`Production: ${report.productionStatus}`);

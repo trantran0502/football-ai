@@ -48,12 +48,17 @@ export async function fetchGoogleLiveResult(
 
   return dedupeGoogleFetch(cacheKey, async () => {
     recordMatchSearch(matchKey);
-    const result = await provider.fetchTeamContext(request);
-    if (!result) {
+    try {
+      const result = await provider.fetchTeamContext(request);
+      if (!result) {
+        return null;
+      }
+      rememberGoogleLiveResult(cacheKey, result);
+      return result;
+    } catch (error) {
+      console.warn("Gemini unavailable:", error);
       return null;
     }
-    rememberGoogleLiveResult(cacheKey, result);
-    return result;
   });
 }
 
