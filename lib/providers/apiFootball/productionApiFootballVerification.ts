@@ -4,6 +4,7 @@ import { resolve } from "path";
 import { loadEnvLocal } from "@/lib/healthCheck/productionHealthCheckRunner";
 import { checkAdminApiKeyConfigured } from "@/lib/supabase/productionVerification";
 import type { ProductionApiFootballProbeResult } from "@/lib/providers/apiFootball/productionApiFootballProbe";
+import type { ApiFootballProbeOutcome } from "@/lib/providers/apiFootball/apiFootballEnvelopeValidation";
 
 const PRODUCTION_URL =
   process.env.HEALTH_CHECK_PRODUCTION_URL?.trim() ||
@@ -55,10 +56,8 @@ async function fetchWithRetry(
   throw lastError;
 }
 
-function mapProbeStatus(
-  status: "PASS" | "FAIL" | "WARNING" | "NOT TESTABLE"
-): VerificationStatus {
-  if (status === "PASS" || status === "WARNING") {
+function mapProbeStatus(status: ApiFootballProbeOutcome): VerificationStatus {
+  if (status === "PASS" || status === "NO_DATA") {
     return "PASS";
   }
   if (status === "FAIL") {
@@ -166,8 +165,7 @@ export async function runProductionApiFootballVerification(options?: {
     probeResult = body.probe ?? null;
 
     if (probeResult) {
-      providerRawEndpoint =
-        probeResult.httpStatus === 200 && probeResult.schemaValid ? "PASS" : "FAIL";
+      providerRawEndpoint = mapProbeStatus(probeResult.rawEndpointStatus);
       providerTeamLookup = mapProbeStatus(probeResult.teamLookupStatus);
       providerFixtureLookup = mapProbeStatus(probeResult.fixtureLookupStatus);
 
@@ -189,7 +187,6 @@ export async function runProductionApiFootballVerification(options?: {
     providerRawEndpoint,
     providerFixtureLookup,
     probeResult,
-    manualSteps,
   });
 
   return {
@@ -216,7 +213,6 @@ function deriveOverallStatus(input: {
   providerRawEndpoint: VerificationStatus;
   providerFixtureLookup: VerificationStatus;
   probeResult: ProductionApiFootballProbeResult | null;
-  manualSteps: string[];
 }): VerificationStatus {
   if (input.probeResult && !input.probeResult.keyConfigured) {
     return "MANUAL ACTION REQUIRED";
@@ -225,12 +221,16 @@ function deriveOverallStatus(input: {
     input.productionDeployment === "PASS" &&
     input.authenticatedHealthRoute === "PASS" &&
     input.providerRawEndpoint === "PASS" &&
-    input.providerFixtureLookup === "PASS" &&
     input.probeResult?.passed
   ) {
     return "PASS";
   }
-  if (input.providerRawEndpoint === "FAIL" || input.providerFixtureLookup === "FAIL") {
+  if (
+    input.providerRawEndpoint === "FAIL" ||
+    input.probeResult?.rawEndpointStatus === "FAIL" ||
+    input.probeResult?.teamLookupStatus === "FAIL" ||
+    input.probeResult?.fixtureLookupStatus === "FAIL"
+  ) {
     return "FAIL";
   }
   return "MANUAL ACTION REQUIRED";
@@ -257,6 +257,35 @@ function renderProductionApiFootballVerificationMarkdown(
   report: ProductionApiFootballVerificationReport
 ): string {
   const probe = report.probeResult;
+  const diagnostics = probe?.diagnostics;
+
+  const renderDiagnostic = (
+    label: string,
+    diagnostic: NonNullable<typeof diagnostics>["rawEndpoint"] | undefined
+  ): string[] => {
+    if (!diagnostic) {
+      return [`### ${label}`, "", "_No diagnostics._", ""];
+    }
+    return [
+      `### ${label}`,
+      "",
+      "| Field | Value |",
+      "|-------|-------|",
+      `| Endpoint | ${diagnostic.endpoint} |`,
+      `| HTTP status | ${diagnostic.httpStatus} |`,
+      `| Outcome | ${diagnostic.outcome} |`,
+      `| Top-level keys | ${diagnostic.topLevelKeys.join(", ") || "-"} |`,
+      `| Provider errors | ${diagnostic.errorsSummary ?? "-"} |`,
+      `| Results count | ${diagnostic.resultsCount ?? "-"} |`,
+      `| Response length | ${diagnostic.responseLength} |`,
+      `| Envelope valid | ${diagnostic.envelopeValid ? "yes" : "no"} |`,
+      `| Schema validation | ${diagnostic.schemaValidationReason} |`,
+      `| Query parameters | ${diagnostic.queryParameters ? JSON.stringify(diagnostic.queryParameters) : "-"} |`,
+      `| Gate reason | ${diagnostic.gateReason} |`,
+      "",
+    ];
+  };
+
   return [
     "# Production API-Football Verification",
     "",
@@ -275,25 +304,36 @@ function renderProductionApiFootballVerificationMarkdown(
     `| Provider team lookup | ${report.providerTeamLookup} |`,
     `| Provider fixture lookup | ${report.providerFixtureLookup} |`,
     "",
-    "## Probe",
+    "## Probe Summary",
     "",
     probe
       ? [
-          `| Field | Value |`,
-          `|-------|-------|`,
+          "| Field | Value |",
+          "|-------|-------|",
           `| healthCheckId | ${probe.healthCheckId} |`,
           `| keyConfigured (server) | ${probe.keyConfigured ? "yes" : "no"} |`,
           `| baseUrl | ${probe.baseUrl} |`,
           `| httpStatus | ${probe.httpStatus ?? "-"} |`,
           `| schemaValid | ${probe.schemaValid ? "yes" : "no"} |`,
+          `| rawEndpointStatus | ${probe.rawEndpointStatus} |`,
+          `| teamLookupStatus | ${probe.teamLookupStatus} |`,
+          `| fixtureLookupStatus | ${probe.fixtureLookupStatus} |`,
           `| quota limit header | ${probe.quotaHeaders.requestsLimit ?? "-"} |`,
           `| quota remaining header | ${probe.quotaHeaders.requestsRemaining ?? "-"} |`,
+          `| teamId | ${probe.teamId ?? "-"} |`,
+          `| teamName | ${probe.teamName ?? "-"} |`,
           `| fixtureCount | ${probe.fixtureCount} |`,
           `| latencyMs | ${probe.latencyMs} |`,
           `| passed | ${probe.passed ? "yes" : "no"} |`,
+          "",
         ].join("\n")
       : "_No probe result._",
     "",
+    "## Diagnostics",
+    "",
+    ...renderDiagnostic("Raw Endpoint", diagnostics?.rawEndpoint),
+    ...renderDiagnostic("Team Lookup", diagnostics?.teamLookup),
+    ...renderDiagnostic("Fixture Lookup", diagnostics?.fixtureLookup),
     "## Manual Steps",
     "",
     ...report.manualSteps.map((step) => `- ${step}`),

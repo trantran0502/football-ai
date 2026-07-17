@@ -1,8 +1,9 @@
+import type { ApiFootballProbeDiagnostics } from "@/lib/providers/apiFootball/apiFootballEnvelopeValidation";
 import {
-  probeApiFootballRawEndpoint,
+  deriveIntegrationProbePassed,
+  runApiFootballIntegrationProbes,
   type ApiFootballQuotaHeaderSnapshot,
-} from "@/lib/providers/apiFootball/apiFootballHealthRunner";
-import { ApiFootballClient } from "@/lib/providers/apiFootball/apiFootballClient";
+} from "@/lib/providers/apiFootball/apiFootballHealthProbes";
 
 export interface ProductionApiFootballProbeResult {
   healthCheckId: string;
@@ -12,88 +13,101 @@ export interface ProductionApiFootballProbeResult {
   httpStatus: number | null;
   schemaValid: boolean;
   quotaHeaders: ApiFootballQuotaHeaderSnapshot;
-  teamLookupStatus: "PASS" | "FAIL" | "WARNING" | "NOT TESTABLE";
-  fixtureLookupStatus: "PASS" | "FAIL" | "NOT TESTABLE";
+  teamLookupStatus: ApiFootballProbeDiagnostics["outcome"];
+  fixtureLookupStatus: ApiFootballProbeDiagnostics["outcome"];
+  rawEndpointStatus: ApiFootballProbeDiagnostics["outcome"];
   fixtureCount: number;
+  teamId: number | null;
+  teamName: string | null;
   latencyMs: number;
   errorMessage?: string;
+  diagnostics: {
+    rawEndpoint: ApiFootballProbeDiagnostics;
+    teamLookup: ApiFootballProbeDiagnostics;
+    fixtureLookup: ApiFootballProbeDiagnostics;
+  };
 }
 
 export async function runProductionApiFootballProbe(
   healthCheckId: string
 ): Promise<ProductionApiFootballProbeResult> {
-  const baseUrl =
-    process.env.API_FOOTBALL_BASE_URL?.trim() || "https://v3.football.api-sports.io";
   const keyConfigured = Boolean(process.env.API_FOOTBALL_KEY?.trim());
 
   if (!keyConfigured) {
+    const emptyDiagnostics: ApiFootballProbeDiagnostics = {
+      endpoint: "n/a",
+      httpStatus: 0,
+      topLevelKeys: [],
+      resultsCount: null,
+      errorsSummary: "API_FOOTBALL_KEY is not configured on the server.",
+      responseLength: 0,
+      envelopeValid: false,
+      schemaValidationReason: "missing API_FOOTBALL_KEY",
+      outcome: "NOT TESTABLE",
+      gateReason: "API_FOOTBALL_KEY is not configured on the server.",
+    };
+
     return {
       healthCheckId,
       passed: false,
       keyConfigured: false,
-      baseUrl,
+      baseUrl: process.env.API_FOOTBALL_BASE_URL?.trim() || "https://v3.football.api-sports.io",
       httpStatus: null,
       schemaValid: false,
       quotaHeaders: { requestsLimit: null, requestsRemaining: null },
       teamLookupStatus: "NOT TESTABLE",
       fixtureLookupStatus: "NOT TESTABLE",
+      rawEndpointStatus: "NOT TESTABLE",
       fixtureCount: 0,
+      teamId: null,
+      teamName: null,
       latencyMs: 0,
       errorMessage: "API_FOOTBALL_KEY is not configured on the server.",
+      diagnostics: {
+        rawEndpoint: emptyDiagnostics,
+        teamLookup: emptyDiagnostics,
+        fixtureLookup: emptyDiagnostics,
+      },
     };
   }
 
-  const started = Date.now();
-  let httpStatus: number | null = null;
-  let schemaValid = false;
-  let quotaHeaders: ApiFootballQuotaHeaderSnapshot = {
-    requestsLimit: null,
-    requestsRemaining: null,
-  };
-  let teamLookupStatus: ProductionApiFootballProbeResult["teamLookupStatus"] = "NOT TESTABLE";
-  let fixtureLookupStatus: ProductionApiFootballProbeResult["fixtureLookupStatus"] = "NOT TESTABLE";
-  let fixtureCount = 0;
-  let errorMessage: string | undefined;
+  const integration = await runApiFootballIntegrationProbes();
+  const passed = deriveIntegrationProbePassed({
+    keyConfigured,
+    rawEndpoint: integration.rawEndpoint,
+    teamLookup: integration.teamLookup,
+    fixtureLookup: integration.fixtureLookup,
+  });
 
-  try {
-    const raw = await probeApiFootballRawEndpoint();
-    httpStatus = raw.httpStatus;
-    schemaValid = raw.schemaValid;
-    quotaHeaders = raw.quotaHeaders;
-
-    const client = new ApiFootballClient();
-    const team = await client.searchTeam("Arsenal");
-    teamLookupStatus = team ? "PASS" : "WARNING";
-
-    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-    const fixtures = await client.getFixturesByDate(yesterday);
-    fixtureCount = fixtures.length;
-    fixtureLookupStatus = "PASS";
-  } catch (error) {
-    errorMessage = error instanceof Error ? error.message : String(error);
-    fixtureLookupStatus = "FAIL";
-  }
-
-  const latencyMs = Date.now() - started;
-  const passed =
-    keyConfigured &&
-    httpStatus === 200 &&
-    schemaValid &&
-    fixtureLookupStatus === "PASS" &&
-    (teamLookupStatus === "PASS" || teamLookupStatus === "WARNING");
+  const errorMessage =
+    integration.rawEndpoint.outcome === "FAIL"
+      ? integration.rawEndpoint.schemaValidationReason
+      : integration.teamLookup.outcome === "FAIL"
+        ? integration.teamLookup.gateReason
+        : integration.fixtureLookup.outcome === "FAIL"
+          ? integration.fixtureLookup.gateReason
+          : undefined;
 
   return {
     healthCheckId,
     passed,
     keyConfigured,
-    baseUrl,
-    httpStatus,
-    schemaValid,
-    quotaHeaders,
-    teamLookupStatus,
-    fixtureLookupStatus,
-    fixtureCount,
-    latencyMs,
+    baseUrl: integration.baseUrl,
+    httpStatus: integration.rawEndpoint.httpStatus,
+    schemaValid: integration.rawEndpoint.outcome === "PASS",
+    quotaHeaders: integration.quotaHeaders,
+    teamLookupStatus: integration.teamLookup.outcome,
+    fixtureLookupStatus: integration.fixtureLookup.outcome,
+    rawEndpointStatus: integration.rawEndpoint.outcome,
+    fixtureCount: integration.fixtureCount,
+    teamId: integration.teamId,
+    teamName: integration.teamName,
+    latencyMs: integration.latencyMs,
     errorMessage,
+    diagnostics: {
+      rawEndpoint: integration.rawEndpoint,
+      teamLookup: integration.teamLookup,
+      fixtureLookup: integration.fixtureLookup,
+    },
   };
 }

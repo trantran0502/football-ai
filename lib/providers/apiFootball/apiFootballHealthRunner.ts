@@ -9,6 +9,12 @@ import {
   getApiFootballCacheStore,
   resetApiFootballCacheStoreForTests,
 } from "@/lib/providers/apiFootball/apiFootballCache";
+import type { ApiFootballProbeOutcome } from "@/lib/providers/apiFootball/apiFootballEnvelopeValidation";
+import { API_FOOTBALL_HEALTH_PROBE_TEAM_ID } from "@/lib/providers/apiFootball/apiFootballEnvelopeValidation";
+import {
+  runApiFootballIntegrationProbes,
+  type ApiFootballQuotaHeaderSnapshot,
+} from "@/lib/providers/apiFootball/apiFootballHealthProbes";
 import {
   canMakeApiFootballRequest,
   getApiFootballQuotaSnapshot,
@@ -16,13 +22,13 @@ import {
   setApiFootballQuotaForTests,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { buildApiFootballMatchBundle } from "@/lib/providers/apiFootball/apiFootballService";
-import type { ApiFootballRawEnvelope } from "@/lib/providers/apiFootball/apiFootballTypes";
 
 export type ApiFootballHealthStatus =
   | "PASS"
   | "FAIL"
   | "NOT TESTABLE"
-  | "WARNING";
+  | "WARNING"
+  | "NO_DATA";
 
 export interface ApiFootballHealthSection {
   name: string;
@@ -31,10 +37,7 @@ export interface ApiFootballHealthSection {
   message?: string;
 }
 
-export interface ApiFootballQuotaHeaderSnapshot {
-  requestsLimit: string | null;
-  requestsRemaining: string | null;
-}
+export type { ApiFootballQuotaHeaderSnapshot } from "@/lib/providers/apiFootball/apiFootballHealthProbes";
 
 export interface ApiFootballHealthReport {
   version: "v1";
@@ -60,7 +63,6 @@ export interface ApiFootballHealthReport {
 }
 
 const DEFAULT_BASE_URL = "https://v3.football.api-sports.io";
-const HEALTH_PROBE_TEAM = "Arsenal";
 
 function section(
   name: string,
@@ -75,98 +77,11 @@ function resolveBaseUrl(): string {
   return process.env.API_FOOTBALL_BASE_URL?.trim() || DEFAULT_BASE_URL;
 }
 
-function readQuotaHeaders(headers: Headers): ApiFootballQuotaHeaderSnapshot {
-  return {
-    requestsLimit:
-      headers.get("x-ratelimit-requests-limit") ??
-      headers.get("X-RateLimit-Requests-Limit"),
-    requestsRemaining:
-      headers.get("x-ratelimit-requests-remaining") ??
-      headers.get("X-RateLimit-Requests-Remaining"),
-  };
-}
-
-export async function probeApiFootballRawEndpoint(input?: {
-  apiKey?: string;
-  baseUrl?: string;
-}): Promise<{
-  httpStatus: number;
-  schemaValid: boolean;
-  quotaHeaders: ApiFootballQuotaHeaderSnapshot;
-  resultCount: number;
-  latencyMs: number;
-  errorMessage?: string;
-}> {
-  const apiKey = input?.apiKey ?? process.env.API_FOOTBALL_KEY ?? "";
-  const baseUrl = (input?.baseUrl ?? resolveBaseUrl()).replace(/\/$/, "");
-  const started = Date.now();
-
-  const response = await fetch(`${baseUrl}/timezone`, {
-    headers: { "x-apisports-key": apiKey },
-    cache: "no-store",
-    signal: AbortSignal.timeout(10_000),
-  });
-  const latencyMs = Date.now() - started;
-  const quotaHeaders = readQuotaHeaders(response.headers);
-
-  if (!response.ok) {
-    return {
-      httpStatus: response.status,
-      schemaValid: false,
-      quotaHeaders,
-      resultCount: 0,
-      latencyMs,
-      errorMessage: `HTTP ${response.status}`,
-    };
+function mapProbeOutcome(outcome: ApiFootballProbeOutcome): ApiFootballHealthStatus {
+  if (outcome === "NO_DATA") {
+    return "NO_DATA";
   }
-
-  const payload = (await response.json()) as ApiFootballRawEnvelope<
-    Array<{ zone?: string; utc?: string }>
-  >;
-  const schemaValid =
-    Array.isArray(payload.response) &&
-    payload.response.length > 0 &&
-    typeof payload.response[0]?.zone === "string";
-
-  return {
-    httpStatus: response.status,
-    schemaValid,
-    quotaHeaders,
-    resultCount: payload.response?.length ?? 0,
-    latencyMs,
-  };
-}
-
-export async function probeInvalidApiFootballKey(): Promise<{
-  handledSafely: boolean;
-  message: string;
-}> {
-  try {
-    const result = await probeApiFootballRawEndpoint({
-      apiKey: "invalid-health-check-key-00000000",
-    });
-    if (result.httpStatus === 401 || result.httpStatus === 403) {
-      return {
-        handledSafely: true,
-        message: `invalid key rejected with HTTP ${result.httpStatus}`,
-      };
-    }
-    if (!result.schemaValid) {
-      return {
-        handledSafely: true,
-        message: `invalid key did not return usable schema (HTTP ${result.httpStatus})`,
-      };
-    }
-    return {
-      handledSafely: false,
-      message: `unexpected success for invalid key (HTTP ${result.httpStatus})`,
-    };
-  } catch (error) {
-    return {
-      handledSafely: true,
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
+  return outcome;
 }
 
 export function probeLocalQuotaBlock(): {
@@ -259,56 +174,65 @@ export async function runApiFootballHealthReport(): Promise<ApiFootballHealthRep
     rootCauses.push(secretExposure.evidence);
   }
 
-  let quotaHeaders: ApiFootballQuotaHeaderSnapshot = {
-    requestsLimit: null,
-    requestsRemaining: null,
-  };
+  const integration = await runApiFootballIntegrationProbes();
+  sections.push(
+    section(
+      "Raw endpoint",
+      "GET /timezone",
+      mapProbeOutcome(integration.rawEndpoint.outcome),
+      integration.rawEndpoint.gateReason
+    )
+  );
+  sections.push(
+    section(
+      "Provider",
+      "Team lookup",
+      mapProbeOutcome(integration.teamLookup.outcome),
+      integration.teamLookup.gateReason
+    )
+  );
+  sections.push(
+    section(
+      "Provider",
+      "Fixture lookup",
+      mapProbeOutcome(integration.fixtureLookup.outcome),
+      integration.fixtureLookup.gateReason
+    )
+  );
 
-  try {
-    const raw = await probeApiFootballRawEndpoint();
-    quotaHeaders = raw.quotaHeaders;
-    sections.push(
-      section(
-        "Raw endpoint",
-        "GET /timezone",
-        raw.httpStatus === 200 && raw.schemaValid ? "PASS" : "FAIL",
-        `http=${raw.httpStatus} schema=${raw.schemaValid ? "valid" : "invalid"} count=${raw.resultCount} latencyMs=${raw.latencyMs}`
-      )
-    );
-    if (raw.quotaHeaders.requestsLimit || raw.quotaHeaders.requestsRemaining) {
-      sections.push(
-        section(
-          "Quota",
-          "Provider rate-limit headers",
-          "PASS",
-          `limit=${raw.quotaHeaders.requestsLimit ?? "-"} remaining=${raw.quotaHeaders.requestsRemaining ?? "-"}`
-        )
-      );
-    } else {
-      sections.push(
-        section(
-          "Quota",
-          "Provider rate-limit headers",
-          "WARNING",
-          "headers not present on /timezone response"
-        )
-      );
-    }
-    if (raw.httpStatus !== 200 || !raw.schemaValid) {
-      rootCauses.push(raw.errorMessage ?? "Raw endpoint probe failed");
-    }
-  } catch (error) {
-    sections.push(
-      section(
-        "Raw endpoint",
-        "GET /timezone",
-        "FAIL",
-        error instanceof Error ? error.message : String(error)
-      )
-    );
-    rootCauses.push(error instanceof Error ? error.message : String(error));
+  if (integration.rawEndpoint.outcome === "FAIL") {
+    rootCauses.push(integration.rawEndpoint.schemaValidationReason);
+  }
+  if (integration.teamLookup.outcome === "FAIL") {
+    rootCauses.push(integration.teamLookup.gateReason);
+  }
+  if (integration.fixtureLookup.outcome === "FAIL") {
+    rootCauses.push(integration.fixtureLookup.gateReason);
   }
 
+  if (integration.quotaHeaders.requestsLimit || integration.quotaHeaders.requestsRemaining) {
+    sections.push(
+      section(
+        "Quota",
+        "Provider rate-limit headers",
+        "PASS",
+        `limit=${integration.quotaHeaders.requestsLimit ?? "-"} remaining=${integration.quotaHeaders.requestsRemaining ?? "-"}`
+      )
+    );
+  } else {
+    sections.push(
+      section(
+        "Quota",
+        "Provider rate-limit headers",
+        "WARNING",
+        "headers not present on /timezone response"
+      )
+    );
+  }
+
+  const { probeInvalidApiFootballKey } = await import(
+    "@/lib/providers/apiFootball/apiFootballHealthProbes"
+  );
   const invalidKey = await probeInvalidApiFootballKey();
   sections.push(
     section(
@@ -329,63 +253,15 @@ export async function runApiFootballHealthReport(): Promise<ApiFootballHealthRep
     )
   );
 
-  const client = new ApiFootballClient();
-  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-
-  let teamId: number | null = null;
-  try {
-    const team = await client.searchTeam(HEALTH_PROBE_TEAM);
-    teamId = team?.id ?? null;
-    sections.push(
-      section(
-        "Provider",
-        "Team lookup",
-        team ? "PASS" : "WARNING",
-        team ? `team=${team.name} id=${team.id}` : `no match for ${HEALTH_PROBE_TEAM}`
-      )
-    );
-  } catch (error) {
-    sections.push(
-      section(
-        "Provider",
-        "Team lookup",
-        "FAIL",
-        error instanceof Error ? error.message : String(error)
-      )
-    );
-    rootCauses.push("Team lookup failed");
-  }
-
-  try {
-    const fixtures = await client.getFixturesByDate(yesterday);
-    sections.push(
-      section(
-        "Provider",
-        "Fixture lookup",
-        "PASS",
-        `date=${yesterday} count=${fixtures.length}`
-      )
-    );
-  } catch (error) {
-    sections.push(
-      section(
-        "Provider",
-        "Fixture lookup",
-        "FAIL",
-        error instanceof Error ? error.message : String(error)
-      )
-    );
-    rootCauses.push("Fixture lookup failed");
-  }
-
-  if (teamId) {
+  if (integration.teamId) {
     try {
-      const form = await client.getTeamForm(teamId, 5);
+      const client = new ApiFootballClient();
+      const form = await client.getTeamForm(integration.teamId, 5);
       sections.push(
         section(
           "Provider",
           "Recent form",
-          form.fixtures.length > 0 ? "PASS" : "WARNING",
+          form.fixtures.length > 0 ? "PASS" : "NO_DATA",
           `fixtures=${form.fixtures.length} path=${form.meta?.requestPath ?? "-"}`
         )
       );
@@ -408,10 +284,10 @@ export async function runApiFootballHealthReport(): Promise<ApiFootballHealthRep
     resetApiFootballCacheStoreForTests();
     const cacheStore = getApiFootballCacheStore();
     const cacheKey = buildApiFootballCacheKey("teamForm", {
-      teamId: teamId ?? 42,
+      teamId: integration.teamId ?? API_FOOTBALL_HEALTH_PROBE_TEAM_ID,
       last: 3,
     });
-    const payload = { probe: true, teamId: teamId ?? 42 };
+    const payload = { probe: true, teamId: integration.teamId ?? API_FOOTBALL_HEALTH_PROBE_TEAM_ID };
     cacheStore.set(cacheKey, "teamForm", payload);
     const readBack = cacheStore.getSync<{ probe: boolean; teamId: number }>(cacheKey);
     sections.push(
@@ -468,7 +344,7 @@ export async function runApiFootballHealthReport(): Promise<ApiFootballHealthRep
     manualSteps,
     keyConfigured,
     baseUrl,
-    quotaHeaders,
+    quotaHeaders: integration.quotaHeaders,
   });
 }
 

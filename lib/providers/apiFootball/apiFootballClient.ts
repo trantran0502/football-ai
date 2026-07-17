@@ -78,6 +78,32 @@ export class ApiFootballClient {
     };
   }
 
+  async getTeamById(teamId: number): Promise<ApiFootballTeamRef | null> {
+    const response = await this.request<Array<Record<string, unknown>>>(
+      `/teams?id=${teamId}`
+    );
+    if (!response.length) {
+      return null;
+    }
+
+    const team = response[0].team as Record<string, unknown>;
+    return {
+      id: team.id as number,
+      name: team.name as string,
+      country: (team.country as string) ?? null,
+    };
+  }
+
+  async getFixturesByTeamSeason(
+    teamId: number,
+    season: number
+  ): Promise<ApiFootballFixtureRecord[]> {
+    const response = await this.request<Array<Record<string, unknown>>>(
+      `/fixtures?team=${teamId}&season=${season}`
+    );
+    return response.map((item) => mapFixtureRecord(item));
+  }
+
   async getFixturesByDate(date: string): Promise<ApiFootballFixtureRecord[]> {
     const response = await this.request<Array<Record<string, unknown>>>(
       `/fixtures?date=${date}`
