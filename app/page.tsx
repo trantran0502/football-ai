@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchRuntimeWeightConfigForBrowserAction } from "@/app/actions/runtimeWeightConfig";
 import { analyzeMatch } from "@/lib/analysis/analyzeMatch";
+import { toLoadedRuntimeWeightConfigFromBrowser } from "@/lib/recommendation/runtimeWeightConfigBrowser";
 import { formatAnalysisField } from "@/lib/analysis/analysisField";
 import type { AnalysisField } from "@/lib/analysis/analysisField";
 import type { AnalysisReport } from "@/lib/analysis/types";
@@ -1090,11 +1092,22 @@ export default function HomePage() {
   }
 
   async function refreshHistory() {
-    const { matches, stats, storage } = await loadPersistedHistory();
-    setHistoryMatches(matches);
-    setStats(stats);
-    setMatchStorageStatus(storage);
-    await refreshBetaDashboard();
+    try {
+      const { matches, stats, storage } = await loadPersistedHistory();
+      setHistoryMatches(matches);
+      setStats(stats);
+      setMatchStorageStatus(storage);
+      await refreshBetaDashboard();
+    } catch (error) {
+      const details =
+        error instanceof Error
+          ? error.stack
+            ? `${error.message}\n${error.stack}`
+            : error.message
+          : String(error);
+      setMatchStorageStatus("failed");
+      setNotice(`Supabase 讀取失敗：${details}`);
+    }
   }
 
   useEffect(() => {
@@ -1147,42 +1160,61 @@ export default function HomePage() {
     }
 
     const rawOdds = input.trim();
-    const nextReport = analyzeMatch(rawOdds);
+    let nextReport;
+    try {
+      const runtimeWeightConfig = await fetchRuntimeWeightConfigForBrowserAction();
+      nextReport = analyzeMatch(rawOdds, {
+        runtimeWeightConfig: toLoadedRuntimeWeightConfigFromBrowser(runtimeWeightConfig),
+      });
+    } catch {
+      nextReport = analyzeMatch(rawOdds);
+    }
     setReport(nextReport);
     setActiveTab("analysis");
     setTeamData(null);
     setTeamDataError("");
 
-    const outcome = await persistAnalysisToHistory(rawOdds, nextReport);
-    setMatchStorageStatus(outcome.storage);
+    try {
+      const outcome = await persistAnalysisToHistory(rawOdds, nextReport);
+      setMatchStorageStatus(outcome.storage);
 
-    if (
-      outcome.status === "created" &&
-      isBetaRecommendationModeEnabled() &&
-      nextReport.betaRecommendation.candidates.length > 0
-    ) {
-      const betaOutcome = await saveBetaRecommendations({
-        matchRecordId: outcome.record.id,
-        homeTeam: nextReport.match.homeTeam,
-        awayTeam: nextReport.match.awayTeam,
-        matchDate: outcome.record.matchDate,
-        rawOdds: input.trim(),
-        marketSelections: nextReport.markets,
-        teamData,
-        candidates: nextReport.betaRecommendation.candidates,
-      });
-      setBetaStorageStatus(betaOutcome.storage);
+      if (
+        outcome.status === "created" &&
+        isBetaRecommendationModeEnabled() &&
+        nextReport.betaRecommendation.candidates.length > 0
+      ) {
+        const betaOutcome = await saveBetaRecommendations({
+          matchRecordId: outcome.record.id,
+          homeTeam: nextReport.match.homeTeam,
+          awayTeam: nextReport.match.awayTeam,
+          matchDate: outcome.record.matchDate,
+          rawOdds: input.trim(),
+          marketSelections: nextReport.markets,
+          teamData,
+          candidates: nextReport.betaRecommendation.candidates,
+        });
+        setBetaStorageStatus(betaOutcome.storage);
+      }
+
+      if (outcome.storage === "failed") {
+        setNotice("儲存失敗");
+      } else if (outcome.status === "duplicate") {
+        setNotice("這場比賽已經儲存");
+      } else {
+        setNotice("儲存成功");
+      }
+
+      await refreshHistory();
+    } catch (error) {
+      const details =
+        error instanceof Error
+          ? error.stack
+            ? `${error.message}\n${error.stack}`
+            : error.message
+          : String(error);
+      setMatchStorageStatus("failed");
+      setNotice(`Supabase 寫入失敗：${details}`);
     }
-
-    if (outcome.storage === "failed") {
-      setNotice("儲存失敗");
-    } else if (outcome.status === "duplicate") {
-      setNotice("這場比賽已經儲存");
-    } else {
-      setNotice("儲存成功");
-    }
-
-    await refreshHistory();
   }
 
   function handleExportP0() {
@@ -1224,7 +1256,7 @@ export default function HomePage() {
             betaStatus={betaStorageStatus}
           />
           <p className="text-center text-xs text-slate-500">
-            正式儲存模式：Supabase 優先（LocalStorage 僅作 fallback）
+            正式資料來源：Supabase（Production 禁止 LocalStorage fallback）
           </p>
           <StatsSection stats={stats} />
           <BetaDashboardSection stats={betaStats} rollingReport={rollingReport} />

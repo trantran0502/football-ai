@@ -1,10 +1,14 @@
 /** M5: Fixed storage policy — always attempt Supabase before LocalStorage. */
 export const STORAGE_POLICY = "supabase-first" as const;
 
+export function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
 export type StorageHealth = "supabase" | "local" | "failed";
 
 export const STORAGE_STATUS_LABELS: Record<StorageHealth, string> = {
-  supabase: "Supabase 正常",
+  supabase: "Supabase",
   local: "LocalStorage fallback",
   failed: "儲存失敗",
 };

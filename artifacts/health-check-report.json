@@ -1,18 +1,18 @@
 {
   "version": "v1",
-  "startedAt": "2026-07-17T15:43:12.993Z",
-  "completedAt": "2026-07-17T15:43:38.962Z",
-  "durationMs": 25969,
-  "gitCommit": "0d375c9c02f1e8b0e173a72e886cf599ab3deaf3",
-  "overallStatus": "PASS",
+  "startedAt": "2026-07-18T13:43:45.981Z",
+  "completedAt": "2026-07-18T13:45:08.726Z",
+  "durationMs": 82745,
+  "gitCommit": "3b672c85f0d3d398344992ba6aa4650f1b75c10f",
+  "overallStatus": "FAIL",
   "criticalCount": 0,
-  "highCount": 0,
-  "mediumCount": 0,
+  "highCount": 2,
+  "mediumCount": 1,
   "lowCount": 6,
-  "supabaseStatus": "PASS",
+  "supabaseStatus": "FAIL",
   "apiFootballStatus": "PASS",
   "geminiStatus": "OPTIONAL",
-  "schedulerStatus": "NOT CONFIGURED",
+  "schedulerStatus": "PASS",
   "pipelineStatus": "PASS",
   "productionStatus": "PASS",
   "items": [
@@ -20,8 +20,8 @@
       "id": "code-health:npm-test",
       "section": "Code Health",
       "name": "npm test",
-      "status": "PASS",
-      "evidence": "exit 0"
+      "status": "FAIL",
+      "evidence": "tConfigService.lifecycle.test.ts && tsx lib/healthCheck/supabaseHealthCheck.test.ts && tsx lib/supabase/services/weightConfigService.test.ts && tsx lib/admin/weightConfigAdminApi.test.ts && tsx lib/ad"
     },
     {
       "id": "code-health:npm-run-build",
@@ -35,14 +35,14 @@
       "section": "Code Health",
       "name": "npm run lint",
       "status": "WARNING",
-      "evidence": "errors=3 warnings=71"
+      "evidence": "errors=4 warnings=75"
     },
     {
       "id": "code-health:npm-run-validate:system",
       "section": "Code Health",
       "name": "npm run validate:system",
-      "status": "PASS",
-      "evidence": "overall=PASS"
+      "status": "FAIL",
+      "evidence": "overall=FAIL"
     },
     {
       "id": "pipeline:verified-pipeline",
@@ -72,13 +72,6 @@
       "evidence": "fundamentalsBacktest.test.ts covers leakage rules"
     },
     {
-      "id": "environment:cron_secret",
-      "section": "Environment",
-      "name": "CRON_SECRET",
-      "status": "NOT CONFIGURED",
-      "message": "Required variable missing locally"
-    },
-    {
       "id": "security:service-role-not-in-next_public",
       "section": "Security",
       "name": "Service role not in NEXT_PUBLIC",
@@ -94,7 +87,7 @@
       "id": "security:cron-secret-configured",
       "section": "Security",
       "name": "Cron secret configured",
-      "status": "NOT CONFIGURED"
+      "status": "PASS"
     },
     {
       "id": "security:supabase-client-uses-server-only-env",
@@ -177,120 +170,23 @@
       "id": "supabase:connection-probe",
       "section": "Supabase",
       "name": "Connection probe",
-      "status": "PASS",
-      "evidence": "host=qjzuledpatlbjsymqtbb.supabase.co rows=1"
+      "status": "FAIL",
+      "evidence": "TypeError: fetch failed",
+      "message": "TypeError: fetch failed"
     },
     {
-      "id": "supabase-schema:match_records",
-      "section": "Supabase Schema",
-      "name": "match_records",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:beta_recommendations",
-      "section": "Supabase Schema",
-      "name": "beta_recommendations",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:beta_rolling_reports",
-      "section": "Supabase Schema",
-      "name": "beta_rolling_reports",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:recommendation_learning",
-      "section": "Supabase Schema",
-      "name": "recommendation_learning",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:team_profiles",
-      "section": "Supabase Schema",
-      "name": "team_profiles",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:execution_logs",
-      "section": "Supabase Schema",
-      "name": "execution_logs",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:scheduler_state",
-      "section": "Supabase Schema",
-      "name": "scheduler_state",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:admin_daily_summaries",
-      "section": "Supabase Schema",
-      "name": "admin_daily_summaries",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:admin_system_snapshots",
-      "section": "Supabase Schema",
-      "name": "admin_system_snapshots",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:admin_error_logs",
-      "section": "Supabase Schema",
-      "name": "admin_error_logs",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-schema:security_rate_limit_buckets",
-      "section": "Supabase Schema",
-      "name": "security_rate_limit_buckets",
-      "status": "PASS",
-      "evidence": "SELECT probe succeeded"
-    },
-    {
-      "id": "supabase-crud:insert-match_records",
-      "section": "Supabase CRUD",
-      "name": "insert match_records",
-      "status": "PASS",
-      "evidence": "id=8762dedf-d8a9-4f4c-9787-18b385c0fd31"
-    },
-    {
-      "id": "supabase-crud:select-match_records",
-      "section": "Supabase CRUD",
-      "name": "select match_records",
-      "status": "PASS",
-      "evidence": "league=HEALTH_CHECK"
-    },
-    {
-      "id": "supabase-crud:update-match_records",
-      "section": "Supabase CRUD",
-      "name": "update match_records",
-      "status": "PASS",
-      "evidence": "HEALTH_CHECK_UPDATED"
-    },
-    {
-      "id": "supabase-crud:delete-match_records",
-      "section": "Supabase CRUD",
-      "name": "delete match_records",
-      "status": "PASS",
-      "evidence": "test row removed"
-    },
-    {
-      "id": "supabase:embedded-models-note",
+      "id": "supabase:schema-tables",
       "section": "Supabase",
-      "name": "Embedded models note",
-      "status": "WARNING",
-      "evidence": "Fixture/Market/Evidence/Learning reports are JSON-embedded, not separate tables"
+      "name": "Schema tables",
+      "status": "NOT TESTABLE",
+      "message": "Connection failed"
+    },
+    {
+      "id": "supabase:crud-test",
+      "section": "Supabase",
+      "name": "CRUD test",
+      "status": "NOT TESTABLE",
+      "message": "Connection failed"
     },
     {
       "id": "api-football:api-key-configured",
@@ -304,21 +200,21 @@
       "section": "API-Football",
       "name": "Fixture fetch",
       "status": "PASS",
-      "evidence": "date=2026-07-16 count=114 latencyMs=989"
+      "evidence": "date=2026-07-17 count=264 latencyMs=1138"
     },
     {
       "id": "gemini:optional-provider",
       "section": "Gemini",
       "name": "Optional provider",
       "status": "OPTIONAL",
-      "evidence": "Unavailable latencyMs=914 (billing/quota/network or empty response)"
+      "evidence": "Unavailable latencyMs=8755 (billing/quota/network or empty response)"
     },
     {
       "id": "database-quality:active-match_records-reachable",
       "section": "Database Quality",
       "name": "Active match_records reachable",
-      "status": "PASS",
-      "evidence": "count=102"
+      "status": "WARNING",
+      "evidence": "count=unknown"
     },
     {
       "id": "database-quality:stale-pending-fixtures-sample",
@@ -332,21 +228,21 @@
       "section": "Deployment",
       "name": "Homepage",
       "status": "PASS",
-      "evidence": "status=200 latencyMs=156 url=https://football-ai-ten.vercel.app/"
+      "evidence": "status=200 latencyMs=240 url=https://football-ai-ten.vercel.app/"
     },
     {
       "id": "deployment:admin-dashboard",
       "section": "Deployment",
       "name": "Admin dashboard",
       "status": "PASS",
-      "evidence": "status=200 latencyMs=673 url=https://football-ai-ten.vercel.app/admin"
+      "evidence": "status=200 latencyMs=219 url=https://football-ai-ten.vercel.app/admin"
     },
     {
       "id": "deployment:health-api-(public)",
       "section": "Deployment",
       "name": "Health API (public)",
       "status": "PASS",
-      "evidence": "status=200 latencyMs=693 url=https://football-ai-ten.vercel.app/api/data/health"
+      "evidence": "status=200 latencyMs=1068 url=https://football-ai-ten.vercel.app/api/data/health"
     },
     {
       "id": "dashboard:browser-ui-verification",
@@ -447,9 +343,11 @@
     {
       "name": "CRON_SECRET",
       "required": true,
-      "present": false,
+      "present": true,
       "clientSafe": false,
-      "serverOnly": true
+      "serverOnly": true,
+      "invalidFormat": false,
+      "maskedValue": "8d4c…2a5f (len=32)"
     },
     {
       "name": "FOOTBALL_DATA_MODE",

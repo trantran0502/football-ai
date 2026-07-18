@@ -34,6 +34,7 @@ export function matchRecordRowToDomain(row: MatchRecordRow): HistoricalMatchReco
     awayTeamId: row.away_team_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    source: row.source,
   });
 }
 
@@ -62,7 +63,7 @@ export function matchRecordDomainToRow(
     season: normalized.season ?? null,
     home_team_id: normalized.homeTeamId ?? null,
     away_team_id: normalized.awayTeamId ?? null,
-    source: options?.source ?? "app",
+    source: options?.source ?? normalized.source ?? "app",
     schema_version: options?.schemaVersion ?? 1,
     created_at: toIsoTimestamp(normalized.createdAt),
     updated_at: toIsoTimestamp(normalized.updatedAt),

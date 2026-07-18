@@ -11,6 +11,7 @@ import {
 import { enrichRecordWithReplayValidation } from "@/lib/replay/replayBuilder";
 import { runMatchVerification } from "@/lib/database/matchVerification";
 import { persistRecommendationLearningForVerifiedMatch } from "@/lib/recommendation/recommendationLearningPersistence";
+import { filterTrulyPendingVerificationRecords } from "@/lib/supabase/services/matchRecordPendingPolicy";
 import type { AnalysisReport } from "@/lib/analysis/types";
 
 const store = new Map<string, HistoricalMatchRecord>();
@@ -169,7 +170,7 @@ export async function verifyMatchInMemory(
 }
 
 export async function listPendingInMemory(): Promise<HistoricalMatchRecord[]> {
-  return [...store.values()]
-    .filter((record) => record.status === "PENDING")
-    .map((record) => structuredClone(record));
+  return filterTrulyPendingVerificationRecords([...store.values()]).map((record) =>
+    structuredClone(record)
+  );
 }

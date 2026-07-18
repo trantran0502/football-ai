@@ -1,6 +1,7 @@
 import { logAdminError } from "@/lib/admin/adminErrorLog";
 import { runAdminDailyCron } from "@/lib/admin/runAdminDailyCron";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import { filterTrulyPendingVerificationRecords } from "@/lib/supabase/services/matchRecordPendingPolicy";
 import { runResultUpdatePipeline } from "@/lib/production/resultUpdatePipeline";
 import type { ResultUpdatePipelineDependencies } from "@/lib/production/resultUpdatePipeline";
 import type { ProductionResultUpdate, ResultPipelineResult } from "@/lib/production/productionTypes";
@@ -55,7 +56,7 @@ export async function runResultScheduler(
     dependencies.listPending ??
     (async () => {
       const records = dependencies.listRecords ? await dependencies.listRecords() : [];
-      return records.filter((record) => record.status === "PENDING");
+      return filterTrulyPendingVerificationRecords(records);
     });
   const listRecords = dependencies.listRecords ?? (async () => [] as HistoricalMatchRecord[]);
   const runSummaryCron = dependencies.runSummaryCron ?? runAdminDailyCron;
@@ -120,17 +121,9 @@ export async function runResultScheduler(
       (async () => {
         const pending = await listPending();
 
-        const fetchOutcome = dependencies.fetchApiFixtures
-          ? {
-              fixtures: await withRetry(() => dependencies.fetchApiFixtures!(runDate), {
-                maxRetries: config.maxRetries,
-                delayMs: config.retryDelayMs,
-              }),
-              source: "api" as const,
-              cacheHit: false,
-              quotaSkipped: false,
-            }
-          : await fetchResultUpdateFixturesByDate(runDate);
+        const fetchOutcome = await fetchResultUpdateFixturesByDate(runDate, {
+          fetchFromApi: dependencies.fetchApiFixtures,
+        });
 
         const apiFootballRequestCount = Math.max(
           0,

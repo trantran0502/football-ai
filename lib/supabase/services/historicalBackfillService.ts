@@ -131,6 +131,10 @@ export function registerHistoricalBackfillDuplicate(
   );
 }
 
+export {
+  findMatchRecordByFixtureIdInSupabase,
+} from "@/lib/supabase/services/matchRecordService";
+
 export async function loadMatchKeysForDateInSupabase(
   matchDate: string
 ): Promise<Set<string>> {
@@ -150,19 +154,5 @@ export async function loadMatchKeysForDateInSupabase(
     keys.add(buildMatchKey(row.match_date, row.home_team, row.away_team));
   }
   return keys;
-}
-
-export async function findMatchRecordByFixtureIdInSupabase(
-  fixtureId: number
-): Promise<HistoricalMatchRecord | null> {
-  const supabase = getSupabaseAdmin();
-  const result = await supabase
-    .from("match_records")
-    .select("*")
-    .eq("fixture_id", fixtureId)
-    .maybeSingle();
-
-  const data = assertSupabaseData(result);
-  return data ? matchRecordRowToDomain(data) : null;
 }
 

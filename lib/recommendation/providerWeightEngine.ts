@@ -4,9 +4,9 @@ import { FEATURE_PROVIDER_KEYS } from "@/lib/providers/registry/types";
 import type { ProviderResolutionAudit } from "@/lib/providers/teamProfile/teamProfileProviderPipeline";
 import { clampConfidence, clampScore } from "@/lib/analysis/featureScore/oddsConversion";
 import {
-  DEFAULT_PROVIDER_WEIGHTS,
   PROVIDER_TO_FUSION_CATEGORY,
 } from "@/lib/recommendation/providerWeights";
+import { buildFallbackWeightConfig } from "@/lib/recommendation/weightConfigRuntime";
 import { getCategoryWeightedScore } from "@/lib/recommendation/recommendationRules";
 
 export interface ProviderRecommendationDiagnostic {
@@ -32,7 +32,8 @@ function isProviderUsable(source: ProviderDataSource | undefined): boolean {
 
 export function computeProviderWeighting(
   fusion: FeatureFusionResult,
-  audit: ProviderResolutionAudit
+  audit: ProviderResolutionAudit,
+  providerWeights: Record<FeatureProviderKey, number> = buildFallbackWeightConfig().providerWeights
 ): ProviderWeightingResult {
   const usableProviders = FEATURE_PROVIDER_KEYS.filter((providerKey) =>
     isProviderUsable(audit.providerSources[providerKey])
@@ -40,7 +41,7 @@ export function computeProviderWeighting(
   const unavailableProviderCount = FEATURE_PROVIDER_KEYS.length - usableProviders.length;
 
   const baseWeightTotal = usableProviders.reduce(
-    (sum, providerKey) => sum + DEFAULT_PROVIDER_WEIGHTS[providerKey],
+    (sum, providerKey) => sum + providerWeights[providerKey],
     0
   );
 
@@ -84,7 +85,7 @@ export function computeProviderWeighting(
       continue;
     }
 
-    const providerWeight = DEFAULT_PROVIDER_WEIGHTS[providerKey] / baseWeightTotal;
+    const providerWeight = providerWeights[providerKey] / baseWeightTotal;
     normalizedWeights[providerKey] = providerWeight;
 
     const category = PROVIDER_TO_FUSION_CATEGORY[providerKey];

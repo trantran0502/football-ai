@@ -33,9 +33,26 @@ export interface ProductionResultUpdate {
 
 export interface DailyPipelineItemResult {
   fixture: ProductionFixture;
-  status: "created" | "duplicate" | "failed";
+  status:
+    | "created"
+    | "duplicate"
+    | "enriched"
+    | "incomplete_rejected"
+    | "conflicting"
+    | "failed";
   matchId?: string;
   error?: string;
+}
+
+export interface DailyDataCompletenessStats {
+  inserted: number;
+  duplicateSkipped: number;
+  historicalBackfillEnriched: number;
+  incompleteAnalysisRejected: number;
+  conflictingRecords: number;
+  oddsMissing: number;
+  settleableMarketMissing: number;
+  analysisSnapshotMissing: number;
 }
 
 export interface DailyPipelineResult {
@@ -45,6 +62,7 @@ export interface DailyPipelineResult {
   duplicates: number;
   failed: number;
   items: DailyPipelineItemResult[];
+  dataCompleteness?: DailyDataCompletenessStats;
 }
 
 export interface ResultPipelineItemResult {

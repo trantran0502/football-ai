@@ -1,4 +1,5 @@
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import { countTrulyPendingVerification } from "@/lib/supabase/services/matchRecordPendingPolicy";
 import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import type { SchedulerDailySummary } from "@/lib/scheduler/schedulerTypes";
 import { buildProductionDashboard } from "@/lib/production/dashboardStatistics";
@@ -81,7 +82,7 @@ export function buildSchedulerDailySummary(
     }
   }
 
-  const pendingCount = dayRecords.filter((record) => record.status === "PENDING").length;
+  const pendingCount = countTrulyPendingVerification(dayRecords);
   const verifiedCount = dayRecords.filter((record) => record.status === "VERIFIED").length;
   const verifiedDayRecords = dayRecords.filter((record) => record.status === "VERIFIED");
   const todayDashboard = buildProductionDashboard(verifiedDayRecords);

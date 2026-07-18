@@ -1,24 +1,39 @@
 import { randomUUID } from "crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   generateHistoricalMatchId,
   type HistoricalMatchRecord,
 } from "@/lib/database/matchSchema";
-import {
-  getSupabaseAdmin,
-  resetSupabaseAdminForTests,
-} from "@/lib/supabase/admin";
-import { getSupabaseEnv } from "@/lib/supabase/env";
-import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseEnv, hasSupabaseEnv, type SupabaseEnv } from "@/lib/supabase/env";
 import {
   insertMatchRecordToSupabase,
   updateMatchRecordInSupabase,
 } from "@/lib/supabase/services/matchRecordService";
+import type { Database } from "@/lib/supabase/database.types";
 import type { HealthCheckItem, HealthCheckStatus } from "@/lib/healthCheck/types";
 
 import {
   SUPABASE_TABLE_REGISTRY,
 } from "@/lib/supabase/schemaRegistry";
 import type { SupabaseTableSpec } from "@/lib/supabase/schemaRegistry";
+
+export const CONNECTION_PROBE_MAX_ATTEMPTS = 4;
+
+/** Delay before attempts 2, 3, and 4 (ms). Attempt 1 runs immediately. */
+export const CONNECTION_PROBE_RETRY_DELAYS_MS = [1000, 2000, 4000] as const;
+
+export interface ConnectionProbeQueryResult {
+  error: { message: string } | null;
+  data: unknown[] | null;
+}
+
+export interface ConnectionProbeRetryResult {
+  connected: boolean;
+  probeEvidence: string;
+  attemptCount: number;
+  lastError: string | null;
+}
 
 function item(
   section: string,
@@ -37,8 +52,62 @@ function item(
   };
 }
 
-async function probeTableExists(spec: SupabaseTableSpec): Promise<boolean> {
-  const supabase = getSupabaseAdmin();
+function defaultSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function formatConnectionProbeEvidence(env: SupabaseEnv, probe: ConnectionProbeQueryResult): string {
+  return probe.error
+    ? probe.error.message
+    : `host=${new URL(env.url).host} rows=${probe.data?.length ?? 0}`;
+}
+
+export async function runConnectionProbeWithRetry(input: {
+  probe: () => Promise<ConnectionProbeQueryResult>;
+  env: SupabaseEnv;
+  sleep?: (ms: number) => Promise<void>;
+  retryDelaysBeforeAttemptMs?: readonly number[];
+  maxAttempts?: number;
+}): Promise<ConnectionProbeRetryResult> {
+  const sleep = input.sleep ?? defaultSleep;
+  const retryDelays = input.retryDelaysBeforeAttemptMs ?? CONNECTION_PROBE_RETRY_DELAYS_MS;
+  const maxAttempts = input.maxAttempts ?? CONNECTION_PROBE_MAX_ATTEMPTS;
+  let lastError: string | null = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (attempt > 0) {
+      const delayMs = retryDelays[attempt - 1] ?? retryDelays[retryDelays.length - 1] ?? 0;
+      await sleep(delayMs);
+    }
+
+    try {
+      const probe = await input.probe();
+      if (!probe.error) {
+        return {
+          connected: true,
+          probeEvidence: formatConnectionProbeEvidence(input.env, probe),
+          attemptCount: attempt + 1,
+          lastError: null,
+        };
+      }
+      lastError = probe.error.message;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  return {
+    connected: false,
+    probeEvidence: lastError ?? "Connection probe failed",
+    attemptCount: maxAttempts,
+    lastError,
+  };
+}
+
+async function probeTableExists(
+  supabase: SupabaseClient<Database>,
+  spec: SupabaseTableSpec
+): Promise<boolean> {
   const result = await supabase
     .from(spec.name as "match_records")
     .select(spec.probeColumn)
@@ -75,16 +144,63 @@ function buildHealthCheckRecord(): HistoricalMatchRecord {
   };
 }
 
-export async function runSupabaseHealthChecks(): Promise<{
+export interface SupabaseHealthCheckDeps {
+  hasSupabaseEnv: () => boolean;
+  getSupabaseEnv: () => SupabaseEnv;
+  getSupabaseAdmin: () => SupabaseClient<Database>;
+  insertMatchRecord: typeof insertMatchRecordToSupabase;
+  updateMatchRecord: typeof updateMatchRecordInSupabase;
+  sleep: (ms: number) => Promise<void>;
+  runConnectionProbe: (input: {
+    supabase: SupabaseClient<Database>;
+    env: SupabaseEnv;
+    sleep: (ms: number) => Promise<void>;
+  }) => Promise<ConnectionProbeRetryResult>;
+}
+
+const defaultSupabaseHealthCheckDeps: SupabaseHealthCheckDeps = {
+  hasSupabaseEnv,
+  getSupabaseEnv,
+  getSupabaseAdmin,
+  insertMatchRecord: insertMatchRecordToSupabase,
+  updateMatchRecord: updateMatchRecordInSupabase,
+  sleep: defaultSleep,
+  runConnectionProbe: async ({ supabase, env, sleep }) =>
+    runConnectionProbeWithRetry({
+      env,
+      sleep,
+      probe: async () => {
+        const result = await supabase.from("match_records").select("id").limit(1);
+        return {
+          error: result.error ? { message: result.error.message } : null,
+          data: result.data,
+        };
+      },
+    }),
+};
+
+function mergeSupabaseHealthCheckDeps(
+  overrides?: Partial<SupabaseHealthCheckDeps>
+): SupabaseHealthCheckDeps {
+  return {
+    ...defaultSupabaseHealthCheckDeps,
+    ...overrides,
+  };
+}
+
+export async function runSupabaseHealthChecks(
+  depsOverride?: Partial<SupabaseHealthCheckDeps>
+): Promise<{
   items: HealthCheckItem[];
   connected: boolean;
   crudPassed: boolean;
 }> {
+  const deps = mergeSupabaseHealthCheckDeps(depsOverride);
   const items: HealthCheckItem[] = [];
   let connected = false;
   let crudPassed = false;
 
-  if (!hasSupabaseEnv()) {
+  if (!deps.hasSupabaseEnv()) {
     items.push(
       item(
         "Supabase",
@@ -97,58 +213,22 @@ export async function runSupabaseHealthChecks(): Promise<{
     return { items, connected, crudPassed };
   }
 
-  resetSupabaseAdminForTests();
+  const env = deps.getSupabaseEnv();
+  const supabase = deps.getSupabaseAdmin();
+  const connection = await deps.runConnectionProbe({ supabase, env, sleep: deps.sleep });
 
-  let probeEvidence = "";
-  try {
-    const env = getSupabaseEnv();
-    const supabase = getSupabaseAdmin();
-    const probe = await supabase.from("match_records").select("id").limit(1);
-    connected = !probe.error;
-    probeEvidence = probe.error
-      ? probe.error.message
-      : `host=${new URL(env.url).host} rows=${probe.data?.length ?? 0}`;
-  } catch (firstError) {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      resetSupabaseAdminForTests();
-      const env = getSupabaseEnv();
-      const supabase = getSupabaseAdmin();
-      const probe = await supabase.from("match_records").select("id").limit(1);
-      connected = !probe.error;
-      probeEvidence = probe.error
-        ? probe.error.message
-        : `host=${new URL(env.url).host} rows=${probe.data?.length ?? 0}`;
-    } catch (retryError) {
-      items.push(
-        item(
-          "Supabase",
-          "Connection probe",
-          "FAIL",
-          undefined,
-          retryError instanceof Error ? retryError.message : String(retryError)
-        )
-      );
-      items.push(
-        item("Supabase", "Schema tables", "NOT TESTABLE", undefined, "Connection failed")
-      );
-      items.push(
-        item("Supabase", "CRUD test", "NOT TESTABLE", undefined, "Connection failed")
-      );
-      return { items, connected, crudPassed };
-    }
-  }
-
-  items.push(
-    item(
-      "Supabase",
-      "Connection probe",
-      connected ? "PASS" : "FAIL",
-      probeEvidence
-    )
-  );
+  connected = connection.connected;
 
   if (!connected) {
+    items.push(
+      item(
+        "Supabase",
+        "Connection probe",
+        "FAIL",
+        connection.probeEvidence,
+        connection.lastError ?? connection.probeEvidence
+      )
+    );
     items.push(
       item("Supabase", "Schema tables", "NOT TESTABLE", undefined, "Connection failed")
     );
@@ -158,8 +238,17 @@ export async function runSupabaseHealthChecks(): Promise<{
     return { items, connected, crudPassed };
   }
 
+  items.push(
+    item(
+      "Supabase",
+      "Connection probe",
+      "PASS",
+      connection.probeEvidence
+    )
+  );
+
   for (const spec of SUPABASE_TABLE_REGISTRY) {
-    const exists = await probeTableExists(spec);
+    const exists = await probeTableExists(supabase, spec);
     items.push(
       item(
         "Supabase Schema",
@@ -173,10 +262,9 @@ export async function runSupabaseHealthChecks(): Promise<{
   let insertedId: string | null = null;
   try {
     const record = buildHealthCheckRecord();
-    const inserted = await insertMatchRecordToSupabase(record);
+    const inserted = await deps.insertMatchRecord(record);
     insertedId = inserted.id;
 
-    const supabase = getSupabaseAdmin();
     const selectResult = await supabase
       .from("match_records")
       .select("id, league, home_team")
@@ -201,7 +289,7 @@ export async function runSupabaseHealthChecks(): Promise<{
       )
     );
 
-    const updated = await updateMatchRecordInSupabase({
+    const updated = await deps.updateMatchRecord({
       ...inserted,
       league: "HEALTH_CHECK_UPDATED",
       updatedAt: new Date().toISOString(),
@@ -244,7 +332,6 @@ export async function runSupabaseHealthChecks(): Promise<{
   } finally {
     if (insertedId) {
       try {
-        const supabase = getSupabaseAdmin();
         await supabase.from("match_records").delete().eq("id", insertedId);
       } catch {
         // best-effort cleanup

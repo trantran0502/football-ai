@@ -16,8 +16,10 @@ import type {
   HealthCheckStatus,
   ProductionHealthCheckReport,
 } from "@/lib/healthCheck/types";
+import type { AnalysisSnapshot } from "@/lib/database/matchSchema";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { isOperationallyExcluded } from "@/lib/supabase/services/matchRecordPendingPolicy";
 
 const PRODUCTION_URL =
   process.env.HEALTH_CHECK_PRODUCTION_URL?.trim() ||
@@ -282,19 +284,26 @@ async function runDatabaseQualityChecks(): Promise<HealthCheckItem[]> {
       )
     );
 
-    const { data: pendingStale } = await supabase
+    const { data: pendingStaleRows } = await supabase
       .from("match_records")
-      .select("id")
+      .select("id, analysis_snapshot")
       .eq("status", "PENDING")
       .lt("match_date", "2020-01-01")
-      .limit(5);
+      .limit(20);
+
+    const pendingStale = (
+      (pendingStaleRows ?? []) as Array<{
+        id: string;
+        analysis_snapshot: AnalysisSnapshot | null;
+      }>
+    ).filter((row) => !isOperationallyExcluded({ analysisSnapshot: row.analysis_snapshot }));
 
     items.push(
       item(
         "Database Quality",
         "Stale pending fixtures sample",
-        pendingStale && pendingStale.length > 0 ? "WARNING" : "PASS",
-        `sample=${pendingStale?.length ?? 0}`
+        pendingStale.length > 0 ? "WARNING" : "PASS",
+        `sample=${pendingStale.length}`
       )
     );
   } catch (error) {

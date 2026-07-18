@@ -1,17 +1,14 @@
+import type {
+  DailyDataCompletenessStats,
+  DailyPipelineItemResult,
+  DailyPipelineResult,
+  ProductionFixture,
+} from "@/lib/production/productionTypes";
 import { logAdminError } from "@/lib/admin/adminErrorLog";
 import { runAdminDailyCron } from "@/lib/admin/runAdminDailyCron";
 import { analyzeMatch } from "@/lib/analysis/analyzeMatch";
 import type { SaveMatchOutcome } from "@/lib/database/matchSchema";
 import type { AnalysisReport } from "@/lib/analysis/types";
-import type {
-  DailyPipelineResult,
-  ProductionFixture,
-} from "@/lib/production/productionTypes";
-import {
-  buildExecutionLogContext,
-  completeExecutionLog,
-  startExecutionLog,
-} from "@/lib/scheduler/executionLogStore";
 import {
   countRemaining,
   loadDailyAnalysisQueue,
@@ -33,8 +30,11 @@ import {
   buildFixtureFilterStats,
   filterAnalyzableFixtures,
   filterFixturesBySchedulerLeaguePolicy,
-  toProductionFixtures,
 } from "@/lib/scheduler/fixtureIntake";
+import type { FixtureIntakeResult } from "@/lib/scheduler/fixtureMapping";
+import { isApiFootballQuotaExceededError } from "@/lib/scheduler/resultUpdateFixtureFetch";
+import { canMakeApiFootballRequest } from "@/lib/providers/apiFootball/apiFootballQuota";
+import { resolveSchedulerFixturesToProduction } from "@/lib/scheduler/schedulerOddsIntegration";
 import { buildSchedulerDailySummary } from "@/lib/scheduler/dailySummary";
 import { withRetry, withTimeout } from "@/lib/scheduler/retry";
 import {
@@ -55,6 +55,17 @@ import {
 } from "@/lib/teamProfile";
 import type { TeamProfileTeamDiagnostic } from "@/lib/teamProfile/teamProfileTypes";
 import { enrichAnalysisReportWithFixture } from "@/lib/scheduler/fixtureMapping";
+import {
+  loadRuntimeWeightConfigForProduction,
+  type RuntimeWeightConfigLoaderDeps,
+} from "@/lib/recommendation/runtimeWeightConfigLoader";
+import { buildWeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigRuntime";
+import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
+import {
+  buildExecutionLogContext,
+  completeExecutionLog,
+  startExecutionLog,
+} from "@/lib/scheduler/executionLogStore";
 
 export interface DailySchedulerDependencies {
   runDate?: string;
@@ -68,6 +79,9 @@ export interface DailySchedulerDependencies {
   listRecords?: () => Promise<HistoricalMatchRecord[]>;
   runSummaryCron?: typeof runAdminDailyCron;
   now?: () => number;
+  loadRuntimeWeightConfig?: (
+    deps?: RuntimeWeightConfigLoaderDeps
+  ) => ReturnType<typeof loadRuntimeWeightConfigForProduction>;
 }
 
 function todayKey(date = new Date()): string {
@@ -128,6 +142,127 @@ function selectFixtureBatch(
   return { batch, cursorBefore, cursorAfter: cursor };
 }
 
+function createEmptyFixtureIntakeResult(): FixtureIntakeResult {
+  return {
+    fixtures: [],
+    skipped: [],
+    fetchMeta: {
+      apiRaw: 0,
+      cancelledOrAbandoned: 0,
+    },
+  };
+}
+
+async function fetchDailyAnalysisFixturesSafely(
+  runDate: string,
+  fetchFixtures: DailySchedulerDependencies["fetchFixtures"],
+  options: {
+    maxRetries: number;
+    retryDelayMs: number;
+  }
+): Promise<FixtureIntakeResult> {
+  const resolvedFetchFixtures = fetchFixtures ?? fetchFixturesByDate;
+
+  if (!canMakeApiFootballRequest()) {
+    logAdminError({
+      category: "scheduler",
+      message: "Daily analysis skipped API fixture fetch due to quota exhaustion.",
+      context: { runDate },
+    });
+    return createEmptyFixtureIntakeResult();
+  }
+
+  try {
+    return await withRetry(() => resolvedFetchFixtures(runDate), {
+      maxRetries: options.maxRetries,
+      delayMs: options.retryDelayMs,
+    });
+  } catch (error) {
+    if (isApiFootballQuotaExceededError(error)) {
+      logAdminError({
+        category: "scheduler",
+        message: "Daily analysis skipped API fixture fetch due to quota exhaustion.",
+        context: {
+          runDate,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+      return createEmptyFixtureIntakeResult();
+    }
+    throw error;
+  }
+}
+
+function createEmptyDataCompletenessStats(): DailyDataCompletenessStats {
+  return {
+    inserted: 0,
+    duplicateSkipped: 0,
+    historicalBackfillEnriched: 0,
+    incompleteAnalysisRejected: 0,
+    conflictingRecords: 0,
+    oddsMissing: 0,
+    settleableMarketMissing: 0,
+    analysisSnapshotMissing: 0,
+  };
+}
+
+function recordDataCompletenessOutcome(
+  stats: DailyDataCompletenessStats,
+  outcome: SaveMatchOutcome,
+  fixture: ProductionFixture
+): DailyPipelineItemResult {
+  switch (outcome.status) {
+    case "created":
+      stats.inserted += 1;
+      return { fixture, status: "created", matchId: outcome.record.id };
+    case "enriched":
+      stats.historicalBackfillEnriched += 1;
+      return { fixture, status: "enriched", matchId: outcome.record.id };
+    case "duplicate":
+      stats.duplicateSkipped += 1;
+      return { fixture, status: "duplicate", matchId: outcome.record.id };
+    case "incomplete_analysis_rejected":
+      stats.incompleteAnalysisRejected += 1;
+      if (outcome.reason === "oddsMissing") {
+        stats.oddsMissing += 1;
+      } else if (outcome.reason === "settleableMarketMissing") {
+        stats.settleableMarketMissing += 1;
+      } else {
+        stats.analysisSnapshotMissing += 1;
+      }
+      logAdminError({
+        category: "scheduler",
+        message: `Daily analysis completeness rejected: ${fixture.homeTeam} vs ${fixture.awayTeam}`,
+        context: {
+          fixtureId: fixture.fixtureId,
+          reason: outcome.reason,
+        },
+      });
+      return {
+        fixture,
+        status: "incomplete_rejected",
+        matchId: outcome.record?.id,
+        error: outcome.reason,
+      };
+    case "conflicting_record":
+      stats.conflictingRecords += 1;
+      logAdminError({
+        category: "scheduler",
+        message: `Daily analysis completeness conflict: ${fixture.homeTeam} vs ${fixture.awayTeam}`,
+        context: {
+          fixtureId: fixture.fixtureId,
+          reason: outcome.reason,
+        },
+      });
+      return {
+        fixture,
+        status: "conflicting",
+        matchId: outcome.record.id,
+        error: outcome.reason,
+      };
+  }
+}
+
 async function runBatchedDailyPipeline(
   fixtures: ProductionFixture[],
   runDate: string,
@@ -140,6 +275,9 @@ async function runBatchedDailyPipeline(
     maxTeamProfileRefreshesPerRun: number;
     timeBudgetDeadline: number;
     now: () => number;
+    loadRuntimeWeightConfig: (
+      deps?: RuntimeWeightConfigLoaderDeps
+    ) => ReturnType<typeof loadRuntimeWeightConfigForProduction>;
   }
 ): Promise<
   DailyPipelineResult & {
@@ -147,6 +285,7 @@ async function runBatchedDailyPipeline(
     teamProfileDiagnostics: TeamProfileTeamDiagnostic[];
     teamProfileApiRequestCount: number;
     batchProgress: DailyAnalysisBatchProgress;
+    batchWeightConfig: WeightConfigSnapshotMetadata;
     updatedQueue: DailyAnalysisQueueState;
   }
 > {
@@ -154,6 +293,7 @@ async function runBatchedDailyPipeline(
   let created = 0;
   let duplicates = 0;
   let failed = 0;
+  const dataCompleteness = createEmptyDataCompletenessStats();
   const teamProfileWarnings: string[] = [];
   const teamProfileDiagnostics: TeamProfileTeamDiagnostic[] = [];
   const deferredFixtures: number[] = [];
@@ -175,6 +315,9 @@ async function runBatchedDailyPipeline(
     deferredFixtureIds: [...queue.deferredFixtureIds],
     deferredTeamProfileKeys: [...queue.deferredTeamProfileKeys],
   };
+
+  const runtimeWeightConfig = await dependencies.loadRuntimeWeightConfig();
+  const batchWeightConfig = buildWeightConfigSnapshotMetadata(runtimeWeightConfig);
 
   for (const fixture of batch) {
     if (dependencies.now() >= dependencies.timeBudgetDeadline) {
@@ -310,6 +453,7 @@ async function runBatchedDailyPipeline(
                   analyzeMatch(fixture.rawOdds, {
                     teamProfiles: profileSnapshot,
                     matchDate: fixture.matchDate,
+                    runtimeWeightConfig,
                     h2hContext: {
                       homeTeam: fixture.homeTeam,
                       awayTeam: fixture.awayTeam,
@@ -359,12 +503,13 @@ async function runBatchedDailyPipeline(
         }
       );
 
-      if (outcome.status === "created") {
+      const item = recordDataCompletenessOutcome(dataCompleteness, outcome, fixture);
+      items.push(item);
+
+      if (outcome.status === "created" || outcome.status === "enriched") {
         created += 1;
-        items.push({ fixture, status: "created", matchId: outcome.record.id });
-      } else {
+      } else if (outcome.status === "duplicate") {
         duplicates += 1;
-        items.push({ fixture, status: "duplicate", matchId: outcome.record.id });
       }
 
       if (!updatedQueue.completedFixtureIds.includes(fixture.fixtureId)) {
@@ -413,6 +558,7 @@ async function runBatchedDailyPipeline(
     duplicates,
     failed,
     items,
+    dataCompleteness,
     teamProfileWarnings,
     teamProfileDiagnostics,
     teamProfileApiRequestCount: Math.max(
@@ -420,6 +566,7 @@ async function runBatchedDailyPipeline(
       getApiFootballQuotaSnapshot().dailyCount - teamProfileQuotaStart
     ),
     batchProgress,
+    batchWeightConfig,
     updatedQueue,
   };
 }
@@ -529,9 +676,9 @@ export async function runDailyScheduler(
   });
 
   try {
-    const intake = await withRetry(() => fetchFixtures(runDate), {
+    const intake = await fetchDailyAnalysisFixturesSafely(runDate, fetchFixtures, {
       maxRetries: config.maxRetries,
-      delayMs: config.retryDelayMs,
+      retryDelayMs: config.retryDelayMs,
     });
     const intakeWarnings = intake.skipped.map(formatIntakeWarning);
 
@@ -552,7 +699,9 @@ export async function runDailyScheduler(
       leagueIdWhitelist: config.leagueIdWhitelist,
       leagueWhitelist: config.leagueWhitelist,
     });
-    const productionFixtures = toProductionFixtures(whitelisted);
+    const { productionFixtures, schedulerOdds } = await resolveSchedulerFixturesToProduction(
+      whitelisted
+    );
 
     const existingQueue = await loadDailyAnalysisQueue(runDate);
     let queue = mergeQueueWithEligibleFixtures(
@@ -583,6 +732,8 @@ export async function runDailyScheduler(
         maxTeamProfileRefreshesPerRun: config.maxTeamProfileRefreshesPerRun,
         timeBudgetDeadline,
         now,
+        loadRuntimeWeightConfig:
+          dependencies.loadRuntimeWeightConfig ?? loadRuntimeWeightConfigForProduction,
       }
     );
 
@@ -613,7 +764,10 @@ export async function runDailyScheduler(
         jobType: "daily_analysis",
         status: executionStatus,
         fixturesFetched: intake.fixtures.length + intake.skipped.length,
-        analyzedCount: pipeline.created + pipeline.duplicates,
+        analyzedCount:
+          pipeline.created +
+          pipeline.duplicates +
+          (pipeline.dataCompleteness?.historicalBackfillEnriched ?? 0),
         skippedCount: intake.skipped.length,
         errorCount: pipeline.failed,
         apiFootballRequestCount,
@@ -623,6 +777,7 @@ export async function runDailyScheduler(
         created: pipeline.created,
         duplicates: pipeline.duplicates,
         failed: pipeline.failed,
+        dataCompleteness: pipeline.dataCompleteness,
         intakeWarnings,
         teamProfileWarnings: pipeline.teamProfileWarnings,
         teamProfileDiagnostics: pipeline.teamProfileDiagnostics,
@@ -636,6 +791,8 @@ export async function runDailyScheduler(
         timeBudgetReached: pipeline.batchProgress.timeBudgetReached,
         executionDurationMs,
         queueStatus: queue.status,
+        weightConfig: pipeline.batchWeightConfig,
+        schedulerOdds,
       }),
     });
 

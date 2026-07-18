@@ -88,7 +88,24 @@ export async function POST(request: Request) {
       isNonEmptyString(matchDate) ? matchDate : undefined
     );
 
-    return dataApiSuccess(outcome.record, { status: outcome.status });
+    if (outcome.status === "incomplete_analysis_rejected" && !outcome.record) {
+      return dataApiError(`Analysis incomplete: ${outcome.reason}.`, 422);
+    }
+
+    if (outcome.status === "conflicting_record") {
+      return dataApiError(outcome.reason, 409);
+    }
+
+    if (!outcome.record) {
+      return genericErrorResponse();
+    }
+
+    return dataApiSuccess(outcome.record, {
+      status: outcome.status,
+      ...(outcome.status === "incomplete_analysis_rejected"
+        ? { reason: outcome.reason }
+        : {}),
+    });
   } catch {
     return genericErrorResponse();
   }

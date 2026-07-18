@@ -11,6 +11,21 @@ import type {
   ApiFootballTeamStatisticsRecord,
 } from "@/lib/providers/apiFootball/apiFootballTypes";
 import {
+  buildApiFootballOddsPath,
+  validateApiFootballOddsQuery,
+} from "@/lib/providers/apiFootball/apiFootballOddsQuery";
+import type {
+  ApiFootballOddsPageEnvelope,
+  ApiFootballOddsPaging,
+  ApiFootballOddsRecord,
+  ApiFootballOddsResponse,
+} from "@/lib/providers/apiFootball/apiFootballOddsTypes";
+import {
+  buildApiFootballCacheKey,
+  getApiFootballCacheStore,
+} from "@/lib/providers/apiFootball/apiFootballCache";
+import type { OddsQuery } from "@/lib/providers/providerTypes";
+import {
   canMakeApiFootballRequest,
   recordApiFootballRequest,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
@@ -26,6 +41,11 @@ const DEFAULT_BASE_URL = "https://v3.football.api-sports.io";
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_MIN_REQUEST_INTERVAL_MS = 250;
+const MAX_ODDS_PAGES = 100;
+
+interface ApiFootballOddsRawEnvelope<T> extends ApiFootballRawEnvelope<T> {
+  paging?: ApiFootballOddsPaging;
+}
 
 let testClientOverride: ApiFootballClient | null = null;
 
@@ -109,6 +129,98 @@ export class ApiFootballClient {
       `/fixtures?date=${date}`
     );
     return response.map((item) => mapFixtureRecord(item));
+  }
+
+  async getFixtureById(fixtureId: number): Promise<ApiFootballFixtureRecord | null> {
+    const response = await this.request<Array<Record<string, unknown>>>(
+      `/fixtures?id=${fixtureId}`
+    );
+    if (!response.length) {
+      return null;
+    }
+    return mapFixtureRecord(response[0]);
+  }
+
+  async getFixturesByIds(fixtureIds: number[]): Promise<ApiFootballFixtureRecord[]> {
+    const uniqueIds = [...new Set(fixtureIds.filter((id) => Number.isInteger(id) && id > 0))];
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    const fixtures: ApiFootballFixtureRecord[] = [];
+    for (let index = 0; index < uniqueIds.length; index += 20) {
+      const chunk = uniqueIds.slice(index, index + 20);
+      const response = await this.request<Array<Record<string, unknown>>>(
+        `/fixtures?ids=${chunk.join("-")}`
+      );
+      fixtures.push(...response.map((item) => mapFixtureRecord(item)));
+    }
+
+    return fixtures;
+  }
+
+  async getOdds(query: OddsQuery): Promise<ApiFootballOddsResponse> {
+    validateApiFootballOddsQuery(query);
+
+    const cacheStore = getApiFootballCacheStore();
+    const items: ApiFootballOddsRecord[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let pagesFetched = 0;
+
+    while (currentPage <= totalPages && pagesFetched < MAX_ODDS_PAGES) {
+      const cacheKey = buildApiFootballCacheKey("odds", {
+        fixtureId: query.fixtureId,
+        date: query.date,
+        leagueId: query.leagueId,
+        season: query.season,
+        bookmakerId: query.bookmakerId,
+        page: currentPage,
+      });
+      const cached = cacheStore.getSync<ApiFootballOddsPageEnvelope<ApiFootballOddsRecord[]>>(
+        cacheKey
+      );
+
+      let page: ApiFootballOddsPageEnvelope<ApiFootballOddsRecord[]>;
+      try {
+        page =
+          cached ??
+          (await this.requestOddsPage(buildApiFootballOddsPath(query, currentPage)));
+      } catch (error) {
+        if (pagesFetched > 0 && isApiFootballOddsPagingLimitError(error)) {
+          break;
+        }
+        throw error;
+      }
+
+      if (!cached) {
+        cacheStore.set(cacheKey, "odds", page);
+      }
+
+      items.push(...page.response);
+      pagesFetched += 1;
+
+      const paging = page.paging;
+      if (!paging || !Number.isInteger(paging.total) || paging.total <= 0) {
+        break;
+      }
+
+      totalPages = paging.total;
+      if (!Number.isInteger(paging.current) || paging.current >= paging.total) {
+        break;
+      }
+
+      currentPage = paging.current + 1;
+    }
+
+    return {
+      items,
+      paging: {
+        current: Math.min(currentPage, totalPages),
+        total: totalPages,
+      },
+      pagesFetched,
+    };
   }
 
   async getFixture(input: {
@@ -301,7 +413,25 @@ export class ApiFootballClient {
     });
   }
 
+  private async requestOddsPage(
+    path: string
+  ): Promise<ApiFootballOddsPageEnvelope<ApiFootballOddsRecord[]>> {
+    const envelope = await this.requestEnvelope<Array<Record<string, unknown>>>(path);
+    return {
+      response: envelope.response.map((item) => mapOddsRecord(item)),
+      paging: envelope.paging,
+    };
+  }
+
   private async request<T>(path: string): Promise<T> {
+    const envelope = await this.requestEnvelope<T>(path);
+    return envelope.response;
+  }
+
+  private async requestEnvelope<T>(path: string): Promise<{
+    response: T;
+    paging: ApiFootballOddsPaging | null;
+  }> {
     if (!this.apiKey) {
       throw new Error("API_FOOTBALL_KEY is not configured.");
     }
@@ -337,7 +467,7 @@ export class ApiFootballClient {
           throw new Error(`API-Football request failed: ${response.status}`);
         }
 
-        const payload = (await response.json()) as ApiFootballRawEnvelope<T>;
+        const payload = (await response.json()) as ApiFootballOddsRawEnvelope<T>;
         if (payload.errors) {
           const serialized = Array.isArray(payload.errors)
             ? payload.errors.join(", ")
@@ -347,7 +477,10 @@ export class ApiFootballClient {
           }
         }
 
-        return payload.response;
+        return {
+          response: payload.response,
+          paging: normalizeApiFootballOddsPaging(payload.paging),
+        };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         if (attempt < this.maxRetries - 1) {
@@ -498,6 +631,61 @@ function resolvePlanSeasonRestriction(
     parseApiFootballPlanSeasonRestriction(serialized) ??
     parsePlanSeasonRestrictionFromText(serialized)
   );
+}
+
+function mapOddsRecord(item: Record<string, unknown>): ApiFootballOddsRecord {
+  const league = item.league as Record<string, unknown>;
+  const fixture = item.fixture as Record<string, unknown>;
+  const bookmakers = (item.bookmakers as Array<Record<string, unknown>>) ?? [];
+
+  return {
+    league: {
+      id: league.id as number,
+      name: league.name as string,
+      country: (league.country as string) ?? null,
+      logo: (league.logo as string) ?? null,
+      flag: (league.flag as string) ?? null,
+      season: league.season as number,
+    },
+    fixture: {
+      id: fixture.id as number,
+      timezone: (fixture.timezone as string) ?? null,
+      date: String(fixture.date),
+      timestamp: (fixture.timestamp as number) ?? null,
+    },
+    update: String(item.update ?? ""),
+    bookmakers: bookmakers.map((bookmaker) => ({
+      id: bookmaker.id as number,
+      name: bookmaker.name as string,
+      bets: ((bookmaker.bets as Array<Record<string, unknown>>) ?? []).map((bet) => ({
+        id: bet.id as number,
+        name: bet.name as string,
+        values: ((bet.values as Array<Record<string, unknown>>) ?? []).map((value) => ({
+          value: String(value.value ?? ""),
+          odd: String(value.odd ?? ""),
+        })),
+      })),
+    })),
+  };
+}
+
+function normalizeApiFootballOddsPaging(
+  paging: ApiFootballOddsPaging | undefined
+): ApiFootballOddsPaging | null {
+  if (!paging) {
+    return null;
+  }
+  const current = Number(paging.current);
+  const total = Number(paging.total);
+  if (!Number.isInteger(current) || !Number.isInteger(total) || current <= 0 || total <= 0) {
+    return null;
+  }
+  return { current, total };
+}
+
+function isApiFootballOddsPagingLimitError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /page parameter/i.test(message);
 }
 
 function mapFixtureRecord(item: Record<string, unknown>): ApiFootballFixtureRecord {

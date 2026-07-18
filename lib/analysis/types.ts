@@ -153,6 +153,7 @@ export interface RecommendationSection {
 }
 
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
+import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
 
 /** 端到端分析報告 */
 export interface AnalysisReport {
@@ -166,6 +167,7 @@ export interface AnalysisReport {
   bettingIntelligence: BettingIntelligenceResult | null;
   decision: DecisionResult | null;
   teamProfiles?: MatchTeamProfilesSnapshot | null;
+  weightConfig?: WeightConfigSnapshotMetadata | null;
 }
 
 export type MarketSelectionInput = MarketSelection[];

@@ -12,6 +12,7 @@ import { getSchedulerConfig } from "@/lib/scheduler/schedulerConfig";
 import { listActiveSchedulerLocks } from "@/lib/scheduler/schedulerLock";
 import type { SchedulerStatusResponse } from "@/lib/scheduler/schedulerTypes";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import { countTrulyPendingVerification } from "@/lib/supabase/services/matchRecordPendingPolicy";
 
 function todayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
@@ -102,7 +103,7 @@ export async function getSchedulerStatus(
     todayMatches,
     analyzedMatches: dayRecords.length,
     validatedMatches: dayRecords.filter((record) => record.status === "VERIFIED").length,
-    pendingMatches: dayRecords.filter((record) => record.status === "PENDING").length,
+    pendingMatches: countTrulyPendingVerification(dayRecords),
     errors: errors.filter((entry) => entry.category === "scheduler").slice(0, 10),
     apiUsage,
     googleUsage: {

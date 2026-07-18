@@ -198,4 +198,9 @@ export const RATE_LIMIT_PRESETS = {
     windowMs: 60_000,
     maxRequests: 5,
   },
+  weightConfigAdmin: {
+    routeKey: "api:admin:weight-config",
+    windowMs: 60_000,
+    maxRequests: 10,
+  },
 } as const satisfies Record<string, RateLimitConfig>;

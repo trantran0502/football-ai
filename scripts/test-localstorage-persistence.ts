@@ -1,5 +1,6 @@
 import { analyzeMatch } from "../lib/analysis/analyzeMatch";
 import { resetBrowserHistoryRepository } from "../lib/database/browserHistoryRepository";
+import { setBrowserMatchStorageDepsForTests } from "../lib/database/browserMatchStorage";
 import {
   clearPersistedHistory,
   loadPersistedHistory,
@@ -66,11 +67,12 @@ const globalScope = globalThis as typeof globalThis & {
 
 globalScope.window = globalScope as Window & typeof globalThis;
 globalScope.localStorage = memoryStorage;
-globalScope.fetch = async () =>
-  new Response(JSON.stringify({ ok: false, message: "offline" }), {
-    status: 503,
-    headers: { "Content-Type": "application/json" },
-  });
+
+setBrowserMatchStorageDepsForTests({
+  loadFromSupabase: async () => null,
+  saveToSupabase: async () => null,
+  verifyOnSupabase: async () => null,
+});
 
 async function runTests(): Promise<void> {
   resetBrowserHistoryRepository();
@@ -81,13 +83,17 @@ async function runTests(): Promise<void> {
 
   assert(saveOutcome.status === "created", "first save should create a record");
   assert(saveOutcome.storage === "local", "fetch failure should fall back to local");
-  assert(saveOutcome.record.status === "PENDING", "new record should be pending");
-  assert(saveOutcome.record.result === null, "result should be null before verify");
+  if (!saveOutcome.record) {
+    throw new Error("created save should include record");
+  }
+  const savedRecord = saveOutcome.record;
+  assert(savedRecord.status === "PENDING", "new record should be pending");
+  assert(savedRecord.result === null, "result should be null before verify");
   assert(
-    saveOutcome.record.analysisSnapshot !== null,
+    savedRecord.analysisSnapshot !== null,
     "analysis snapshot should be saved"
   );
-  assert(saveOutcome.record.rawOdds === sample, "raw odds should be persisted");
+  assert(savedRecord.rawOdds === sample, "raw odds should be persisted");
 
   let loaded = await loadPersistedHistory();
   assert(loaded.stats.total === 1, "total should be 1 after save");
@@ -112,7 +118,7 @@ async function runTests(): Promise<void> {
     "home team should survive refresh"
   );
 
-  const verified = await verifyPersistedMatch(saveOutcome.record.id, {
+  const verified = await verifyPersistedMatch(savedRecord.id, {
     fullTimeHomeGoals: 2,
     fullTimeAwayGoals: 1,
     halfTimeHomeGoals: 1,
@@ -132,6 +138,7 @@ async function runTests(): Promise<void> {
   assert(afterVerify.stats.pending === 0, "pending should be 0 after verify");
   assert(afterVerify.stats.verified === 1, "verified should be 1 after verify");
 
+  setBrowserMatchStorageDepsForTests(null);
   console.log("LocalStorage persistence flow tests passed.");
 }
 

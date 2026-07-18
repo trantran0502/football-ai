@@ -70,10 +70,13 @@ export class HistoryRepository {
 
   saveMatch(input: SaveMatchInput): HistoricalMatchRecord {
     const outcome = this.saveMatchIfNew(input);
-    if (outcome.status === "duplicate") {
+    if (outcome.record) {
       return outcome.record;
     }
-    return outcome.record;
+    if (outcome.status === "incomplete_analysis_rejected") {
+      throw new Error(`Save rejected: ${outcome.reason}`);
+    }
+    throw new Error("Save rejected.");
   }
 
   saveMatchIfNew(input: SaveMatchInput): SaveMatchOutcome {

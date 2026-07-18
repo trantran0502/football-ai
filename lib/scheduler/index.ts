@@ -40,6 +40,29 @@ export {
   buildSchedulerPlaceholderOdds,
 } from "@/lib/scheduler/schedulerPlaceholderOdds";
 export {
+  resolveSchedulerFixturesToProduction,
+  buildOddsQueryFromSchedulerFixture,
+  type SchedulerOddsStats,
+  type SchedulerOddsIntegrationDeps,
+} from "@/lib/scheduler/schedulerOddsIntegration";
+export {
+  resolveSchedulerRawOdds,
+  resolveSchedulerRawOddsDetailed,
+  type SchedulerOddsResolverInput,
+  type SchedulerOddsResolverDeps,
+  type SchedulerOddsResolveOutcome,
+} from "@/lib/scheduler/schedulerOddsResolver";
+export {
+  isRealSchedulerOddsEnabled,
+  getSchedulerOddsSource,
+  shouldUseMockSchedulerOddsProvider,
+  shouldUseApiFootballSchedulerOddsProvider,
+  resolveSchedulerOddsProviderSource,
+  type SchedulerOddsProviderSource,
+  type SchedulerOddsSource,
+} from "@/lib/scheduler/schedulerOddsConfig";
+export { createSchedulerOddsProvider } from "@/lib/scheduler/schedulerOddsProvider";
+export {
   buildFixtureFilterStats,
   fetchFixturesByDate,
   filterAnalyzableFixtures,

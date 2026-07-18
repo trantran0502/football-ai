@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "decision-v3-replay-validation-v1",
+  "generatedAt": "2026-07-18T15:33:21.413Z",
+  "dataset": {
+    "totalRecords": 208,
+    "eligibleRecords": 3,
+    "excludedRecords": 205,
+    "exclusionReasons": {
+      "RAW_ODDS_UNPARSEABLE": 156,
+      "EVIDENCE_CAPTURED_AFTER_KICKOFF": 15,
+      "NOT_VERIFIED": 34
+    }
+  },
+  "legacy": {
+    "bets": 0,
+    "passes": 3,
+    "wins": 0,
+    "halfWins": 0,
+    "pushes": 0,
+    "halfLosses": 0,
+    "losses": 0,
+    "hitRate": 0,
+    "roi": 0,
+    "netUnits": 0,
+    "averageOdds": 0,
+    "maxDrawdown": 0
+  },
+  "decisionV3": {
+    "bets": 3,
+    "passes": 0,
+    "wins": 1,
+    "halfWins": 0,
+    "pushes": 0,
+    "halfLosses": 0,
+    "losses": 2,
+    "hitRate": 0.3333,
+    "roi": -0.35,
+    "netUnits": -1.05,
+    "averageOdds": 1.95,
+    "maxDrawdown": 1.05
+  },
+  "agreement": {
+    "directionAgreementRate": 0,
+    "marketAgreementRate": 0,
+    "confidenceAgreementRate": 0,
+    "candidateChangedRate": 1,
+    "overallAgreementRate": 0,
+    "legacyOnlyBetCount": 0,
+    "decisionOnlyBetCount": 3,
+    "bothBetCount": 0,
+    "bothPassCount": 0
+  },
+  "headToHead": {
+    "bothBetLegacyWonDecisionLost": 0,
+    "bothBetDecisionWonLegacyLost": 0,
+    "bothWon": 0,
+    "bothLost": 0,
+    "scoreDiffDistribution": {}
+  },
+  "grouped": {
+    "byMarketType": {
+      "moneyline": {
+        "sampleSize": 3,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      }
+    },
+    "byLeague": {
+      "Friendlies Clubs": {
+        "sampleSize": 2,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      },
+      "Liga Pro": {
+        "sampleSize": 1,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      }
+    },
+    "byDecisionLevel": {
+      "bet": {
+        "sampleSize": 3,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      }
+    },
+    "byConfidence": {
+      "high": {
+        "sampleSize": 3,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      }
+    },
+    "byEvidenceCompleteness": {
+      "1/3": {
+        "sampleSize": 3,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      }
+    },
+    "byProviderConfidence": {
+      "unknown": {
+        "sampleSize": 3,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      }
+    },
+    "byRuntimeWeightSource": {
+      "fallback": {
+        "sampleSize": 3,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      }
+    },
+    "byDataSource": {
+      "unknown": {
+        "sampleSize": 2,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      },
+      "mock": {
+        "sampleSize": 1,
+        "hitRate": 0,
+        "roi": 0,
+        "netUnits": 0,
+        "status": "insufficient_sample"
+      }
+    }
+  },
+  "leakageAudit": {
+    "checked": 18,
+    "passed": 3,
+    "excluded": 15,
+    "violationsByReason": {
+      "EVIDENCE_CAPTURED_AFTER_KICKOFF": 15
+    }
+  },
+  "verdict": "INSUFFICIENT_DATA",
+  "verdictNotes": [
+    "Eligible records (3) below minimum threshold of 100."
+  ],
+  "options": {
+    "includeMockFixtures": false,
+    "flatStake": 1,
+    "assumedKickoffHourUtc": 15
+  }
+}

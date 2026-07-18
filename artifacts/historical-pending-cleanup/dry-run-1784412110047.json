@@ -1,0 +1,234 @@
+{
+  "generatedAt": "2026-07-18T22:01:50.047Z",
+  "mode": "dry_run",
+  "dryRun": true,
+  "pendingLoadSummary": {
+    "pagesLoaded": 1,
+    "retriesUsed": 1,
+    "pendingRecordsLoaded": 34,
+    "duplicateIdsIgnored": 0,
+    "pageSize": 50
+  },
+  "plan": {
+    "generatedAt": "2026-07-18T22:01:19.529Z",
+    "retryCandidateIds": [
+      "b8079e1c-56f3-434d-a2f4-a3fcebf6bb49",
+      "20fa2f82-4eee-48a8-8c4c-794aa491bf70",
+      "835ee335-c2b5-4484-ad5e-a5f631959967",
+      "7239a6a6-ea20-47c0-9e2e-560135719a10",
+      "6f214e8a-57de-4f64-9f8e-10dd1e8ffa5e",
+      "8debebbd-3e47-4e6e-bc5e-e457f826ddbc"
+    ],
+    "legacyExclusionCandidateIds": [
+      "0473c335-6d34-4656-8d53-a68d389cee10",
+      "ee637b4f-e4ed-4771-8fd2-8baef8eba946",
+      "2af31308-6e46-4a7b-bc36-3780c28d986a",
+      "ab6a1a9d-e772-4ccc-8f78-3b47cde2a325",
+      "6c5b6b0b-1777-4012-85f5-9ff4432dcc6c",
+      "6a376162-ffe4-464e-9fff-4d8766582aac",
+      "bf46af8d-8216-4f81-acf1-ada1396d0176",
+      "afcdf2f0-5ef0-4c9f-bc50-66c86449b11d",
+      "09729379-69b8-4f6b-a4f0-c28a5c20a679",
+      "0724dece-e3dc-4b9e-b1d7-17809e96288c",
+      "d2540f8a-a4fb-497c-8c78-fbca35bcd9fa",
+      "a751fd34-c9d0-4bb5-af77-2af50ef9cced",
+      "b4397e94-b998-4fc1-a0e9-c610adad3cf9",
+      "dbd64cd7-7eeb-470b-a3b6-e305dc561926",
+      "cb6f2a8b-b485-4f50-ae3f-74bbb0214766",
+      "bcde6604-5715-4eb5-b968-0e145155026e",
+      "ff55aa5c-810e-4141-a9db-32ade8c814ed",
+      "0a8126f3-c5f8-4037-ad61-a6304462c3ad",
+      "947ba348-f24d-4f09-859b-9dbdc83fa433",
+      "39c84a6c-12d3-4fb2-8f5b-c547ffdac5a4",
+      "075905f1-35af-40c0-9194-2d8b09b46561",
+      "555d379b-9aae-424e-b387-7a7c6d5755e0",
+      "baffa62f-da4c-4270-bab1-ebcac05767ff",
+      "62047f0f-73f8-4b00-a9b7-47e4af808ae2",
+      "9759fd9d-af6a-476e-8ded-e740d6de422a",
+      "391d6f34-aec3-429c-b128-4cbeaa43ed5e",
+      "184ecd81-1ea7-49b9-906d-7032f8b4553d",
+      "121c05fa-0ef6-4fcf-b9be-d2bf6cc2ff68"
+    ],
+    "otherPendingRecordIds": []
+  },
+  "verificationAttempts": [
+    {
+      "recordId": "b8079e1c-56f3-434d-a2f4-a3fcebf6bb49",
+      "fixtureId": 1593668,
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "20fa2f82-4eee-48a8-8c4c-794aa491bf70",
+      "fixtureId": 1490326,
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "835ee335-c2b5-4484-ad5e-a5f631959967",
+      "fixtureId": 1517309,
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "7239a6a6-ea20-47c0-9e2e-560135719a10",
+      "fixtureId": 1554430,
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "6f214e8a-57de-4f64-9f8e-10dd1e8ffa5e",
+      "fixtureId": 1554423,
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "8debebbd-3e47-4e6e-bc5e-e457f826ddbc",
+      "fixtureId": 1541640,
+      "status": "skipped",
+      "message": "dry_run"
+    }
+  ],
+  "exclusionAttempts": [
+    {
+      "recordId": "0473c335-6d34-4656-8d53-a68d389cee10",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "ee637b4f-e4ed-4771-8fd2-8baef8eba946",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "2af31308-6e46-4a7b-bc36-3780c28d986a",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "ab6a1a9d-e772-4ccc-8f78-3b47cde2a325",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "6c5b6b0b-1777-4012-85f5-9ff4432dcc6c",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "6a376162-ffe4-464e-9fff-4d8766582aac",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "bf46af8d-8216-4f81-acf1-ada1396d0176",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "afcdf2f0-5ef0-4c9f-bc50-66c86449b11d",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "09729379-69b8-4f6b-a4f0-c28a5c20a679",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "0724dece-e3dc-4b9e-b1d7-17809e96288c",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "d2540f8a-a4fb-497c-8c78-fbca35bcd9fa",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "a751fd34-c9d0-4bb5-af77-2af50ef9cced",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "b4397e94-b998-4fc1-a0e9-c610adad3cf9",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "dbd64cd7-7eeb-470b-a3b6-e305dc561926",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "cb6f2a8b-b485-4f50-ae3f-74bbb0214766",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "bcde6604-5715-4eb5-b968-0e145155026e",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "ff55aa5c-810e-4141-a9db-32ade8c814ed",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "0a8126f3-c5f8-4037-ad61-a6304462c3ad",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "947ba348-f24d-4f09-859b-9dbdc83fa433",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "39c84a6c-12d3-4fb2-8f5b-c547ffdac5a4",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "075905f1-35af-40c0-9194-2d8b09b46561",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "555d379b-9aae-424e-b387-7a7c6d5755e0",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "baffa62f-da4c-4270-bab1-ebcac05767ff",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "62047f0f-73f8-4b00-a9b7-47e4af808ae2",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "9759fd9d-af6a-476e-8ded-e740d6de422a",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "391d6f34-aec3-429c-b128-4cbeaa43ed5e",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "184ecd81-1ea7-49b9-906d-7032f8b4553d",
+      "status": "skipped",
+      "message": "dry_run"
+    },
+    {
+      "recordId": "121c05fa-0ef6-4fcf-b9be-d2bf6cc2ff68",
+      "status": "skipped",
+      "message": "dry_run"
+    }
+  ]
+}

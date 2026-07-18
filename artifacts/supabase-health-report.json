@@ -1,15 +1,15 @@
 {
   "version": "v1",
-  "startedAt": "2026-07-17T10:11:11.892Z",
-  "completedAt": "2026-07-17T10:11:21.214Z",
-  "durationMs": 9322,
+  "startedAt": "2026-07-18T01:10:12.637Z",
+  "completedAt": "2026-07-18T01:10:24.032Z",
+  "durationMs": 11395,
   "overallStatus": "MANUAL ACTION REQUIRED",
   "rootCauses": [
     "Connection failed: TypeError: fetch failed"
   ],
   "migrationStatus": "PASS",
   "localCrudStatus": "NOT TESTABLE",
-  "productionCrudStatus": "FAIL",
+  "productionCrudStatus": "PASS",
   "rlsStatus": "NOT TESTABLE",
   "manualActionRequired": true,
   "manualSteps": [],
@@ -41,8 +41,8 @@
     },
     {
       "name": "Production Supabase connection",
-      "status": "FAIL",
-      "evidence": "status=200 connected=undefined"
+      "status": "PASS",
+      "evidence": "status=200 connected=true"
     },
     {
       "name": "Migration file 001_initial_p0.sql",
@@ -86,6 +86,11 @@
     },
     {
       "name": "Migration file 009_schema_recovery_verify.sql",
+      "status": "PASS",
+      "evidence": "present in repo"
+    },
+    {
+      "name": "Migration file 010_weight_config_versions.sql",
       "status": "PASS",
       "evidence": "present in repo"
     }

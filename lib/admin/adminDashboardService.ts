@@ -1,7 +1,9 @@
 import type {
+  AdminDashboardMetadata,
   AdminDashboardResponse,
   AdminDailySummaryPayload,
   AdminSystemSnapshotPayload,
+  AdminSystemSnapshotRecord,
 } from "@/lib/admin/adminDashboardTypes";
 import { buildBettingIntelligenceDashboardMetrics } from "@/lib/admin/bettingDashboardMetrics";
 import { buildDecisionDashboardMetrics } from "@/lib/decision/decisionDashboardMetrics";
@@ -12,9 +14,15 @@ import {
 } from "@/lib/admin/adminDailyAggregation";
 import {
   countDailySummariesInSupabase,
-  getSystemSnapshotFromStore,
+  getSystemSnapshotRecordFromStore,
   listDailySummariesFromStore,
 } from "@/lib/admin/adminDashboardStore";
+import {
+  ADMIN_DASHBOARD_SNAPSHOT_MAX_AGE_MS,
+  buildLiveAdminSystemSnapshot,
+  isSystemSnapshotFresh,
+  type BuildLiveAdminSystemSnapshotDeps,
+} from "@/lib/admin/adminDashboardLiveQuery";
 import { loadRecentAdminErrorsFromSupabase } from "@/lib/admin/adminErrorLog";
 import { loadAdminMatchRecords } from "@/lib/admin/adminRecordLoader";
 import { buildLearningEngineReport } from "@/lib/learning/learningEngine";
@@ -143,15 +151,72 @@ function emptySystemSnapshot(): AdminSystemSnapshotPayload {
     analysis: {
       pendingCount: 0,
       verifiedCount: 0,
+      anomalyCount: 0,
     },
   };
+}
+
+export interface ResolveAdminSystemSnapshotDeps {
+  getSystemSnapshotRecord?: () => Promise<AdminSystemSnapshotRecord | null>;
+  buildLiveSnapshot?: (
+    now: Date,
+    deps?: BuildLiveAdminSystemSnapshotDeps
+  ) => Promise<AdminSystemSnapshotPayload>;
+  snapshotMaxAgeMs?: number;
+  liveSnapshotDeps?: BuildLiveAdminSystemSnapshotDeps;
+}
+
+export async function resolveAdminSystemSnapshot(
+  now = new Date(),
+  deps: ResolveAdminSystemSnapshotDeps = {}
+): Promise<{
+  snapshot: AdminSystemSnapshotPayload;
+  metadata: AdminDashboardMetadata;
+}> {
+  const getRecord = deps.getSystemSnapshotRecord ?? getSystemSnapshotRecordFromStore;
+  const buildLive = deps.buildLiveSnapshot ?? buildLiveAdminSystemSnapshot;
+  const maxAgeMs = deps.snapshotMaxAgeMs ?? ADMIN_DASHBOARD_SNAPSHOT_MAX_AGE_MS;
+
+  try {
+    const record = await getRecord();
+    if (record && isSystemSnapshotFresh(record.updatedAt, now, maxAgeMs)) {
+      return {
+        snapshot: record.payload,
+        metadata: {
+          dataSource: "snapshot",
+          snapshotTime: record.updatedAt,
+        },
+      };
+    }
+  } catch {
+    // Fall through to live query.
+  }
+
+  try {
+    const liveSnapshot = await buildLive(now, deps.liveSnapshotDeps);
+    return {
+      snapshot: liveSnapshot,
+      metadata: {
+        dataSource: "live",
+        snapshotTime: null,
+      },
+    };
+  } catch {
+    return {
+      snapshot: emptySystemSnapshot(),
+      metadata: {
+        dataSource: "live",
+        snapshotTime: null,
+      },
+    };
+  }
 }
 
 export async function buildAdminDashboardResponse(
   now = new Date()
 ): Promise<AdminDashboardResponse> {
   const summaries = await listDailySummariesFromStore();
-  const snapshot = (await getSystemSnapshotFromStore()) ?? emptySystemSnapshot();
+  const { snapshot, metadata } = await resolveAdminSystemSnapshot(now);
   const today = todayKey(now);
   const todaySummary =
     summaries.find((summary) => summary.summaryDate === today) ?? null;
@@ -182,6 +247,7 @@ export async function buildAdminDashboardResponse(
 
   return {
     generatedAt: now.toISOString(),
+    metadata,
     system: snapshot.system,
     analysis: {
       analyzedToday: todaySummary?.analyzedCount ?? 0,
@@ -189,6 +255,7 @@ export async function buildAdminDashboardResponse(
       passToday: todaySummary?.passCount ?? 0,
       pendingCount: snapshot.analysis.pendingCount,
       verifiedCount: snapshot.analysis.verifiedCount,
+      anomalyCount: snapshot.analysis.anomalyCount ?? 0,
     },
     performance: {
       roiToday: todaySummary?.roi ?? 0,

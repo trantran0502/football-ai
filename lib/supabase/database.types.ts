@@ -21,6 +21,8 @@ import type {
 } from "@/lib/recommendation/recommendationLearningTypes";
 import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
 import type { ReplayProviderRecommendationDiagnostic } from "@/lib/replay/replayTypes";
+import type { FeatureProviderKey } from "@/lib/providers/registry/types";
+import type { WeightConfigStatus } from "@/lib/recommendation/weightConfigTypes";
 
 export interface MatchRecordRow {
   id: string;
@@ -189,6 +191,32 @@ export interface RecommendationLearningInsert {
   updated_at: string;
 }
 
+export interface WeightConfigVersionRow {
+  id: string;
+  version: number;
+  status: WeightConfigStatus;
+  provider_weights: Record<FeatureProviderKey, number>;
+  market_blend_weight: number;
+  source_report_snapshot: Record<string, unknown>;
+  created_by: string;
+  created_at: string;
+  applied_at: string | null;
+  archived_at: string | null;
+}
+
+export interface WeightConfigVersionInsert {
+  id?: string;
+  version: number;
+  status: WeightConfigStatus;
+  provider_weights: Record<FeatureProviderKey, number>;
+  market_blend_weight: number;
+  source_report_snapshot?: Record<string, unknown>;
+  created_by?: string;
+  created_at?: string;
+  applied_at?: string | null;
+  archived_at?: string | null;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -231,6 +259,12 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      weight_config_versions: {
+        Row: WeightConfigVersionRow;
+        Insert: WeightConfigVersionInsert;
+        Update: Partial<WeightConfigVersionInsert>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

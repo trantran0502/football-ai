@@ -17,8 +17,10 @@ import type { ReplaySnapshot } from "@/lib/replay/replayTypes";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type { BettingIntelligenceResult } from "@/lib/betting/intelligenceTypes";
 import type { DecisionResult } from "@/lib/decision/decisionTypes";
+import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
 import { buildReplaySnapshotFromReport } from "@/lib/replay/replayBuilder";
 import type { MarketSelection } from "@/types/match";
+import { countTrulyPendingVerification } from "@/lib/supabase/services/matchRecordPendingPolicy";
 
 /** 歷史比賽唯一識別 */
 export type HistoricalMatchId = string;
@@ -33,6 +35,19 @@ export type MatchWinner = "home" | "away" | "draw";
  * 完整 Analysis Engine 輸出快照。
  * 保存所有分析欄位，供未來回測使用。
  */
+export interface AnalysisDataCompletenessMetadata {
+  analysisEnriched?: boolean;
+  analysisEnrichedAt?: string;
+  enrichedFrom?: string;
+}
+
+export interface AnalysisPendingPolicyMetadata {
+  excluded: true;
+  reason: string;
+  excludedAt: string;
+  source: string;
+}
+
 export interface AnalysisSnapshot {
   features: AnalysisFeature[];
   interpretations: MarketInterpretation[];
@@ -44,6 +59,9 @@ export interface AnalysisSnapshot {
   bettingIntelligence: BettingIntelligenceResult | null;
   decision: DecisionResult | null;
   teamProfiles?: MatchTeamProfilesSnapshot | null;
+  weightConfig?: WeightConfigSnapshotMetadata | null;
+  dataCompleteness?: AnalysisDataCompletenessMetadata;
+  pendingPolicy?: AnalysisPendingPolicyMetadata;
   capturedAt: string;
 }
 
@@ -91,6 +109,7 @@ export interface HistoricalMatchRecord {
   awayTeamId?: number | null;
   createdAt: string;
   updatedAt: string;
+  source?: string;
 }
 
 export interface MatchHistoryStats {
@@ -123,7 +142,18 @@ export interface SaveMatchInput {
 
 export type SaveMatchOutcome =
   | { status: "created"; record: HistoricalMatchRecord }
-  | { status: "duplicate"; record: HistoricalMatchRecord };
+  | { status: "duplicate"; record: HistoricalMatchRecord }
+  | { status: "enriched"; record: HistoricalMatchRecord }
+  | {
+      status: "incomplete_analysis_rejected";
+      record: HistoricalMatchRecord | null;
+      reason: "oddsMissing" | "settleableMarketMissing" | "analysisSnapshotMissing";
+    }
+  | {
+      status: "conflicting_record";
+      record: HistoricalMatchRecord;
+      reason: string;
+    };
 
 /** 更新賽果時的輸入（進球數為原始資料，其餘欄位由 repository 衍生） */
 export interface UpdateMatchResultInput {
@@ -174,6 +204,7 @@ export function createAnalysisSnapshotFromReport(
     bettingIntelligence: report.bettingIntelligence ?? null,
     decision: report.decision ?? null,
     teamProfiles: report.teamProfiles ?? null,
+    weightConfig: report.weightConfig ?? report.recommendation?.result?.weightConfig ?? null,
     capturedAt,
   };
 
@@ -221,7 +252,7 @@ export function buildMatchHistoryStats(
 ): MatchHistoryStats {
   const stats: MatchHistoryStats = {
     total: records.length,
-    pending: 0,
+    pending: countTrulyPendingVerification(records),
     verified: 0,
     failed: 0,
     cancelled: 0,
@@ -229,9 +260,6 @@ export function buildMatchHistoryStats(
 
   for (const record of records) {
     switch (record.status) {
-      case "PENDING":
-        stats.pending += 1;
-        break;
       case "VERIFIED":
         stats.verified += 1;
         break;

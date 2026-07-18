@@ -42,7 +42,9 @@ async function runTests(): Promise<void> {
 
   const saved = await saveMatchInMemory(SAMPLE_ODDS, report, MATCH_DATE);
   assert(saved.status === "created", "should create match with replay snapshot");
-
+  if (!saved.record) {
+    throw new Error("created save should include record");
+  }
   const record = saved.record;
   const snapshot = record.analysisSnapshot?.replay;
   if (!snapshot) {

@@ -33,6 +33,11 @@ import {
   integrateEvidenceForSelection,
   integrateEvidenceGlobally,
 } from "@/lib/evidence/evidenceIntegration";
+import {
+  buildFallbackWeightConfig,
+  buildWeightConfigSnapshotMetadata,
+} from "@/lib/recommendation/weightConfigRuntime";
+import type { LoadedRuntimeWeightConfig } from "@/lib/recommendation/weightConfigTypes";
 import type { MarketSelection } from "@/types/match";
 
 const SUPPORTED_MARKET_TYPES = new Set([
@@ -68,10 +73,22 @@ export function generateRecommendations(
   options: RecommendationEngineOptions & {
     providerAudit?: ProviderResolutionAudit | null;
     evidenceReport?: RecommendationEngineInput["evidenceReport"];
+    runtimeWeightConfig?: LoadedRuntimeWeightConfig | null;
   } = {}
 ): RecommendationEngineResult {
+  const runtimeWeightConfig =
+    options.runtimeWeightConfig ??
+    ({
+      ...buildFallbackWeightConfig(),
+      loadedAt: new Date().toISOString(),
+    } satisfies LoadedRuntimeWeightConfig);
+
   const weighting = options.providerAudit
-    ? computeProviderWeighting(fusion, options.providerAudit)
+    ? computeProviderWeighting(
+        fusion,
+        options.providerAudit,
+        runtimeWeightConfig.providerWeights
+      )
     : null;
   const effectiveFusion = weighting
     ? applyProviderWeightingToFusion(fusion, weighting)
@@ -94,7 +111,8 @@ export function generateRecommendations(
         fusionWarnings,
         passGate.reason,
         marketAnalysisByType,
-        options.evidenceReport ?? null
+        options.evidenceReport ?? null,
+        runtimeWeightConfig.marketBlendWeight
       )
     );
 
@@ -111,6 +129,7 @@ export function generateRecommendations(
     evidenceConfidence: globalEvidence.evidenceConfidence,
     evidenceSummary: globalEvidence.evidenceSummary,
     evidenceBreakdown: globalEvidence.evidenceBreakdown,
+    weightConfig: buildWeightConfigSnapshotMetadata(runtimeWeightConfig),
   };
 }
 
@@ -138,7 +157,8 @@ function buildCandidate(
   fusionWarnings: string[],
   passReason: string | null,
   marketAnalysisByType: ReturnType<typeof buildMarketAnalysisIndex>,
-  evidenceReport: RecommendationEngineInput["evidenceReport"]
+  evidenceReport: RecommendationEngineInput["evidenceReport"],
+  marketBlendWeight: number
 ): RecommendationCandidate {
   const direction = directionalMultiplier(selection.side, selection.marketType);
   const scored = scoreSelection(selection, fusion, direction, weighting?.normalizedWeights ?? null);
@@ -147,6 +167,7 @@ function buildCandidate(
     featureScore: scored.score,
     marketAnalysisByType,
     globalPass,
+    marketBlendWeight,
   });
   const marketScore = globalPass ? 0 : clampScore(marketAdjusted.blendedScore);
   const evidenceIntegration = integrateEvidenceForSelection(

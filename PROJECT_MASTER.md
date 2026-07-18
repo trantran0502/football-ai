@@ -4,10 +4,10 @@ Project Name:
 Football AI
 
 Current Version:
-v1.0.0
+v1.0 Beta
 
 Status:
-Stable
+READY FOR DATA COLLECTION
 
 Release:
 PASS
@@ -48,6 +48,10 @@ Phase 2
 Real Data Integration
 🟨 In Progress
 
+Phase 2-A
+Real Scheduler Odds Integration
+✅ COMPLETED / SEALED
+
 Phase 3
 Evidence Engine
 ✅ Completed
@@ -86,6 +90,19 @@ AI Learning
 Phase 5
 Website Enhancement
 🟨 In Progress
+
+Phase 3-6
+Operations Dashboard (v1.0 Beta)
+✅ COMPLETED / SEALED
+
+v1.0 Beta
+Core Development Complete
+✅ READY FOR DATA COLLECTION
+
+After v1.0 Beta:
+- Stop adding core features
+- Focus on data collection and replay validation
+- Do not promote Decision V3 to Production primary without Phase 3-4.5 evidence
 
 ==================================
 
@@ -156,6 +173,96 @@ Completed
 - Historical Fundamentals Backtest v1
 - Full Production Health Check v1 (PARTIAL PASS — see HEALTH_CHECK_REPORT.md)
 - Supabase Recovery v1 (Local CRUD PASS — see SUPABASE_HEALTH_REPORT.md)
+- Phase 2-A — Real Scheduler Odds Integration (SEALED — see docs/SCHEDULER_ODDS_RUNBOOK.md)
+- Phase 3-0 — Evidence/Decision V3 Architecture Design (SEALED)
+- Phase 3-1 — Evidence V3 Shadow Mode (SEALED)
+- Phase 3-2 — Decision V3 Read-Only Shadow (SEALED)
+- Phase 3-3 — Decision Weight Bridge (SEALED)
+- Phase 3-4 — Dual-Write Scoring (SEALED)
+- Phase 3-4.5 — Replay Validation (SEALED — INSUFFICIENT_DATA pending real match records)
+- Phase 3-6 — Operations Dashboard (SEALED — `/admin/operations`)
+- Data Completeness Guard — Daily Analysis enrichment for incomplete historical backfill rows (see docs/REPLAY_DATA_SOURCE_POLICY.md)
+
+Replay data source policy:
+docs/REPLAY_DATA_SOURCE_POLICY.md
+
+==================================
+
+Phase 2-A — Real Scheduler Odds Integration
+
+Status:
+COMPLETED / SEALED
+
+Suggested tag:
+v2.0-scheduler-odds
+
+Runbook:
+docs/SCHEDULER_ODDS_RUNBOOK.md
+
+1. Final data flow
+
+SchedulerFixtureSource
+→ OddsQuery
+→ SchedulerOddsResolver
+→ OddsProvider
+→ ApiFootballOddsAdapter
+→ OddsData[]
+→ SchedulerRawOddsFormatter
+→ rawOdds
+→ ProductionFixture
+→ analyzeMatch()
+
+2. Production enable
+
+USE_REAL_SCHEDULER_ODDS=true
+SCHEDULER_ODDS_SOURCE=api-football
+
+Optional:
+
+SCHEDULER_ODDS_BOOKMAKER_ID=8
+
+3. Rollback
+
+USE_REAL_SCHEDULER_ODDS=false
+
+(No rebuild, redeploy, or DB migration required.)
+
+4. Observability
+
+schedulerOdds:
+{
+  source,
+  total,
+  resolved,
+  fallback,
+  providerErrors
+}
+
+Recorded in daily scheduler execution log context. Does not log API keys, full odds, marketSelections, or bookmaker details.
+
+5. Production Proof
+
+date: 2026-07-18
+fixtureId: 1490329
+source: api-football
+resolved: 1
+fallback: 0
+providerErrors: 0
+isPlaceholder: false
+analyzeMatchPassed: true
+
+Command: `npm run test:scheduler-odds:production-proof`
+
+6. Known limitations
+
+- API-Football Free plan quota
+- Minute request limit (10/min in-process gate)
+- After provider blocked in one scheduler run, remaining fixtures in that run fallback to placeholder
+- Per-fixture lookup may add API requests (fixture metadata for team names)
+- Bookmaker is single deterministic selection (no consensus)
+- No persistent odds cache yet
+- Gemini health optional — credits depleted is non-blocking for this phase
+- Supabase health issues, if still present, are pre-existing environment issues (see HEALTH_CHECK_REPORT.md)
 
 ==================================
 
@@ -225,6 +332,34 @@ Production Verification (v1):
 
 ==================================
 
+Phase 3-6 — Operations Dashboard (v1.0 Beta)
+
+Status:
+✅ COMPLETED / SEALED
+
+Route:
+- `/admin/operations`
+
+Purpose:
+- Read-only monitoring dashboard for production operations
+- Does NOT modify Recommendation, Decision, Learning, Replay, Scheduler, Parser, Weight, or Evidence
+
+Sections:
+- Scheduler (today fixtures, success/failure, next run)
+- Production (Legacy / Decision Shadow / Agreement %)
+- Replay (Eligible, VERIFIED total, replay verdict)
+- Provider (API-Football quota, Google Search, Supabase, Scheduler health)
+- Decision (Shadow ON/OFF, Weight Version, Runtime/Fallback)
+- Evidence (Catalog Version, supported IDs, shadow status)
+- System (Version, Git Commit, Build, Last Validation, Environment)
+
+Data sources (read-only):
+- `getSchedulerStatus()`, `buildAdminDashboardResponse()`, `loadAdminMatchRecords()`
+- Artifacts: `artifacts/decision-v3-replay-validation.json`, `artifacts/health-check-report.json`, `artifacts/system-validation-report.json`
+- Env flags: `USE_EVIDENCE_V3_SHADOW`, `USE_DECISION_V3_SHADOW`, `RECOMMENDATION_DUAL_WRITE`
+
+==================================
+
 Historical Data Policy
 
 - Historical fundamentals may be used for backtesting
@@ -243,7 +378,14 @@ Current Blocker
 
 Next Task
 
-Phase 2
+v1.0 Beta — Data Collection
+
+- Accumulate VERIFIED match records in Supabase via Scheduler
+- Re-run `npm run validate:decision-v3-replay` when eligible records >= 100
+- Monitor via `/admin/operations`
+- Do NOT promote Decision V3 to Production primary without replay validation evidence
+
+Previous focus (Phase 2):
 
 Real Data Integration
 

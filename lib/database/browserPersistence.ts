@@ -14,7 +14,7 @@ import type {
 import type { StorageHealth } from "@/lib/storage/storageStatus";
 
 /**
- * 瀏覽器端持久化：Supabase 優先，失敗才寫入 LocalStorage。
+ * 瀏覽器端持久化：Production 必須寫入 Supabase；Development 才允許 LocalStorage fallback。
  */
 export async function persistAnalysisToHistory(
   rawOdds: string,

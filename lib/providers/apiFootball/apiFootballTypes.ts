@@ -4,7 +4,8 @@ export type ApiFootballCacheCategory =
   | "teamStatistics"
   | "h2h"
   | "injuries"
-  | "teamForm";
+  | "teamForm"
+  | "odds";
 
 export const API_FOOTBALL_CACHE_TTL_MS: Record<ApiFootballCacheCategory, number> = {
   fixture: 6 * 60 * 60 * 1000,
@@ -13,6 +14,7 @@ export const API_FOOTBALL_CACHE_TTL_MS: Record<ApiFootballCacheCategory, number>
   h2h: 24 * 60 * 60 * 1000,
   injuries: 2 * 60 * 60 * 1000,
   teamForm: 6 * 60 * 60 * 1000,
+  odds: 60 * 60 * 1000,
 };
 
 export interface ApiFootballTeamRef {

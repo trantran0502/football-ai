@@ -2,7 +2,6 @@ import type { AnalysisReport } from "@/lib/analysis/types";
 import type { ProductionFixture } from "@/lib/production/productionTypes";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
 import type { SchedulerFixtureSource } from "@/lib/scheduler/schedulerTypes";
-import { buildSchedulerPlaceholderOdds } from "@/lib/scheduler/schedulerPlaceholderOdds";
 
 export interface FixtureMappingSkip {
   fixtureId: number | null;
@@ -80,7 +79,6 @@ export function mapApiFixtureToSchedulerSource(
     homeTeamId: fixture.homeTeamId,
     awayTeamId: fixture.awayTeamId,
     status: fixture.status,
-    rawOdds: buildSchedulerPlaceholderOdds(homeTeam, awayTeam),
   };
 }
 
@@ -109,6 +107,10 @@ export function intakeApiFixtures(
 }
 
 export function toProductionFixture(source: SchedulerFixtureSource): ProductionFixture {
+  if (!source.rawOdds?.trim()) {
+    throw new Error(`Missing rawOdds for fixture ${source.fixtureId}`);
+  }
+
   return {
     matchDate: source.matchDate,
     league: source.leagueName,
@@ -121,7 +123,7 @@ export function toProductionFixture(source: SchedulerFixtureSource): ProductionF
     awayTeam: source.awayTeam,
     homeTeamId: source.homeTeamId,
     awayTeamId: source.awayTeamId,
-    rawOdds: source.rawOdds ?? buildSchedulerPlaceholderOdds(source.homeTeam, source.awayTeam),
+    rawOdds: source.rawOdds,
   };
 }
 

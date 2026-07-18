@@ -90,15 +90,39 @@ export async function createMatchRecordViaApi(
     });
     const payload = await parseJsonResponse<MatchRecordsApiWriteResponse>(response);
 
-    if (!response.ok || !payload.ok || !payload.data || !payload.status) {
+    if (!response.ok || !payload.ok || !payload.status) {
       return null;
     }
 
-    return {
-      status: payload.status,
+    if (!payload.data) {
+      return null;
+    }
+
+    const base = {
       record: payload.data,
-      storage: "supabase",
+      storage: "supabase" as const,
     };
+
+    switch (payload.status) {
+      case "created":
+      case "duplicate":
+      case "enriched":
+        return { status: payload.status, ...base };
+      case "incomplete_analysis_rejected":
+        return {
+          status: payload.status,
+          reason: "oddsMissing",
+          ...base,
+        };
+      case "conflicting_record":
+        return {
+          status: payload.status,
+          reason: "Conflicting record.",
+          ...base,
+        };
+      default:
+        return null;
+    }
   } catch {
     return null;
   }

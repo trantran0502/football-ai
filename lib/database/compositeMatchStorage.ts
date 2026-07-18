@@ -2,7 +2,6 @@ import type { AnalysisReport } from "@/lib/analysis/types";
 import type {
   HistoricalMatchRecord,
   MatchHistoryStats,
-  SaveMatchInput,
   SaveMatchOutcome,
   UpdateMatchResultInput,
 } from "@/lib/database/matchSchema";
@@ -33,31 +32,9 @@ function isBrowserClient(): boolean {
   return typeof window !== "undefined";
 }
 
-function saveMatchIfNewLocally(input: SaveMatchInput): SaveMatchOutcome {
-  return getBrowserHistoryRepository().saveMatchIfNew(input);
-}
-
-function loadMatchHistoryLocally(): {
-  matches: HistoricalMatchRecord[];
-  stats: MatchHistoryStats;
-} {
-  const repository = getBrowserHistoryRepository();
-  return {
-    matches: repository.getAllMatches(),
-    stats: repository.getStats(),
-  };
-}
-
-function verifyMatchLocally(
-  matchId: string,
-  input: UpdateMatchResultInput
-): HistoricalMatchRecord | null {
-  return getBrowserHistoryRepository().verifyMatch(matchId, input);
-}
-
 /**
- * Browser clients persist locally only (RC2).
- * Protected Supabase writes must go through admin-authenticated API routes or server jobs.
+ * Browser clients read/write Supabase via server actions.
+ * LocalStorage fallback is allowed only outside production.
  */
 export async function saveMatchFromAnalysisComposite(
   rawOdds: string,
@@ -72,24 +49,10 @@ export async function saveMatchFromAnalysisComposite(
     return saveMatchFromAnalysisServerSide(rawOdds, report);
   }
 
-  const matchDate = new Date().toISOString().split("T")[0];
-  const outcome = saveMatchIfNewLocally({
-    date: matchDate,
-    matchDate,
-    league: report.match.league ?? "",
-    homeTeam: report.match.homeTeam,
-    awayTeam: report.match.awayTeam,
-    rawOdds,
-    marketSelections: report.markets,
-    analysis: report,
-    candidates: report.candidates,
-    status: "PENDING",
-  });
-
-  return {
-    ...outcome,
-    storage: "local",
-  };
+  const { saveMatchFromAnalysisForBrowser } = await import(
+    "@/lib/database/browserMatchStorage"
+  );
+  return saveMatchFromAnalysisForBrowser(rawOdds, report);
 }
 
 export async function loadMatchHistoryComposite(): Promise<MatchHistoryLoadResult> {
@@ -100,11 +63,8 @@ export async function loadMatchHistoryComposite(): Promise<MatchHistoryLoadResul
     return loadMatchHistoryServerSide();
   }
 
-  const local = loadMatchHistoryLocally();
-  return {
-    ...local,
-    storage: "local",
-  };
+  const { loadMatchHistoryForBrowser } = await import("@/lib/database/browserMatchStorage");
+  return loadMatchHistoryForBrowser();
 }
 
 export async function verifyMatchComposite(
@@ -118,11 +78,8 @@ export async function verifyMatchComposite(
     return verifyMatchServerSide(matchId, input);
   }
 
-  const localRecord = verifyMatchLocally(matchId, input);
-  return {
-    record: localRecord,
-    storage: localRecord ? "local" : "failed",
-  };
+  const { verifyMatchForBrowser } = await import("@/lib/database/browserMatchStorage");
+  return verifyMatchForBrowser(matchId, input);
 }
 
 export function clearMatchHistoryLocally(): void {

@@ -1,6 +1,7 @@
 import type {
   AdminDailySummaryPayload,
   AdminSystemSnapshotPayload,
+  AdminSystemSnapshotRecord,
 } from "@/lib/admin/adminDashboardTypes";
 
 const DAILY_TABLE = "admin_daily_summaries";
@@ -9,6 +10,7 @@ const SNAPSHOT_KEY = "latest";
 
 const memoryDailySummaries = new Map<string, AdminDailySummaryPayload>();
 let memorySystemSnapshot: AdminSystemSnapshotPayload | null = null;
+let memorySystemSnapshotUpdatedAt: string | null = null;
 
 export async function upsertDailySummary(
   payload: AdminDailySummaryPayload
@@ -42,15 +44,25 @@ export async function getDailySummaryFromStore(
 }
 
 export async function upsertSystemSnapshot(
-  payload: AdminSystemSnapshotPayload
+  payload: AdminSystemSnapshotPayload,
+  updatedAt: string = new Date().toISOString()
 ): Promise<void> {
   memorySystemSnapshot = structuredClone(payload);
-  await writeSystemSnapshotSupabase(payload);
+  memorySystemSnapshotUpdatedAt = updatedAt;
+  await writeSystemSnapshotSupabase(payload, updatedAt);
 }
 
 export async function getSystemSnapshotFromStore(): Promise<AdminSystemSnapshotPayload | null> {
+  const record = await getSystemSnapshotRecordFromStore();
+  return record?.payload ?? null;
+}
+
+export async function getSystemSnapshotRecordFromStore(): Promise<AdminSystemSnapshotRecord | null> {
   if (memorySystemSnapshot) {
-    return structuredClone(memorySystemSnapshot);
+    return {
+      payload: structuredClone(memorySystemSnapshot),
+      updatedAt: memorySystemSnapshotUpdatedAt,
+    };
   }
   return readSystemSnapshotSupabase();
 }
@@ -58,14 +70,19 @@ export async function getSystemSnapshotFromStore(): Promise<AdminSystemSnapshotP
 export function resetAdminDashboardStoreForTests(): void {
   memoryDailySummaries.clear();
   memorySystemSnapshot = null;
+  memorySystemSnapshotUpdatedAt = null;
 }
 
 export function seedDailySummaryForTests(payload: AdminDailySummaryPayload): void {
   memoryDailySummaries.set(payload.summaryDate, structuredClone(payload));
 }
 
-export function seedSystemSnapshotForTests(payload: AdminSystemSnapshotPayload): void {
+export function seedSystemSnapshotForTests(
+  payload: AdminSystemSnapshotPayload,
+  updatedAt: string = new Date().toISOString()
+): void {
   memorySystemSnapshot = structuredClone(payload);
+  memorySystemSnapshotUpdatedAt = updatedAt;
 }
 
 async function writeDailySummarySupabase(
@@ -114,7 +131,8 @@ async function readDailySummariesSupabase(): Promise<AdminDailySummaryPayload[]>
 }
 
 async function writeSystemSnapshotSupabase(
-  payload: AdminSystemSnapshotPayload
+  payload: AdminSystemSnapshotPayload,
+  updatedAt: string
 ): Promise<void> {
   try {
     if (typeof window !== "undefined") {
@@ -125,14 +143,14 @@ async function writeSystemSnapshotSupabase(
     await supabase.from(SNAPSHOT_TABLE as "match_records").upsert({
       snapshot_key: SNAPSHOT_KEY,
       payload,
-      updated_at: new Date().toISOString(),
+      updated_at: updatedAt,
     } as never);
   } catch {
     // Fail closed.
   }
 }
 
-async function readSystemSnapshotSupabase(): Promise<AdminSystemSnapshotPayload | null> {
+async function readSystemSnapshotSupabase(): Promise<AdminSystemSnapshotRecord | null> {
   try {
     if (typeof window !== "undefined") {
       return null;
@@ -141,7 +159,7 @@ async function readSystemSnapshotSupabase(): Promise<AdminSystemSnapshotPayload 
     const supabase = getSupabaseAdmin();
     const result = await supabase
       .from(SNAPSHOT_TABLE as "match_records")
-      .select("payload")
+      .select("payload,updated_at")
       .eq("snapshot_key", SNAPSHOT_KEY)
       .maybeSingle();
 
@@ -149,7 +167,15 @@ async function readSystemSnapshotSupabase(): Promise<AdminSystemSnapshotPayload 
       return null;
     }
 
-    return (result.data as unknown as { payload: AdminSystemSnapshotPayload }).payload;
+    const row = result.data as unknown as {
+      payload: AdminSystemSnapshotPayload;
+      updated_at: string | null;
+    };
+
+    return {
+      payload: row.payload,
+      updatedAt: row.updated_at,
+    };
   } catch {
     return null;
   }

@@ -1,7 +1,5 @@
-import type {
-  HistoricalMatchRecord,
-  UpdateMatchResultInput,
-} from "@/lib/database/matchSchema";
+import type { HistoricalMatchRecord, UpdateMatchResultInput } from "@/lib/database/matchSchema";
+import { filterTrulyPendingVerificationRecords } from "@/lib/supabase/services/matchRecordPendingPolicy";
 import type {
   ProductionResultUpdate,
   ResultPipelineItemResult,
@@ -128,7 +126,8 @@ export function buildResultUpdatesFromFixtures(
 }
 
 export function listPendingProductionMatches(
-  records: HistoricalMatchRecord[]
+  records: HistoricalMatchRecord[],
+  now = new Date()
 ): HistoricalMatchRecord[] {
-  return records.filter((record) => record.status === "PENDING");
+  return filterTrulyPendingVerificationRecords(records, now);
 }

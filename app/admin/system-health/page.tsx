@@ -14,7 +14,12 @@ export default async function SystemHealthPage() {
           Generated at {new Date(snapshot.generatedAt).toLocaleString("zh-TW")}
         </p>
         <div className="mt-3 flex flex-wrap gap-3 text-sm">
-          <Link href="/admin">Admin Home</Link>
+          <Link href="/admin/operations" className="text-emerald-700 hover:underline dark:text-emerald-400">
+            Operations
+          </Link>
+          <Link href="/admin" className="text-emerald-700 hover:underline dark:text-emerald-400">
+            Admin Home
+          </Link>
           <Link href="/admin/recommendation-learning-backfill">Backfill</Link>
           <Link href="/admin/weight-optimizer">Weight Optimizer</Link>
         </div>

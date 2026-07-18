@@ -175,8 +175,9 @@ async function runTests(): Promise<void> {
     analysis: {
       pendingCount: 3,
       verifiedCount: 7,
+      anomalyCount: 0,
     },
-  });
+  }, `${MATCH_DATE}T11:00:00.000Z`);
 
   seedDailySummaryForTests(buildSummary(MATCH_DATE));
   seedDailySummaryForTests(
@@ -202,6 +203,7 @@ async function runTests(): Promise<void> {
   assert(dashboard.system.cache.hits === 2, "dashboard should expose cache hits");
   assert(dashboard.analysis.analyzedToday === 2, "dashboard should expose today analyzed count");
   assert(dashboard.analysis.pendingCount === 3, "dashboard should expose pending count");
+  assert(dashboard.analysis.anomalyCount === 0, "dashboard should expose anomaly count");
   assert(dashboard.performance.roiToday === 0.12, "dashboard should expose today ROI");
   assert(dashboard.performance.totalRecommendations === 6, "dashboard should sum recommendation counts");
   assert(
@@ -225,6 +227,8 @@ async function runTests(): Promise<void> {
     "dashboard should expose AI suggestions"
   );
   assert(dashboard.recentErrors.length >= 2, "dashboard should include recent errors");
+  assert(dashboard.metadata.dataSource === "snapshot", "dashboard should use fresh snapshot metadata");
+  assert(dashboard.metadata.snapshotTime !== null, "dashboard should expose snapshot time");
 
   await runDailyMatchPipeline(
     [
@@ -250,7 +254,8 @@ async function runTests(): Promise<void> {
     }
   );
 
-  const pending = listPendingProductionMatches(listInMemoryProductionRecords());
+  const policyNow = new Date(`${MATCH_DATE}T12:00:00.000Z`);
+  const pending = listPendingProductionMatches(listInMemoryProductionRecords(), policyNow);
   const updates = buildResultUpdatesFromFixtures(pending, [
     {
       homeTeam: "Arsenal",

@@ -240,6 +240,10 @@ export class MockFootballProvider implements FootballDataProvider {
   }
 
   async getOdds(query: OddsQuery): Promise<OddsData | null> {
+    if (!query.matchId) {
+      return null;
+    }
+
     const record = findRecord(query.matchId);
     if (!record) {
       return null;

@@ -5,7 +5,14 @@ import type { FeatureFusionResult } from "@/lib/analysis/featureScore/fusion/fus
 import type { RecommendationSection } from "@/lib/analysis/types";
 import { generateRecommendations } from "@/lib/recommendation/recommendationEngine";
 import type { RecommendationEngineResult } from "@/lib/recommendation/recommendationTypes";
+import { runDecisionV3ShadowIfEnabled } from "@/lib/decision/v3/decisionShadowMode";
+import { isDecisionV3ShadowEnabled } from "@/lib/decision/v3/decisionConfig";
 import { collectEvidence } from "@/lib/evidence/evidenceEngine";
+import { isEvidenceV3ShadowEnabled } from "@/lib/evidence/v3/evidenceConfig";
+import { runEvidenceV3ShadowIfEnabled } from "@/lib/evidence/v3/evidenceShadowMode";
+import { isRecommendationDualWriteEnabled } from "@/lib/recommendation/v3/recommendationDualWriteConfig";
+import { runRecommendationDualWriteIfEnabled } from "@/lib/recommendation/v3/recommendationDualWrite";
+import { createShadowRunId, resetShadowRunsForTests } from "@/lib/shadow/shadowRunScope";
 import {
   EMPTY_RECOMMENDATION_MESSAGE,
   getRecommendationMessage,
@@ -44,6 +51,7 @@ import {
 } from "@/lib/providers/matchContext/productionMatchContextProvider";
 import { clearProductionMatchContextCacheForTests } from "@/lib/providers/matchContext/matchContextCache";
 import { resetFeatureProviderRegistryForTests } from "@/lib/providers/registry";
+import type { LoadedRuntimeWeightConfig } from "@/lib/recommendation/weightConfigTypes";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type { MarketSelection, MatchData } from "@/types/match";
 
@@ -63,6 +71,7 @@ export interface FeatureRecommendationPipelineResult {
   section: RecommendationSection;
   providerAudit: ProviderResolutionAudit | null;
   evidenceReport: import("@/lib/evidence/evidenceTypes").EvidenceReport | null;
+  shadowRunId?: string;
 }
 
 export interface FeatureRecommendationPipelineOptions {
@@ -72,6 +81,7 @@ export interface FeatureRecommendationPipelineOptions {
   leagueStrengthContext?: ProductionLeagueStrengthContext | null;
   squadAvailabilityContext?: ProductionSquadAvailabilityContext | null;
   matchContextContext?: ProductionMatchContextContext | null;
+  runtimeWeightConfig?: LoadedRuntimeWeightConfig | null;
 }
 
 export function runFeatureRecommendationPipeline(
@@ -152,6 +162,7 @@ export function runFeatureRecommendationPipeline(
     const recommendation = generateRecommendations(fusion, markets, {
       providerAudit,
       evidenceReport,
+      runtimeWeightConfig: options.runtimeWeightConfig ?? null,
     });
     const guarded = applyRecommendationProviderGuard({
       fusion,
@@ -168,12 +179,21 @@ export function runFeatureRecommendationPipeline(
         : getRecommendationMessage(guarded.recommendation),
     };
 
+    const shadowRunId = runShadowV3IfEnabled({
+      match,
+      markets,
+      options,
+      providerAudit,
+      legacyRecommendation: guarded.recommendation,
+    });
+
     return {
       fusion: guarded.fusion,
       recommendation: guarded.recommendation,
       section,
       providerAudit,
       evidenceReport,
+      shadowRunId,
     };
   } finally {
     resetTeamProfileProviderContext();
@@ -196,4 +216,60 @@ export function resetFeatureRecommendationPipelineForTests(): void {
   clearProductionSquadAvailabilityCacheForTests();
   clearProductionMatchContextCacheForTests();
   resetFeatureProviderRegistryForTests();
+  resetShadowRunsForTests();
+}
+
+function runShadowV3IfEnabled(input: {
+  match: MatchData;
+  markets: MarketSelection[];
+  options: FeatureRecommendationPipelineOptions;
+  providerAudit: ProviderResolutionAudit;
+  legacyRecommendation: RecommendationEngineResult | null;
+}): string | undefined {
+  if (
+    !isEvidenceV3ShadowEnabled() &&
+    !isDecisionV3ShadowEnabled() &&
+    !isRecommendationDualWriteEnabled()
+  ) {
+    return undefined;
+  }
+
+  const collectorContext = {
+    homeTeam: input.match.homeTeam,
+    awayTeam: input.match.awayTeam,
+    league: input.match.league,
+    matchDate: input.options.matchDate,
+    marketSelections: input.markets,
+    providerAudit: input.providerAudit,
+    teamProfiles: input.options.teamProfiles ?? null,
+  };
+
+  const shadowRunId = createShadowRunId({
+    homeTeam: input.match.homeTeam,
+    awayTeam: input.match.awayTeam,
+  });
+
+  const evidenceCollection = runEvidenceV3ShadowIfEnabled(
+    shadowRunId,
+    collectorContext
+  );
+
+  runDecisionV3ShadowIfEnabled({
+    runId: shadowRunId,
+    evidenceCollection,
+    collectorContext,
+    marketSelections: input.markets,
+    runtimeWeightConfig: input.options.runtimeWeightConfig ?? null,
+  });
+
+  runRecommendationDualWriteIfEnabled({
+    runId: shadowRunId,
+    legacyRecommendation: input.legacyRecommendation,
+    evidenceCollection,
+    collectorContext,
+    marketSelections: input.markets,
+    runtimeWeightConfig: input.options.runtimeWeightConfig ?? null,
+  });
+
+  return shadowRunId;
 }

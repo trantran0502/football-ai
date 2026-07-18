@@ -1,7 +1,7 @@
 # Supabase Recovery and Verification v1
 
-Generated: 2026-07-17T10:11:21.214Z
-Duration: 9322ms
+Generated: 2026-07-18T01:10:24.032Z
+Duration: 11395ms
 
 ## Overall: MANUAL ACTION REQUIRED
 
@@ -11,7 +11,7 @@ Duration: 9322ms
 |-------|--------|
 | Migration | PASS |
 | Local CRUD | NOT TESTABLE |
-| Production CRUD | FAIL |
+| Production CRUD | PASS |
 | RLS | NOT TESTABLE |
 
 ## Root Causes
@@ -28,7 +28,7 @@ Duration: 9322ms
 - **Connection**: FAIL — TypeError: fetch failed
 - **Schema**: NOT TESTABLE (Connection failed)
 - **Local CRUD**: NOT TESTABLE (Connection failed)
-- **Production Supabase connection**: FAIL — status=200 connected=undefined
+- **Production Supabase connection**: PASS — status=200 connected=true
 - **Migration file 001_initial_p0.sql**: PASS — present in repo
 - **Migration file 002_admin_dashboard.sql**: PASS — present in repo
 - **Migration file 003_scheduler.sql**: PASS — present in repo
@@ -38,3 +38,4 @@ Duration: 9322ms
 - **Migration file 007_historical_match_backfill.sql**: PASS — present in repo
 - **Migration file 008_recommendation_learning.sql**: PASS — present in repo
 - **Migration file 009_schema_recovery_verify.sql**: PASS — present in repo
+- **Migration file 010_weight_config_versions.sql**: PASS — present in repo

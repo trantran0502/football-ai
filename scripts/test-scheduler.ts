@@ -33,11 +33,11 @@ import {
   resetExecutionLogsForTests,
   resetPersistedExecutionLogsForTests,
   resetSchedulerLocksForTests,
+  resolveSchedulerFixturesToProduction,
   runDailyScheduler,
   runResultScheduler,
   getSchedulerStatus,
   setExecutionLogPersistFailureForTests,
-  toProductionFixture,
   validateApiFixtureRecord,
   writeResultUpdateFixturesByDateCache,
   withRetry,
@@ -318,8 +318,10 @@ async function testFixtureMappingFields(): Promise<void> {
   assert(mapped.leagueName === "Brasileirão", "leagueName must map");
   assert(mapped.season === 2025, "season must map");
   assert(mapped.kickoffTime === "2026-07-16T23:30:00.000Z", "kickoffTime must map");
+  assert(mapped.rawOdds === undefined, "mapping must not create rawOdds");
 
-  const production = toProductionFixture(mapped);
+  const { productionFixtures } = await resolveSchedulerFixturesToProduction([mapped]);
+  const production = productionFixtures[0]!;
   const report = enrichAnalysisReportWithFixture(analyzeMatch(production.rawOdds), production);
   assert(report.match.league === "Brasileirão", "report match league must be populated");
   assert(report.match.leagueId === 71, "report match leagueId must be populated");
@@ -866,6 +868,7 @@ async function testSchedulerApiUsageFromSnapshot(): Promise<void> {
     analysis: {
       pendingCount: 0,
       verifiedCount: 0,
+      anomalyCount: 0,
     },
   });
 

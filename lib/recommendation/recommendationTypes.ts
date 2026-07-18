@@ -5,6 +5,7 @@ import type {
 } from "@/lib/evidence/evidenceTypes";
 import type { MarketSelection, MarketType } from "@/types/match";
 import type { ProviderRecommendationDiagnostic } from "@/lib/recommendation/providerWeightEngine";
+import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
 
 export type RecommendationLevel = "pass" | "low" | "medium" | "high";
 
@@ -40,6 +41,7 @@ export interface RecommendationEngineResult {
   evidenceConfidence: number | null;
   evidenceSummary: string[];
   evidenceBreakdown: EvidenceBreakdownItem[];
+  weightConfig: WeightConfigSnapshotMetadata | null;
 }
 
 export interface RecommendationEngineOptions {
@@ -67,6 +69,7 @@ export function createEmptyRecommendationResult(
     evidenceConfidence: null,
     evidenceSummary: [],
     evidenceBreakdown: [],
+    weightConfig: null,
     ...overrides,
   };
 }

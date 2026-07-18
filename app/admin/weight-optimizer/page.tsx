@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { runAutomatedLearningPipeline } from "@/lib/admin/recommendationPipelineService";
+import {
+  buildDraftDefaultsFromFallback,
+  buildDraftDefaultsFromOptimizerReport,
+  mapActiveWeightConfigPanelData,
+} from "@/lib/admin/weightConfigUiHelpers";
+import { WeightConfigManagementPanel } from "@/components/admin/WeightConfigManagementPanel";
 import { WeightOptimizerDashboard } from "@/components/recommendation/WeightOptimizerDashboard";
 import {
   PipelineInspectorPanel,
   WeightOptimizerDiagnosticsPanel,
 } from "@/components/admin/RecommendationPipelinePanels";
 import { buildWeightOptimizerReport } from "@/lib/recommendation/weightOptimizer";
+import {
+  getActiveWeightConfig,
+  listWeightConfigVersions,
+} from "@/lib/supabase/services/weightConfigService";
 import { listRecommendationLearningFromSupabase } from "@/lib/supabase/services/recommendationLearningService";
 import { withSupabaseRetry } from "@/lib/admin/supabaseRetry";
 
@@ -18,6 +28,16 @@ export default async function WeightOptimizerAdminPage() {
   );
   const records = learningResult.ok ? learningResult.value : [];
   const report = buildWeightOptimizerReport(records);
+
+  const [activeConfig, versions] = await Promise.all([
+    getActiveWeightConfig(),
+    listWeightConfigVersions(),
+  ]);
+
+  const draftDefaults =
+    report.diagnostics.recordsUsed > 0
+      ? buildDraftDefaultsFromOptimizerReport(report)
+      : buildDraftDefaultsFromFallback();
 
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
@@ -41,6 +61,12 @@ export default async function WeightOptimizerAdminPage() {
         statistics={snapshot.statistics}
       />
       <PipelineInspectorPanel steps={snapshot.pipeline} />
+
+      <WeightConfigManagementPanel
+        activeConfig={mapActiveWeightConfigPanelData(activeConfig)}
+        versions={versions}
+        draftDefaults={draftDefaults}
+      />
 
       {report.diagnostics.recordsUsed > 0 ? (
         <WeightOptimizerDashboard report={report} />

@@ -7,13 +7,18 @@ import type {
   MarketAnalysisSnapshot,
   MarketEngineType,
 } from "@/lib/recommendation/marketEngine/marketEngineTypes";
-import {
-  MARKET_ENGINE_INITIAL_WEIGHT,
-} from "@/lib/recommendation/marketEngine/marketScore";
+import { buildFallbackWeightConfig } from "@/lib/recommendation/weightConfigRuntime";
 
 export const MARKET_ENGINE_INTEGRATION_REASON_PREFIX = "Market engine:";
 
-const FEATURE_BLEND_WEIGHT = 1 - MARKET_ENGINE_INITIAL_WEIGHT;
+export function blendFeatureAndMarketEngineScore(
+  featureScore: number,
+  marketSideScore: number,
+  marketBlendWeight: number = buildFallbackWeightConfig().marketBlendWeight
+): number {
+  const featureBlendWeight = 1 - marketBlendWeight;
+  return featureScore * featureBlendWeight + marketSideScore * marketBlendWeight;
+}
 
 export function resolveEngineMarketType(
   selection: MarketSelection
@@ -74,15 +79,6 @@ export function computeMarketEngineSideScore(
   return -Math.abs(centered) * 0.75;
 }
 
-export function blendFeatureAndMarketEngineScore(
-  featureScore: number,
-  marketSideScore: number
-): number {
-  return (
-    featureScore * FEATURE_BLEND_WEIGHT + marketSideScore * MARKET_ENGINE_INITIAL_WEIGHT
-  );
-}
-
 export function buildMarketEngineCandidateReasons(
   analysis: MarketAnalysis,
   selection: MarketSelection
@@ -133,7 +129,10 @@ export function applyMarketEngineToCandidate(input: {
   featureScore: number;
   marketAnalysisByType: Map<MarketEngineType, MarketAnalysis>;
   globalPass: boolean;
+  marketBlendWeight?: number;
 }): MarketEngineRecommendationAdjustment {
+  const marketBlendWeight =
+    input.marketBlendWeight ?? buildFallbackWeightConfig().marketBlendWeight;
   if (input.globalPass) {
     return {
       blendedScore: 0,
@@ -162,7 +161,7 @@ export function applyMarketEngineToCandidate(input: {
 
   const marketSideScore = computeMarketEngineSideScore(analysis, input.selection);
   const blendedScore = clampScore(
-    blendFeatureAndMarketEngineScore(input.featureScore, marketSideScore)
+    blendFeatureAndMarketEngineScore(input.featureScore, marketSideScore, marketBlendWeight)
   );
 
   return {

@@ -427,7 +427,16 @@ export default async function AdminDashboardPage() {
           <p className="text-sm text-zinc-500">
             更新時間：{new Date(dashboard.generatedAt).toLocaleString("zh-TW")}
           </p>
+          <p className="text-sm text-zinc-500">
+            資料來源：{dashboard.metadata.dataSource === "snapshot" ? "Snapshot" : "Live"}
+            {dashboard.metadata.snapshotTime
+              ? ` · Snapshot Time：${new Date(dashboard.metadata.snapshotTime).toLocaleString("zh-TW")}`
+              : ""}
+          </p>
           <div className="flex flex-wrap gap-3 text-sm">
+            <a href="/admin/operations" className="text-emerald-700 hover:underline dark:text-emerald-400">
+              Operations
+            </a>
             <a href="/admin/system-health" className="text-emerald-700 hover:underline dark:text-emerald-400">
               System Health
             </a>
@@ -483,12 +492,13 @@ export default async function AdminDashboardPage() {
 
         <section>
           <h2 className="mb-3 text-lg font-semibold">分析狀態</h2>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
             <MetricCard label="今日分析" value={String(dashboard.analysis.analyzedToday)} />
             <MetricCard label="今日推薦" value={String(dashboard.analysis.recommendedToday)} />
             <MetricCard label="今日 PASS" value={String(dashboard.analysis.passToday)} />
             <MetricCard label="待驗證" value={String(dashboard.analysis.pendingCount)} />
             <MetricCard label="已驗證" value={String(dashboard.analysis.verifiedCount)} />
+            <MetricCard label="資料異常" value={String(dashboard.analysis.anomalyCount)} />
           </div>
         </section>
 

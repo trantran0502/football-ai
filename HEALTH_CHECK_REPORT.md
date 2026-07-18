@@ -1,26 +1,26 @@
 # Full Production Health Check Report v1
 
-Generated: 2026-07-17T15:43:38.962Z
-Duration: 25969ms
-Git Commit: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
+Generated: 2026-07-18T13:45:08.726Z
+Duration: 82745ms
+Git Commit: 3b672c85f0d3d398344992ba6aa4650f1b75c10f
 
 ## Overall Status
 
-**PASS**
+**FAIL**
 
 - Critical Issues: 0
-- High Issues: 0
-- Medium Issues: 0
+- High Issues: 2
+- Medium Issues: 1
 - Low Issues: 6
 
 ## Service Summary
 
 | Service | Status |
 |---------|--------|
-| Supabase | PASS |
+| Supabase | FAIL |
 | API-Football | PASS |
 | Gemini | OPTIONAL (Unavailable) |
-| Scheduler | NOT CONFIGURED |
+| Scheduler | PASS |
 | Pipeline | PASS |
 | Production | PASS |
 
@@ -35,7 +35,7 @@ Git Commit: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
 | API_FOOTBALL_KEY | yes | yes | no | yes | ok |
 | GOOGLE_GEMINI_API_KEY | no | yes | no | yes | ok |
 | ADMIN_API_KEY | yes | yes | no | yes | ok |
-| CRON_SECRET | yes | no | no | yes | - |
+| CRON_SECRET | yes | yes | no | yes | ok |
 | FOOTBALL_DATA_MODE | no | no | no | yes | - |
 | SCHEDULER_ENABLED | no | no | no | yes | - |
 | NEXT_PUBLIC_BETA_RECOMMENDATION_MODE | no | no | yes | no | - |
@@ -48,10 +48,10 @@ Git Commit: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
 
 ### Code Health
 
-- **npm test**: PASS — exit 0
+- **npm test**: FAIL — tConfigService.lifecycle.test.ts && tsx lib/healthCheck/supabaseHealthCheck.test.ts && tsx lib/supabase/services/weightConfigService.test.ts && tsx lib/admin/weightConfigAdminApi.test.ts && tsx lib/ad
 - **npm run build**: PASS — exit 0
-- **npm run lint**: WARNING — errors=3 warnings=71
-- **npm run validate:system**: PASS — overall=PASS
+- **npm run lint**: WARNING — errors=4 warnings=75
+- **npm run validate:system**: FAIL — overall=FAIL
 
 ### Pipeline
 
@@ -66,15 +66,11 @@ Git Commit: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
 
 - **Pre-match snapshot validator**: PASS — fundamentalsBacktest.test.ts covers leakage rules
 
-### Environment
-
-- **CRON_SECRET**: NOT CONFIGURED (Required variable missing locally)
-
 ### Security
 
 - **Service role not in NEXT_PUBLIC**: PASS
 - **Admin API key configured**: PASS
-- **Cron secret configured**: NOT CONFIGURED
+- **Cron secret configured**: PASS
 - **Supabase client uses server-only env**: PASS — Uses SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (no browser anon client)
 
 ### LocalStorage
@@ -95,49 +91,29 @@ Git Commit: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
 
 ### Supabase
 
-- **Connection probe**: PASS — host=qjzuledpatlbjsymqtbb.supabase.co rows=1
-- **Embedded models note**: WARNING — Fixture/Market/Evidence/Learning reports are JSON-embedded, not separate tables
-
-### Supabase Schema
-
-- **match_records**: PASS — SELECT probe succeeded
-- **beta_recommendations**: PASS — SELECT probe succeeded
-- **beta_rolling_reports**: PASS — SELECT probe succeeded
-- **recommendation_learning**: PASS — SELECT probe succeeded
-- **team_profiles**: PASS — SELECT probe succeeded
-- **execution_logs**: PASS — SELECT probe succeeded
-- **scheduler_state**: PASS — SELECT probe succeeded
-- **admin_daily_summaries**: PASS — SELECT probe succeeded
-- **admin_system_snapshots**: PASS — SELECT probe succeeded
-- **admin_error_logs**: PASS — SELECT probe succeeded
-- **security_rate_limit_buckets**: PASS — SELECT probe succeeded
-
-### Supabase CRUD
-
-- **insert match_records**: PASS — id=8762dedf-d8a9-4f4c-9787-18b385c0fd31
-- **select match_records**: PASS — league=HEALTH_CHECK
-- **update match_records**: PASS — HEALTH_CHECK_UPDATED
-- **delete match_records**: PASS — test row removed
+- **Connection probe**: FAIL — TypeError: fetch failed (TypeError: fetch failed)
+- **Schema tables**: NOT TESTABLE (Connection failed)
+- **CRUD test**: NOT TESTABLE (Connection failed)
 
 ### API-Football
 
 - **API key configured**: PASS — API_FOOTBALL_KEY present
-- **Fixture fetch**: PASS — date=2026-07-16 count=114 latencyMs=989
+- **Fixture fetch**: PASS — date=2026-07-17 count=264 latencyMs=1138
 
 ### Gemini
 
-- **Optional provider**: OPTIONAL — Unavailable latencyMs=914 (billing/quota/network or empty response)
+- **Optional provider**: OPTIONAL — Unavailable latencyMs=8755 (billing/quota/network or empty response)
 
 ### Database Quality
 
-- **Active match_records reachable**: PASS — count=102
+- **Active match_records reachable**: WARNING — count=unknown
 - **Stale pending fixtures sample**: PASS — sample=0
 
 ### Deployment
 
-- **Homepage**: PASS — status=200 latencyMs=156 url=https://football-ai-ten.vercel.app/
-- **Admin dashboard**: PASS — status=200 latencyMs=673 url=https://football-ai-ten.vercel.app/admin
-- **Health API (public)**: PASS — status=200 latencyMs=693 url=https://football-ai-ten.vercel.app/api/data/health
+- **Homepage**: PASS — status=200 latencyMs=240 url=https://football-ai-ten.vercel.app/
+- **Admin dashboard**: PASS — status=200 latencyMs=219 url=https://football-ai-ten.vercel.app/admin
+- **Health API (public)**: PASS — status=200 latencyMs=1068 url=https://football-ai-ten.vercel.app/api/data/health
 
 ### Dashboard
 
@@ -161,7 +137,9 @@ Git Commit: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
 
 ## Required Fixes
 
-- None blocking at this time.
+- [Code Health] npm test: tConfigService.lifecycle.test.ts && tsx lib/healthCheck/supabaseHealthCheck.test.ts && tsx lib/supabase/services/weightConfigService.test.ts && tsx lib/admin/weightConfigAdminApi.test.ts && tsx lib/ad
+- [Code Health] npm run validate:system: overall=FAIL
+- [Supabase] Connection probe: TypeError: fetch failed
 
 ## Deferred Improvements
 
@@ -170,4 +148,4 @@ Git Commit: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
 - [LocalStorage] football-ai-beta-recommendations
 - [LocalStorage] football-ai-beta-rolling-reports
 - [LocalStorage] Cross-device sync
-- [Supabase] Embedded models note
+- [Database Quality] Active match_records reachable

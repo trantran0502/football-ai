@@ -1,4 +1,5 @@
 import type { ExecutionLogEntry, SchedulerJobName } from "@/lib/scheduler/schedulerTypes";
+import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
 
 const logs: ExecutionLogEntry[] = [];
 const runtimeState = {
@@ -27,6 +28,24 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   warning?: string;
   cacheHit?: boolean;
   fixtureSource?: string;
+  weightConfig?: WeightConfigSnapshotMetadata;
+  schedulerOdds?: {
+    source: "placeholder" | "mock" | "api-football";
+    total: number;
+    resolved: number;
+    fallback: number;
+    providerErrors: number;
+  };
+  dataCompleteness?: {
+    inserted: number;
+    duplicateSkipped: number;
+    historicalBackfillEnriched: number;
+    incompleteAnalysisRejected: number;
+    conflictingRecords: number;
+    oddsMissing: number;
+    settleableMarketMissing: number;
+    analysisSnapshotMissing: number;
+  };
 }
 
 export interface CompleteExecutionLogResult {

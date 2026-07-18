@@ -40,6 +40,13 @@ export const SUPABASE_TABLE_REGISTRY: SupabaseTableSpec[] = [
     description: "Post-verification learning rows (AI/evidence learning persistence)",
   },
   {
+    name: "weight_config_versions",
+    probeColumn: "id",
+    category: "learning",
+    migrationFile: "010_weight_config_versions.sql",
+    description: "Versioned Weight Optimizer config drafts and active weights (Phase 0 storage)",
+  },
+  {
     name: "team_profiles",
     probeColumn: "id",
     category: "core",
@@ -160,4 +167,5 @@ export const MIGRATION_FILES_ORDERED = [
   "007_historical_match_backfill.sql",
   "008_recommendation_learning.sql",
   "009_schema_recovery_verify.sql",
+  "010_weight_config_versions.sql",
 ] as const;

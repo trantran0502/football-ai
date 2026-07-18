@@ -57,6 +57,7 @@ export interface AdminAnalysisStatus {
   passToday: number;
   pendingCount: number;
   verifiedCount: number;
+  anomalyCount: number;
 }
 
 export interface AdminPerformanceMetrics {
@@ -103,6 +104,7 @@ export interface AdminBettingIntelligenceMetrics {
 
 export interface AdminDashboardResponse {
   generatedAt: string;
+  metadata: AdminDashboardMetadata;
   system: AdminSystemStatus;
   analysis: AdminAnalysisStatus;
   performance: AdminPerformanceMetrics;
@@ -123,6 +125,18 @@ export interface AdminSystemSnapshotPayload {
   system: AdminSystemStatus;
   analysis: Pick<
     AdminAnalysisStatus,
-    "pendingCount" | "verifiedCount"
+    "pendingCount" | "verifiedCount" | "anomalyCount"
   >;
+}
+
+export type AdminDashboardDataSource = "snapshot" | "live";
+
+export interface AdminDashboardMetadata {
+  dataSource: AdminDashboardDataSource;
+  snapshotTime: string | null;
+}
+
+export interface AdminSystemSnapshotRecord {
+  payload: AdminSystemSnapshotPayload;
+  updatedAt: string | null;
 }

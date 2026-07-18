@@ -1,15 +1,15 @@
 # Football AI V1 System Validation Report
 
 - **Overall**: PASS
-- **Started**: 2026-07-17T15:43:29.043Z
-- **Completed**: 2026-07-17T15:43:31.296Z
-- **Duration**: 2253ms
-- **Git Commit**: 0d375c9c02f1e8b0e173a72e886cf599ab3deaf3
+- **Started**: 2026-07-18T16:25:34.931Z
+- **Completed**: 2026-07-18T16:25:54.351Z
+- **Duration**: 19420ms
+- **Git Commit**: 3b672c85f0d3d398344992ba6aa4650f1b75c10f
 - **Fixtures**: 12
 
 ## Summary
 
-- **Build**: SKIP (passed 1, failed 0)
+- **Build**: PASS (passed 1, failed 0)
 - **Unit Tests**: PASS (passed 1, failed 0)
 - **Market Engine**: PASS (passed 492, failed 0)
 - **Rules**: PASS (passed 71, failed 0)

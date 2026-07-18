@@ -15,6 +15,7 @@ import type { ProductionLeagueStrengthContext } from "@/lib/providers/leagueStre
 import type { ProductionSquadAvailabilityContext } from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
 import type { ProductionMatchContextContext } from "@/lib/providers/matchContext/productionMatchContextProvider";
 import type { AnalysisReport } from "@/lib/analysis/types";
+import type { LoadedRuntimeWeightConfig } from "@/lib/recommendation/weightConfigTypes";
 import { parseOdds } from "@/lib/parser/parser";
 import { normalizeMarketSelections } from "@/lib/parser/normalizeMarketSelections";
 
@@ -31,6 +32,7 @@ export function analyzeMatch(
     leagueStrengthContext?: ProductionLeagueStrengthContext | null;
     squadAvailabilityContext?: ProductionSquadAvailabilityContext | null;
     matchContextContext?: ProductionMatchContextContext | null;
+    runtimeWeightConfig?: LoadedRuntimeWeightConfig | null;
   } = {}
 ): AnalysisReport {
   const match = parseOdds(rawText);
@@ -59,6 +61,7 @@ export function analyzeMatch(
       leagueStrengthContext: options.leagueStrengthContext ?? null,
       squadAvailabilityContext: options.squadAvailabilityContext ?? null,
       matchContextContext: options.matchContextContext ?? null,
+      runtimeWeightConfig: options.runtimeWeightConfig ?? null,
     }
   );
   const bettingIntelligence = buildBettingIntelligence({
@@ -91,6 +94,7 @@ export function analyzeMatch(
     bettingIntelligence,
     decision,
     teamProfiles: options.teamProfiles ?? null,
+    weightConfig: recommendation.result?.weightConfig ?? null,
   };
 }
 

@@ -6,6 +6,8 @@ export {
 } from "@/lib/providers/provider";
 
 export { MockFootballProvider } from "@/lib/providers/mockProvider";
+export { MockOddsAdapter } from "@/lib/providers/odds/mockOddsAdapter";
+export { ApiFootballOddsAdapter } from "@/lib/providers/odds/apiFootballOddsAdapter";
 
 export * from "@/lib/providers/free";
 
@@ -14,6 +16,7 @@ export type {
   HistoricalMatchesQuery,
   MatchStatus,
   OddsData,
+  OddsProvider,
   OddsQuery,
   ProviderConstructor,
   ProviderHistoricalMatch,

@@ -1,5 +1,9 @@
 import { analyzeMatch } from "@/lib/analysis/analyzeMatch";
 import type { SaveMatchOutcome } from "@/lib/database/matchSchema";
+import {
+  loadRuntimeWeightConfigForProduction,
+  type RuntimeWeightConfigLoaderDeps,
+} from "@/lib/recommendation/runtimeWeightConfigLoader";
 import type {
   DailyPipelineItemResult,
   DailyPipelineResult,
@@ -13,6 +17,9 @@ export interface DailyMatchPipelineDependencies {
     report: ReturnType<typeof analyzeMatch>,
     matchDate: string
   ) => Promise<SaveMatchOutcome>;
+  loadRuntimeWeightConfig?: (
+    deps?: RuntimeWeightConfigLoaderDeps
+  ) => ReturnType<typeof loadRuntimeWeightConfigForProduction>;
 }
 
 export async function runDailyMatchPipeline(
@@ -21,6 +28,8 @@ export async function runDailyMatchPipeline(
   dependencies: DailyMatchPipelineDependencies = {}
 ): Promise<DailyPipelineResult> {
   const analyze = dependencies.analyze ?? analyzeMatch;
+  const loadRuntimeWeightConfig =
+    dependencies.loadRuntimeWeightConfig ?? loadRuntimeWeightConfigForProduction;
   const saveMatch =
     dependencies.saveMatch ??
     (async () => {
@@ -32,28 +41,40 @@ export async function runDailyMatchPipeline(
   let duplicates = 0;
   let failed = 0;
 
+  const runtimeWeightConfig = await loadRuntimeWeightConfig();
+
   for (const fixture of fixtures) {
     try {
-      const report = analyze(fixture.rawOdds);
+      const report = analyze(fixture.rawOdds, { runtimeWeightConfig });
       const outcome = await saveMatch(
         fixture.rawOdds,
         report,
         fixture.matchDate
       );
 
-      if (outcome.status === "created") {
+      if (outcome.status === "created" || outcome.status === "enriched") {
         created += 1;
         items.push({
           fixture,
-          status: "created",
+          status: outcome.status === "enriched" ? "enriched" : "created",
           matchId: outcome.record.id,
         });
-      } else {
+      } else if (outcome.record) {
         duplicates += 1;
         items.push({
           fixture,
           status: "duplicate",
           matchId: outcome.record.id,
+        });
+      } else {
+        failed += 1;
+        items.push({
+          fixture,
+          status: "failed",
+          error:
+            outcome.status === "incomplete_analysis_rejected"
+              ? outcome.reason
+              : "Save rejected.",
         });
       }
     } catch (error) {

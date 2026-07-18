@@ -33,7 +33,12 @@ export interface UpcomingMatchesQuery {
 
 /** 賠率查詢 */
 export interface OddsQuery {
-  matchId: ProviderMatchId;
+  matchId?: ProviderMatchId;
+  fixtureId?: number;
+  date?: string;
+  leagueId?: number;
+  season?: number;
+  bookmakerId?: string;
 }
 
 /** 賽果查詢 */
@@ -66,6 +71,7 @@ export interface UpcomingMatch {
 /** 單場賠率資料 */
 export interface OddsData {
   matchId: ProviderMatchId;
+  fixtureId?: number;
   date: string;
   league: string;
   homeTeam: string;
@@ -73,6 +79,15 @@ export interface OddsData {
   marketSelections: MarketSelection[];
   capturedAt: string;
   source: ProviderId;
+  bookmakerId?: string;
+}
+
+/**
+ * 賠率 Provider 抽象介面。
+ * 所有賠率來源（Mock、API-Football、The Odds API 等）統一透過 OddsQuery 查詢並回傳 OddsData[]。
+ */
+export interface OddsProvider {
+  fetchOdds(query: OddsQuery): Promise<OddsData[]>;
 }
 
 /** 單場賽果資料 */

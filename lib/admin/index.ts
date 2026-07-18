@@ -2,11 +2,14 @@ export type {
   AdminAiSuggestions,
   AdminAnalysisStatus,
   AdminDailySummaryPayload,
+  AdminDashboardDataSource,
+  AdminDashboardMetadata,
   AdminDashboardResponse,
   AdminErrorCategory,
   AdminErrorLogEntry,
   AdminPerformanceMetrics,
   AdminSystemSnapshotPayload,
+  AdminSystemSnapshotRecord,
   AdminSystemStatus,
 } from "@/lib/admin/adminDashboardTypes";
 
@@ -21,6 +24,7 @@ export {
   countDailySummariesInSupabase,
   getDailySummaryFromStore,
   getSystemSnapshotFromStore,
+  getSystemSnapshotRecordFromStore,
   listDailySummariesFromStore,
   resetAdminDashboardStoreForTests,
   seedDailySummaryForTests,
@@ -30,8 +34,15 @@ export {
 } from "@/lib/admin/adminDashboardStore";
 
 export {
+  ADMIN_DASHBOARD_SNAPSHOT_MAX_AGE_MS,
+  buildLiveAdminSystemSnapshot,
+  isSystemSnapshotFresh,
+} from "@/lib/admin/adminDashboardLiveQuery";
+
+export {
   buildAdminDashboardResponse,
   refreshSystemSnapshotTablesCount,
+  resolveAdminSystemSnapshot,
 } from "@/lib/admin/adminDashboardService";
 
 export {
