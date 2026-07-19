@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { DailyRecommendationRecord } from "@/lib/dailyRecommendations/dailyRecommendationTypes";
 import { filterBettableDailyRecommendations } from "@/lib/dailyRecommendations/bettableRecommendationFilter";
+import { filterQualifiedDailyRecommendations } from "@/lib/dailyRecommendations/dailyRecommendationThresholdFilter";
 import {
   DAILY_RECOMMENDATION_RANK_LABELS,
   formatKickoffDisplay,
@@ -99,6 +100,7 @@ export function DailyRecommendationsSection({
   error,
 }: DailyRecommendationsSectionProps) {
   const bettableRecommendations = filterBettableDailyRecommendations(recommendations);
+  const qualifiedRecommendations = filterQualifiedDailyRecommendations(bettableRecommendations);
 
   return (
     <section className="rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-5">
@@ -117,12 +119,12 @@ export function DailyRecommendationsSection({
         </p>
       ) : null}
 
-      {!loading && !error && bettableRecommendations.length === 0 ? (
-        <p className="mt-4 text-sm text-slate-500">今日尚未產生 AI 推薦。</p>
+      {!loading && !error && qualifiedRecommendations.length === 0 ? (
+        <p className="mt-4 text-sm text-slate-500">今日暫無符合門檻的推薦</p>
       ) : null}
 
       <div className="mt-4 space-y-4">
-        {bettableRecommendations.map((item) => (
+        {qualifiedRecommendations.map((item) => (
           <RecommendationCard key={item.id} item={item} />
         ))}
       </div>

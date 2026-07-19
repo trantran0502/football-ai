@@ -53,6 +53,13 @@ export interface DailyDataCompletenessStats {
   oddsMissing: number;
   settleableMarketMissing: number;
   analysisSnapshotMissing: number;
+  profileDeferredCount: number;
+  profileUnavailableCount: number;
+  groundingUnavailableCount: number;
+  snapshotPersistedCount: number;
+  snapshotMissingCount: number;
+  recommendationsBlockedByCompleteness: number;
+  recommendationsCreatedWithCompleteData: number;
 }
 
 export interface DailyPipelineResult {

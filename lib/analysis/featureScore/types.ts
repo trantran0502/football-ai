@@ -12,6 +12,8 @@ export interface FeatureScore {
   weight: number;
   confidence: number;
   reason: string;
+  available?: boolean;
+  unavailableReason?: string | null;
   metadata?: Record<string, unknown>;
 }
 

@@ -19,6 +19,7 @@ import type { BettingIntelligenceResult } from "@/lib/betting/intelligenceTypes"
 import type { DecisionResult } from "@/lib/decision/decisionTypes";
 import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
 import { buildReplaySnapshotFromReport } from "@/lib/replay/replayBuilder";
+import type { ReplayRawSources } from "@/lib/replay/replayTypes";
 import type { MarketSelection } from "@/types/match";
 import { countTrulyPendingVerification } from "@/lib/supabase/services/matchRecordPendingPolicy";
 
@@ -39,6 +40,16 @@ export interface AnalysisDataCompletenessMetadata {
   analysisEnriched?: boolean;
   analysisEnrichedAt?: string;
   enrichedFrom?: string;
+  status?: "complete" | "incomplete";
+  eligibleForRecommendation?: boolean;
+  completenessReasons?: string[];
+  profileDeferred?: boolean;
+  profileUnavailableCount?: number;
+  groundingUnavailable?: boolean;
+  trustedExternalSourceAvailable?: boolean;
+  snapshotPersisted?: boolean;
+  quotaWarnings?: string[];
+  assessedAt?: string;
 }
 
 export interface AnalysisPendingPolicyMetadata {
@@ -147,7 +158,7 @@ export type SaveMatchOutcome =
   | {
       status: "incomplete_analysis_rejected";
       record: HistoricalMatchRecord | null;
-      reason: "oddsMissing" | "settleableMarketMissing" | "analysisSnapshotMissing";
+      reason: "oddsMissing" | "settleableMarketMissing" | "analysisSnapshotMissing" | "dataCompletenessInsufficient" | "profileDeferred" | "profileUnavailable" | "groundingUnavailable";
     }
   | {
       status: "conflicting_record";
@@ -185,7 +196,11 @@ export function createAnalysisSnapshotFromReport(
   report: AnalysisReport,
   capturedAt: string = new Date().toISOString(),
   matchId?: string,
-  matchDate?: string
+  matchDate?: string,
+  options?: {
+    rawSources?: ReplayRawSources;
+    dataCompleteness?: AnalysisDataCompletenessMetadata;
+  }
 ): AnalysisSnapshot {
   const base: AnalysisSnapshot = {
     features: buildAnalysisFeatures(report.markets),
@@ -205,6 +220,7 @@ export function createAnalysisSnapshotFromReport(
     decision: report.decision ?? null,
     teamProfiles: report.teamProfiles ?? null,
     weightConfig: report.weightConfig ?? report.recommendation?.result?.weightConfig ?? null,
+    dataCompleteness: options?.dataCompleteness,
     capturedAt,
   };
 
@@ -218,6 +234,8 @@ export function createAnalysisSnapshotFromReport(
       matchId,
       capturedAt,
       matchDate,
+      rawSources: options?.rawSources,
+      dataCompleteness: options?.dataCompleteness,
     }),
   };
 }

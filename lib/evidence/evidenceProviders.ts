@@ -96,7 +96,7 @@ function buildFromFeature(
 
   return buildEvidenceItem({
     category,
-    score: feature.score,
+    score: feature.score ?? 0,
     confidence: feature.confidence,
     source,
     summary: summaryOverride ?? feature.reason,
@@ -277,8 +277,8 @@ export function collectXgEvidence(
   if (primary) {
     const combinedScore =
       homeXg && awayXg
-        ? clampScore((homeXg.score + awayXg.score) / 2)
-        : primary.score;
+        ? clampScore(((homeXg.score ?? 0) + (awayXg.score ?? 0)) / 2)
+        : primary.score ?? 0;
     const combinedConfidence =
       homeXg && awayXg
         ? clampConfidence((homeXg.confidence + awayXg.confidence) / 2)
@@ -317,8 +317,8 @@ export function collectXgaEvidence(
   if (primary) {
     const combinedScore =
       homeXga && awayXga
-        ? clampScore((homeXga.score + awayXga.score) / 2)
-        : primary.score;
+        ? clampScore(((homeXga.score ?? 0) + (awayXga.score ?? 0)) / 2)
+        : primary.score ?? 0;
     const combinedConfidence =
       homeXga && awayXga
         ? clampConfidence((homeXga.confidence + awayXga.confidence) / 2)

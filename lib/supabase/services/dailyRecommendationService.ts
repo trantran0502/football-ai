@@ -1,5 +1,10 @@
-import { buildDailyRecommendationRecords } from "@/lib/dailyRecommendations/dailyRecommendationRanking";
-import type { BuildDailyRecommendationsInput } from "@/lib/dailyRecommendations/dailyRecommendationRanking";
+import {
+  buildDailyRecommendationRecordsWithDiagnostics,
+} from "@/lib/dailyRecommendations/dailyRecommendationRanking";
+import type {
+  BuildDailyRecommendationsInput,
+  DailyRecommendationBuildResult,
+} from "@/lib/dailyRecommendations/dailyRecommendationRanking";
 import type { DailyRecommendationRecord } from "@/lib/dailyRecommendations/dailyRecommendationTypes";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -52,9 +57,20 @@ export async function insertDailyRecommendationsToSupabase(
 export async function rebuildDailyRecommendationsForDate(
   input: BuildDailyRecommendationsInput
 ): Promise<DailyRecommendationRecord[]> {
+  const rebuilt = await rebuildDailyRecommendationsWithDiagnosticsForDate(input);
+  return rebuilt.records;
+}
+
+export async function rebuildDailyRecommendationsWithDiagnosticsForDate(
+  input: BuildDailyRecommendationsInput
+): Promise<DailyRecommendationBuildResult> {
   await deleteDailyRecommendationsForDate(input.matchDate);
-  const records = buildDailyRecommendationRecords(input);
-  return insertDailyRecommendationsToSupabase(records);
+  const built = buildDailyRecommendationRecordsWithDiagnostics(input);
+  const records = await insertDailyRecommendationsToSupabase(built.records);
+  return {
+    records,
+    diagnostics: built.diagnostics,
+  };
 }
 
 export type { HistoricalMatchRecord };

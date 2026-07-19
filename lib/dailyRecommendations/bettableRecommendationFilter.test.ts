@@ -118,6 +118,9 @@ function buildMatchRecord(input: {
       },
       bettingIntelligence: null,
       decision: null,
+      dataCompleteness: {
+        eligibleForRecommendation: input.status !== "VERIFIED",
+      },
       capturedAt: "2026-07-19T10:00:00.000Z",
     },
     candidates: [],

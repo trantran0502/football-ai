@@ -41,7 +41,7 @@ function getFeatureById(
 function assertBounds(features: ReturnType<typeof buildFeatureScores>["features"]): void {
   for (const feature of features) {
     assert(
-      feature.score >= -100 && feature.score <= 100,
+      (feature.score ?? 0) >= -100 && (feature.score ?? 0) <= 100,
       `${feature.id} score must stay within [-100, 100]`
     );
     assert(

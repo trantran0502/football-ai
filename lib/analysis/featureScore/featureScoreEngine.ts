@@ -4,6 +4,7 @@ import type {
   FeatureScoreContext,
   FeatureScoreResult,
 } from "@/lib/analysis/featureScore/types";
+import { isUnavailableFeature, normalizeFeatureAvailability } from "@/lib/analysis/featureScore/featureAvailability";
 
 const collectors: FeatureCollector[] = [];
 
@@ -29,20 +30,26 @@ export function getRegisteredFeatureCollectors(): readonly FeatureCollector[] {
 export function buildFeatureScores(
   context: FeatureScoreContext
 ): FeatureScoreResult {
-  const features = collectors.flatMap((collect) => collect(context));
+  const features = normalizeFeatureAvailability(
+    collectors.flatMap((collect) => collect(context))
+  );
   return aggregateFeatureScores(features);
 }
 
 function aggregateFeatureScores(features: FeatureScore[]): FeatureScoreResult {
-  if (features.length === 0) {
+  const scoredFeatures = features.filter(
+    (feature) => feature.available !== false && !isUnavailableFeature(feature)
+  );
+
+  if (scoredFeatures.length === 0) {
     return {
-      features: [],
+      features,
       totalScore: 0,
       confidence: 0,
     };
   }
 
-  const totalWeight = features.reduce((sum, feature) => sum + feature.weight, 0);
+  const totalWeight = scoredFeatures.reduce((sum, feature) => sum + feature.weight, 0);
 
   if (totalWeight <= 0) {
     return {
@@ -52,11 +59,11 @@ function aggregateFeatureScores(features: FeatureScore[]): FeatureScoreResult {
     };
   }
 
-  const weightedScore = features.reduce(
-    (sum, feature) => sum + feature.score * feature.weight,
+  const weightedScore = scoredFeatures.reduce(
+    (sum, feature) => sum + (feature.score ?? 0) * feature.weight,
     0
   );
-  const weightedConfidence = features.reduce(
+  const weightedConfidence = scoredFeatures.reduce(
     (sum, feature) => sum + feature.confidence * feature.weight,
     0
   );

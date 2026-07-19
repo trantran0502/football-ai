@@ -20,6 +20,9 @@ export function resolveDailyRecommendationGrade(score: number): DailyRecommendat
   if (score >= 80) {
     return { grade: "B", stars: "★★", recommended: true };
   }
+  if (score >= 60) {
+    return { grade: "C", stars: "★", recommended: true };
+  }
   return { grade: "—", stars: "", recommended: false };
 }
 

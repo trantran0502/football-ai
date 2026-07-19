@@ -152,8 +152,12 @@ export interface RecommendationSection {
   message: string;
 }
 
-import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
+import type { MatchTeamProfilesSnapshot, TeamProfileTeamDiagnostic } from "@/lib/teamProfile/teamProfileTypes";
 import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
+
+export interface AnalysisReportContext {
+  profileDiagnostics?: TeamProfileTeamDiagnostic[];
+}
 
 /** 端到端分析報告 */
 export interface AnalysisReport {
@@ -168,6 +172,7 @@ export interface AnalysisReport {
   decision: DecisionResult | null;
   teamProfiles?: MatchTeamProfilesSnapshot | null;
   weightConfig?: WeightConfigSnapshotMetadata | null;
+  analysisContext?: AnalysisReportContext;
 }
 
 export type MarketSelectionInput = MarketSelection[];

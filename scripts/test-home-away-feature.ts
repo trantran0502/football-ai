@@ -87,7 +87,7 @@ function runTests(): void {
     "missing teams should still return 9 home/away features"
   );
   assert(
-    getHomeAwayFeatures(missingTeams.features).every((feature) => feature.score === 0),
+    getHomeAwayFeatures(missingTeams.features).every((feature) => (feature.score ?? 0) === 0),
     "missing teams should score 0"
   );
 
@@ -192,7 +192,7 @@ function runTests(): void {
       `${feature.id} weight should use homeAdvantage`
     );
     assert(
-      feature.score >= -100 && feature.score <= 100,
+      (feature.score ?? 0) >= -100 && (feature.score ?? 0) <= 100,
       `${feature.id} score must stay within [-100, 100]`
     );
     assert(

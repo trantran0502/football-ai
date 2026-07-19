@@ -61,6 +61,17 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   startedFixtureSkipped?: number;
   terminalStatusSkipped?: number;
   eligibleUpcomingCount?: number;
+  profileDeferredCount?: number;
+  profileUnavailableCount?: number;
+  groundingUnavailableCount?: number;
+  snapshotPersistedCount?: number;
+  snapshotMissingCount?: number;
+  recommendationsBlockedByCompleteness?: number;
+  recommendationsCreatedWithCompleteData?: number;
+  rejectedByScore?: number;
+  rejectedByConfidence?: number;
+  rejectedByGrade?: number;
+  eligibleRecommendationCount?: number;
 }
 
 export interface CompleteExecutionLogResult {

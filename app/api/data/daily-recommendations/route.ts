@@ -1,4 +1,5 @@
 import { filterBettableDailyRecommendations } from "@/lib/dailyRecommendations/bettableRecommendationFilter";
+import { filterQualifiedDailyRecommendations } from "@/lib/dailyRecommendations/dailyRecommendationThresholdFilter";
 import { listDailyRecommendationsFromSupabase } from "@/lib/supabase/queries/dailyRecommendations";
 import { dataApiSuccess } from "@/lib/supabase/apiResponse";
 import { genericErrorResponse } from "@/lib/security";
@@ -21,7 +22,8 @@ export async function GET(request: Request) {
   try {
     const records = await listDailyRecommendationsFromSupabase(matchDate);
     const bettable = filterBettableDailyRecommendations(records);
-    return dataApiSuccess(bettable, { count: bettable.length, matchDate });
+    const qualified = filterQualifiedDailyRecommendations(bettable);
+    return dataApiSuccess(qualified, { count: qualified.length, matchDate });
   } catch {
     return genericErrorResponse();
   }

@@ -1,8 +1,8 @@
 import type { AnalysisSnapshot } from "@/lib/database/matchSchema";
 
-export const DAILY_RECOMMENDATION_SCORE_THRESHOLD = 80;
+export const DAILY_RECOMMENDATION_SCORE_THRESHOLD = 60;
+export const DAILY_RECOMMENDATION_CONFIDENCE_THRESHOLD = 55;
 export const DAILY_RECOMMENDATION_MAX_PICKS = 3;
-export const DAILY_RECOMMENDATION_MIN_PICKS = 1;
 
 export interface DailyRecommendationRecord {
   id: string;

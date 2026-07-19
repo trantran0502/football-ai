@@ -86,7 +86,7 @@ function runTests(): void {
   );
   assert(
     getLeagueStrengthFeatures(missingLeague.features).every(
-      (feature) => feature.score === 0
+      (feature) => (feature.score ?? 0) === 0
     ),
     "missing league should score 0"
   );
@@ -191,7 +191,7 @@ function runTests(): void {
       `${feature.id} weight should use leagueStrength`
     );
     assert(
-      feature.score >= -100 && feature.score <= 100,
+      (feature.score ?? 0) >= -100 && (feature.score ?? 0) <= 100,
       `${feature.id} score must stay within [-100, 100]`
     );
     assert(

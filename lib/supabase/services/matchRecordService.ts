@@ -25,11 +25,17 @@ import {
 } from "@/lib/supabase/mappers/matchRecordMapper";
 import {
   assessAnalysisCompleteness,
+  assessProductionRecommendationCompleteness,
   buildEnrichedHistoricalBackfillRecord,
   hasCompleteAnalysisRecord,
   isConflictingEnrichmentTarget,
   isIncompleteHistoricalBackfillRecord,
 } from "@/lib/supabase/services/matchRecordCompletenessGuard";
+import {
+  assessRecommendationDataCompleteness,
+  buildAnalysisDataCompletenessMetadata,
+} from "@/lib/analysis/analysisDataCompleteness";
+import { captureReplayRawSources } from "@/lib/replay/replayRawCapture";
 
 type MatchRecordInsertRow =
   Database["public"]["Tables"]["match_records"]["Insert"];
@@ -254,7 +260,50 @@ export async function saveMatchFromAnalysisInSupabase(
 ): Promise<SaveMatchOutcome> {
   const id = generateHistoricalMatchId();
   const capturedAt = new Date().toISOString();
-  const snapshot = createAnalysisSnapshotFromReport(report, capturedAt, id, matchDate);
+  const rawSources = await captureReplayRawSources({ report, matchDate });
+  const assessment = assessRecommendationDataCompleteness({
+    report,
+    matchId: id,
+    profileDiagnostics: report.analysisContext?.profileDiagnostics,
+    rawSources,
+  });
+  const dataCompleteness = buildAnalysisDataCompletenessMetadata(assessment, capturedAt);
+  const snapshot = createAnalysisSnapshotFromReport(report, capturedAt, id, matchDate, {
+    rawSources,
+    dataCompleteness,
+  });
+
+  const existing = await resolveExistingMatchRecordForSave(
+    {
+      id,
+      date: matchDate,
+      matchDate,
+      league: report.match.league ?? "",
+      homeTeam: report.match.homeTeam,
+      awayTeam: report.match.awayTeam,
+      rawOdds,
+      marketSelections: report.markets,
+      fixtureId: report.match.fixtureId ?? null,
+      leagueId: report.match.leagueId ?? null,
+      season: report.match.season ?? null,
+      homeTeamId: report.match.homeTeamId ?? null,
+      awayTeamId: report.match.awayTeamId ?? null,
+    },
+    deps
+  );
+  const isBackfillEnrichment =
+    existing !== null && isIncompleteHistoricalBackfillRecord(existing);
+
+  if (!isBackfillEnrichment) {
+    const recommendationIssue = assessProductionRecommendationCompleteness(snapshot);
+    if (recommendationIssue) {
+      return {
+        status: "incomplete_analysis_rejected",
+        record: null,
+        reason: recommendationIssue,
+      };
+    }
+  }
 
   return saveMatchIfNewInSupabase(
     {

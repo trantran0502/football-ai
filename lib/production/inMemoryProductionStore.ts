@@ -13,6 +13,12 @@ import { runMatchVerification } from "@/lib/database/matchVerification";
 import { persistRecommendationLearningForVerifiedMatch } from "@/lib/recommendation/recommendationLearningPersistence";
 import { filterTrulyPendingVerificationRecords } from "@/lib/supabase/services/matchRecordPendingPolicy";
 import type { AnalysisReport } from "@/lib/analysis/types";
+import {
+  assessRecommendationDataCompleteness,
+  buildAnalysisDataCompletenessMetadata,
+} from "@/lib/analysis/analysisDataCompleteness";
+import { assessAnalysisCompleteness, assessProductionRecommendationCompleteness } from "@/lib/supabase/services/matchRecordCompletenessGuard";
+import { captureReplayRawSources } from "@/lib/replay/replayRawCapture";
 
 const store = new Map<string, HistoricalMatchRecord>();
 
@@ -43,7 +49,31 @@ export async function saveMatchInMemory(
 
   const now = new Date().toISOString();
   const id = generateHistoricalMatchId();
-  const snapshot = createAnalysisSnapshotFromReport(report, now, id, matchDate);
+  const rawSources = await captureReplayRawSources({ report, matchDate });
+  const assessment = assessRecommendationDataCompleteness({
+    report,
+    matchId: id,
+    profileDiagnostics: report.analysisContext?.profileDiagnostics,
+    rawSources,
+  });
+  const dataCompleteness = buildAnalysisDataCompletenessMetadata(assessment, now);
+  const snapshot = createAnalysisSnapshotFromReport(report, now, id, matchDate, {
+    rawSources,
+    dataCompleteness,
+  });
+  const completenessIssue =
+    assessAnalysisCompleteness({
+      rawOdds,
+      marketSelections: report.markets,
+      analysisSnapshot: snapshot,
+    }) ?? assessProductionRecommendationCompleteness(snapshot);
+  if (completenessIssue) {
+    return {
+      status: "incomplete_analysis_rejected",
+      record: null,
+      reason: completenessIssue,
+    };
+  }
   const record = normalizeHistoricalMatchRecord({
     id,
     date: matchDate,

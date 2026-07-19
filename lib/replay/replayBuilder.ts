@@ -4,7 +4,7 @@ import { buildReplayDecisionSnapshot } from "@/lib/decision/decisionEngine";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import type { ProviderRecommendationDiagnostic } from "@/lib/recommendation/providerWeightEngine";
 import { mapEngineProviderDiagnostics } from "@/lib/recommendation/recommendationValidationDashboard";
-import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import type { AnalysisDataCompletenessMetadata, HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import {
   buildGoogleSearchCacheKey,
   getCachedGoogleRecord,
@@ -33,6 +33,7 @@ import {
 import type { FeatureProviderKey } from "@/lib/providers/registry/types";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import type {
+  ReplayDataCompletenessSnapshot,
   ReplayDataSource,
   ReplayMarketSnapshot,
   ReplayMarketSelectionSnapshot,
@@ -74,7 +75,13 @@ function captureRawSources(input: {
   homeTeam: string;
   awayTeam: string;
   matchDate?: string;
+  override?: ReplayRawSources;
+  teamProfiles?: MatchTeamProfilesSnapshot | null;
 }): ReplayRawSources {
+  if (input.override) {
+    return input.override;
+  }
+
   const cacheKey = buildGoogleSearchCacheKey({
     homeTeam: input.homeTeam,
     awayTeam: input.awayTeam,
@@ -84,10 +91,18 @@ function captureRawSources(input: {
   const googleRecord = getCachedGoogleRecord(cacheKey);
 
   return {
-    apiFootballRaw: null,
-    googleGroundingRaw: googleRecord?.rawResponse ?? null,
+    apiFootballRaw: input.teamProfiles
+      ? {
+          source: "api-football-normalized",
+          completeness: input.teamProfiles.completeness,
+          warnings: input.teamProfiles.warnings,
+          home: input.teamProfiles.home,
+          away: input.teamProfiles.away,
+        }
+      : null,
+    googleGroundingRaw: googleRecord?.rawResponse ?? googleRecord?.payload ?? null,
     citations: googleRecord?.citations ?? googleRecord?.payload.citations ?? [],
-    cacheSource: googleRecord ? "cache" : null,
+    cacheSource: googleRecord ? "cache" : input.teamProfiles ? "api-football" : null,
   };
 }
 
@@ -185,10 +200,12 @@ function captureFeatureSnapshots(
     return annotated.map((feature) => ({
       id: feature.id,
       category: feature.category,
-      score: feature.score,
+      score: feature.available === false ? null : feature.score,
       confidence: feature.confidence,
       weight: feature.weight,
       explanation: feature.reason,
+      available: feature.available ?? true,
+      unavailableReason: feature.unavailableReason ?? null,
       source:
         (feature.metadata?.replaySource as ReplayDataSource | undefined) ??
         "unknown",
@@ -217,20 +234,20 @@ function buildFeatureViews(
     const inSupportingList = candidateFeatures.includes(label) ||
       candidateFeatures.includes(feature.id);
 
-    if (direction === "supporting" && (inSupportingList || feature.score > 15)) {
+    if (direction === "supporting" && (inSupportingList || (feature.score ?? 0) > 15)) {
       views.push({
         featureId: feature.id,
         label,
-        score: feature.score,
+        score: feature.score ?? 0,
         role: "supporting",
       });
     }
 
-    if (direction === "opposing" && (feature.score < -10 || (candidateFeatures.length > 0 && !inSupportingList && feature.score < 0))) {
+    if (direction === "opposing" && ((feature.score ?? 0) < -10 || (candidateFeatures.length > 0 && !inSupportingList && (feature.score ?? 0) < 0))) {
       views.push({
         featureId: feature.id,
         label,
-        score: feature.score,
+        score: feature.score ?? 0,
         role: "opposing",
       });
     }
@@ -370,6 +387,38 @@ export function buildReplayMatchInfo(
   };
 }
 
+function buildReplayDataCompletenessSnapshot(
+  metadata: AnalysisDataCompletenessMetadata | undefined
+): ReplayDataCompletenessSnapshot | null {
+  if (!metadata) {
+    return {
+      eligibleForRecommendation: false,
+      reasons: ["legacy_snapshot_not_saved"],
+      profileDeferred: false,
+      profileUnavailableCount: 0,
+      groundingUnavailable: true,
+      trustedExternalSourceAvailable: false,
+      quotaWarnings: [],
+      legacySnapshot: true,
+      modelVersion: null,
+      ruleVersion: REPLAY_SNAPSHOT_VERSION,
+    };
+  }
+
+  return {
+    eligibleForRecommendation: metadata.eligibleForRecommendation !== false,
+    reasons: metadata.completenessReasons ?? [],
+    profileDeferred: metadata.profileDeferred ?? false,
+    profileUnavailableCount: metadata.profileUnavailableCount ?? 0,
+    groundingUnavailable: metadata.groundingUnavailable ?? true,
+    trustedExternalSourceAvailable: metadata.trustedExternalSourceAvailable ?? false,
+    quotaWarnings: metadata.quotaWarnings ?? [],
+    legacySnapshot: false,
+    modelVersion: null,
+    ruleVersion: REPLAY_SNAPSHOT_VERSION,
+  };
+}
+
 export function buildReplaySnapshotFromReport(
   report: AnalysisReport,
   options: {
@@ -377,6 +426,8 @@ export function buildReplaySnapshotFromReport(
     capturedAt?: string;
     matchDate?: string;
     record?: HistoricalMatchRecord | null;
+    rawSources?: ReplayRawSources;
+    dataCompleteness?: AnalysisDataCompletenessMetadata;
   }
 ): ReplaySnapshot {
   const capturedAt = options.capturedAt ?? new Date().toISOString();
@@ -386,6 +437,8 @@ export function buildReplaySnapshotFromReport(
     homeTeam: report.match.homeTeam,
     awayTeam: report.match.awayTeam,
     matchDate,
+    override: options.rawSources,
+    teamProfiles: report.teamProfiles ?? null,
   });
   const providers = captureProviderSnapshots({
     homeTeam: report.match.homeTeam,
@@ -419,6 +472,7 @@ export function buildReplaySnapshotFromReport(
     marketReplay: captureMarketReplay(report),
     decisionReplay,
     validation: buildValidationSnapshot(options.record ?? null),
+    dataCompleteness: buildReplayDataCompletenessSnapshot(options.dataCompleteness),
   };
 }
 

@@ -1,3 +1,11 @@
+import {
+  assessRecommendationDataCompleteness,
+  assessSnapshotRecommendationEligibility,
+  buildAnalysisDataCompletenessMetadata,
+  isEligibleForDailyRecommendation,
+  mapCompletenessToIncompleteReason,
+  type RecommendationDataCompletenessAssessment,
+} from "@/lib/analysis/analysisDataCompleteness";
 import type {
   AnalysisSnapshot,
   HistoricalMatchRecord,
@@ -17,7 +25,11 @@ export interface AnalysisCompletenessInput {
 export type IncompleteAnalysisReason =
   | "oddsMissing"
   | "settleableMarketMissing"
-  | "analysisSnapshotMissing";
+  | "analysisSnapshotMissing"
+  | "dataCompletenessInsufficient"
+  | "profileDeferred"
+  | "profileUnavailable"
+  | "groundingUnavailable";
 
 export interface DataCompletenessRejectReason {
   kind: "incomplete_analysis_rejected";
@@ -59,6 +71,25 @@ export function assessAnalysisCompleteness(
   }
   return null;
 }
+
+export function assessProductionRecommendationCompleteness(
+  snapshot: AnalysisSnapshot | null | undefined
+): IncompleteAnalysisReason | null {
+  const recommendationAssessment = assessSnapshotRecommendationEligibility(snapshot);
+  if (!recommendationAssessment.eligibleForRecommendation) {
+    return mapCompletenessToIncompleteReason(recommendationAssessment);
+  }
+  return null;
+}
+
+export function buildSnapshotDataCompleteness(
+  assessment: RecommendationDataCompletenessAssessment,
+  capturedAt: string
+): AnalysisSnapshot["dataCompleteness"] {
+  return buildAnalysisDataCompletenessMetadata(assessment, capturedAt);
+}
+
+export { isEligibleForDailyRecommendation };
 
 export function hasCompleteAnalysisRecord(record: HistoricalMatchRecord): boolean {
   return (

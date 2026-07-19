@@ -91,7 +91,7 @@ function runTests(): void {
   );
   assert(
     getRecentFormFeatures(missingTeams.features).every(
-      (feature) => feature.score === 0
+      (feature) => (feature.score ?? 0) === 0
     ),
     "missing teams should score 0"
   );
@@ -211,7 +211,7 @@ function runTests(): void {
 
   for (const feature of recentFormFeatures) {
     assert(
-      feature.score >= -100 && feature.score <= 100,
+      (feature.score ?? 0) >= -100 && (feature.score ?? 0) <= 100,
       `${feature.id} score must stay within [-100, 100]`
     );
     assert(

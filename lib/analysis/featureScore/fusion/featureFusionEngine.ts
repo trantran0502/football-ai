@@ -1,4 +1,5 @@
 import { clampConfidence, clampScore } from "@/lib/analysis/featureScore/oddsConversion";
+import { isUnavailableFeature } from "@/lib/analysis/featureScore/featureAvailability";
 import {
   FUSION_SOURCE_CATEGORIES,
   type FeatureFusionOptions,
@@ -35,7 +36,10 @@ export class FeatureFusionEngine {
 
   fuse(features: FeatureScore[]): FeatureFusionResult {
     const activeFeatures = features.filter(
-      (feature) => feature.confidence >= this.options.minConfidence
+      (feature) =>
+        feature.available !== false &&
+        !isUnavailableFeature(feature) &&
+        feature.confidence >= this.options.minConfidence
     );
     const ignoredFeatures = features
       .filter((feature) => feature.confidence < this.options.minConfidence)
@@ -90,7 +94,7 @@ export function resolveFusionSourceCategory(
 function toFactorSummary(feature: FeatureScore): FusionFactorSummary {
   return {
     id: feature.id,
-    score: feature.score,
+    score: feature.score ?? 0,
     confidence: feature.confidence,
     weight: feature.weight,
     reason: feature.reason,
@@ -117,7 +121,10 @@ function buildCategoryScores(activeFeatures: FeatureScore[]): FusionCategoryScor
       };
     }
 
-    const totalScore = categoryFeatures.reduce((sum, feature) => sum + feature.score, 0);
+    const totalScore = categoryFeatures.reduce(
+      (sum, feature) => sum + (feature.score ?? 0),
+      0
+    );
     const weightSum = categoryFeatures.reduce((sum, feature) => sum + feature.weight, 0);
 
     let weightedScore = 0;
@@ -125,7 +132,7 @@ function buildCategoryScores(activeFeatures: FeatureScore[]): FusionCategoryScor
     if (weightSum > 0) {
       weightedScore =
         categoryFeatures.reduce(
-          (sum, feature) => sum + feature.score * feature.weight,
+          (sum, feature) => sum + (feature.score ?? 0) * feature.weight,
           0
         ) / weightSum;
       confidence =
@@ -160,8 +167,10 @@ function aggregateOverall(activeFeatures: FeatureScore[]): {
   }
 
   const weightedScore =
-    activeFeatures.reduce((sum, feature) => sum + feature.score * feature.weight, 0) /
-    weightSum;
+    activeFeatures.reduce(
+      (sum, feature) => sum + (feature.score ?? 0) * feature.weight,
+      0
+    ) / weightSum;
   const weightedConfidence =
     activeFeatures.reduce(
       (sum, feature) => sum + feature.confidence * feature.weight,
@@ -184,7 +193,9 @@ function pickTopFactors(
         ? right.confidence - left.confidence
         : left.confidence - right.confidence;
     }
-    return direction === "desc" ? right.score - left.score : left.score - right.score;
+    return direction === "desc"
+      ? (right.score ?? 0) - (left.score ?? 0)
+      : (left.score ?? 0) - (right.score ?? 0);
   });
 
   return sorted.slice(0, TOP_FACTOR_COUNT).map((feature) => toFactorSummary(feature));
@@ -280,8 +291,12 @@ function detectFeatureConflicts(
   activeFeatures: FeatureScore[],
   threshold: number
 ): Array<{ positiveId: string; negativeId: string }> {
-  const positives = activeFeatures.filter((feature) => feature.score >= threshold);
-  const negatives = activeFeatures.filter((feature) => feature.score <= -threshold);
+  const positives = activeFeatures.filter(
+    (feature) => (feature.score ?? 0) >= threshold
+  );
+  const negatives = activeFeatures.filter(
+    (feature) => (feature.score ?? 0) <= -threshold
+  );
   const conflicts: Array<{ positiveId: string; negativeId: string }> = [];
 
   for (const positive of positives) {

@@ -63,12 +63,27 @@ export interface ReplayProviderSnapshot {
 export interface ReplayFeatureSnapshot {
   id: string;
   category: string;
-  score: number;
+  score: number | null;
   confidence: number;
   weight: number;
   explanation: string;
   source: ReplayDataSource;
+  available?: boolean;
+  unavailableReason?: string | null;
   metadata: Record<string, unknown> | null;
+}
+
+export interface ReplayDataCompletenessSnapshot {
+  eligibleForRecommendation: boolean;
+  reasons: string[];
+  profileDeferred: boolean;
+  profileUnavailableCount: number;
+  groundingUnavailable: boolean;
+  trustedExternalSourceAvailable: boolean;
+  quotaWarnings: string[];
+  legacySnapshot: boolean;
+  modelVersion?: string | null;
+  ruleVersion?: string | null;
 }
 
 export interface ReplayRecommendationFeatureView {
@@ -167,6 +182,7 @@ export interface ReplaySnapshot {
   marketReplay: ReplayMarketSnapshot | null;
   decisionReplay: ReplayDecisionSnapshot | null;
   validation: ReplayValidationSnapshot | null;
+  dataCompleteness?: ReplayDataCompletenessSnapshot | null;
 }
 
 export interface ReplayStep<T> {

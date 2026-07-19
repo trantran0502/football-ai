@@ -114,6 +114,9 @@ function buildVerifiedRecord(input: {
     },
     bettingIntelligence: null,
     decision: null,
+    dataCompleteness: {
+      eligibleForRecommendation: true,
+    },
     capturedAt: "2026-07-19T10:00:00.000Z",
   } satisfies AnalysisSnapshot;
 

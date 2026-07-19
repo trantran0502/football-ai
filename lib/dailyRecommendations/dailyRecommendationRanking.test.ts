@@ -5,7 +5,10 @@ import {
   rankDailyRecommendationEntries,
   selectDailyRecommendationEntries,
 } from "@/lib/dailyRecommendations/dailyRecommendationRanking";
-import { DAILY_RECOMMENDATION_SCORE_THRESHOLD } from "@/lib/dailyRecommendations/dailyRecommendationTypes";
+import {
+  DAILY_RECOMMENDATION_CONFIDENCE_THRESHOLD,
+  DAILY_RECOMMENDATION_SCORE_THRESHOLD,
+} from "@/lib/dailyRecommendations/dailyRecommendationTypes";
 import type { RecommendationCandidate } from "@/lib/recommendation/recommendationTypes";
 
 function assert(condition: boolean, message: string): void {
@@ -84,6 +87,10 @@ function buildRecord(input: {
     },
     bettingIntelligence: null,
     decision: null,
+    dataCompleteness: {
+      status: "complete" as const,
+      eligibleForRecommendation: true,
+    },
     capturedAt: "2026-07-19T10:00:00.000Z",
   } as AnalysisSnapshot;
 
@@ -165,15 +172,33 @@ async function runDailyRecommendationRankingTests(): Promise<void> {
 
   const selectedQualified = selectDailyRecommendationEntries(ranked);
   assert(
-    selectedQualified.every((entry) => entry.score >= DAILY_RECOMMENDATION_SCORE_THRESHOLD),
-    "qualified selection should meet threshold when available"
+    selectedQualified.every(
+      (entry) =>
+        entry.score >= DAILY_RECOMMENDATION_SCORE_THRESHOLD &&
+        entry.confidence >= DAILY_RECOMMENDATION_CONFIDENCE_THRESHOLD
+    ),
+    "qualified selection should meet score and confidence thresholds"
   );
   assert(selectedQualified.length <= 3, "should keep at most three picks");
 
-  const onlyLow = rankDailyRecommendationEntries([low, medium]);
-  const fallback = selectDailyRecommendationEntries(onlyLow);
-  assert(fallback.length === 1, "fallback should keep top match when none meet threshold");
-  assert(fallback[0]?.matchRecord.id === "medium-match", "fallback should pick highest score");
+  const onlyLow = rankDailyRecommendationEntries([
+    buildRecord({
+      id: "low-a",
+      homeTeam: "Team C",
+      awayTeam: "Team D",
+      candidate: buildCandidate(40, "low"),
+      fusionConfidence: 0.4,
+    }),
+    buildRecord({
+      id: "low-b",
+      homeTeam: "Team E",
+      awayTeam: "Team F",
+      candidate: buildCandidate(35, "low"),
+      fusionConfidence: 0.35,
+    }),
+  ]);
+  const noFallback = selectDailyRecommendationEntries(onlyLow);
+  assert(noFallback.length === 0, "should not fallback to low-score picks when none meet threshold");
 
   const built = buildDailyRecommendationRecords({
     matchDate: "2026-07-19",
@@ -181,13 +206,13 @@ async function runDailyRecommendationRankingTests(): Promise<void> {
     records: [high, medium, low],
     now: () => new Date("2026-07-19T12:00:00.000Z"),
   });
-  assert(built.length >= 1, "should build at least one recommendation");
+  assert(built.length >= 1, "should build at least one recommendation when qualified candidates exist");
   assert(built[0]?.rank === 1, "first built record should be rank 1");
   assert(built[0]?.homeTeam === "Liverpool", "top record should map match teams");
   assert(built[0]?.recommendation.includes("主"), "recommendation label should be localized");
 
   const score = computeDailyRecommendationScore(buildCandidate(88, "high"), 0.91);
-  assert(score >= 80, "high candidate should produce display score above threshold");
+  assert(score >= DAILY_RECOMMENDATION_SCORE_THRESHOLD, "high candidate should produce display score above threshold");
 
   console.log("Daily recommendation ranking tests passed.");
 }

@@ -143,7 +143,9 @@ function toFeatureScore(feature: ReplaySnapshot["features"][number]): FeatureSco
   return {
     id: feature.id,
     category: feature.category as FeatureScore["category"],
-    score: feature.score,
+    score: feature.score ?? 0,
+    available: feature.available,
+    unavailableReason: feature.unavailableReason,
     weight: feature.weight,
     confidence: feature.confidence,
     reason: feature.explanation,

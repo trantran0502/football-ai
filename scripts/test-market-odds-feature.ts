@@ -194,7 +194,7 @@ function runTests(): void {
     missingData.features[0],
   ]) {
     assert(
-      feature.score >= -100 && feature.score <= 100,
+      (feature.score ?? 0) >= -100 && (feature.score ?? 0) <= 100,
       "score must stay within [-100, 100]"
     );
     assert(

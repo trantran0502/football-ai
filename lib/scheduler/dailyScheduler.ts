@@ -71,7 +71,13 @@ import {
   completeExecutionLog,
   startExecutionLog,
 } from "@/lib/scheduler/executionLogStore";
-import { rebuildDailyRecommendationsForDate } from "@/lib/supabase/services/dailyRecommendationService";
+import {
+  rebuildDailyRecommendationsForDate,
+  rebuildDailyRecommendationsWithDiagnosticsForDate,
+} from "@/lib/supabase/services/dailyRecommendationService";
+import {
+  assessRecommendationDataCompleteness,
+} from "@/lib/analysis/analysisDataCompleteness";
 
 export interface DailySchedulerDependencies {
   runDate?: string;
@@ -89,6 +95,7 @@ export interface DailySchedulerDependencies {
     deps?: RuntimeWeightConfigLoaderDeps
   ) => ReturnType<typeof loadRuntimeWeightConfigForProduction>;
   rebuildDailyRecommendations?: typeof rebuildDailyRecommendationsForDate;
+  rebuildDailyRecommendationsWithDiagnostics?: typeof rebuildDailyRecommendationsWithDiagnosticsForDate;
 }
 
 function todayKey(date = new Date()): string {
@@ -273,6 +280,13 @@ function createEmptyDataCompletenessStats(): DailyDataCompletenessStats {
     oddsMissing: 0,
     settleableMarketMissing: 0,
     analysisSnapshotMissing: 0,
+    profileDeferredCount: 0,
+    profileUnavailableCount: 0,
+    groundingUnavailableCount: 0,
+    snapshotPersistedCount: 0,
+    snapshotMissingCount: 0,
+    recommendationsBlockedByCompleteness: 0,
+    recommendationsCreatedWithCompleteData: 0,
   };
 }
 
@@ -297,8 +311,16 @@ function recordDataCompletenessOutcome(
         stats.oddsMissing += 1;
       } else if (outcome.reason === "settleableMarketMissing") {
         stats.settleableMarketMissing += 1;
-      } else {
+      } else if (outcome.reason === "analysisSnapshotMissing") {
         stats.analysisSnapshotMissing += 1;
+      } else if (outcome.reason === "profileDeferred") {
+        stats.profileDeferredCount += 1;
+      } else if (outcome.reason === "profileUnavailable") {
+        stats.profileUnavailableCount += 1;
+      } else if (outcome.reason === "groundingUnavailable") {
+        stats.groundingUnavailableCount += 1;
+      } else {
+        stats.recommendationsBlockedByCompleteness += 1;
       }
       logAdminError({
         category: "scheduler",
@@ -405,11 +427,12 @@ async function runBatchedDailyPipeline(
     }
 
     try {
-      const outcome = await withRetry(
+      const pipelineResult = await withRetry(
         async () =>
           withTimeout(
             (async () => {
               let profileSnapshot = buildMatchTeamProfilesSnapshot(null, null, []);
+              let fixtureProfileDiagnostics: TeamProfileTeamDiagnostic[] = [];
               const canAttemptProfileRefresh =
                 teamProfileRefreshesUsed + 2 <=
                 dependencies.maxTeamProfileRefreshesPerRun;
@@ -429,6 +452,7 @@ async function runBatchedDailyPipeline(
                     skipDeferredRetry: true,
                   });
                   profileSnapshot = profileResult.snapshot;
+                  fixtureProfileDiagnostics = profileResult.profileDiagnostics;
                   teamProfileWarnings.push(...profileResult.profileWarnings);
                   teamProfileDiagnostics.push(...profileResult.profileDiagnostics);
                   teamProfileRefreshesUsed += 2;
@@ -553,7 +577,27 @@ async function runBatchedDailyPipeline(
                 ),
                 profileSnapshot
               );
-              return dependencies.saveMatch(fixture.rawOdds, report, fixture.matchDate);
+              report.analysisContext = {
+                profileDiagnostics: fixtureProfileDiagnostics,
+              };
+
+              const completeness = assessRecommendationDataCompleteness({
+                report,
+                profileDiagnostics: fixtureProfileDiagnostics,
+              });
+              if (!completeness.eligibleForRecommendation) {
+                return {
+                  status: "incomplete_deferred" as const,
+                  completeness,
+                };
+              }
+
+              const outcome = await dependencies.saveMatch(
+                fixture.rawOdds,
+                report,
+                fixture.matchDate
+              );
+              return { status: "saved" as const, outcome };
             })(),
             dependencies.fixtureTimeoutMs,
             `Fixture analysis timed out: ${fixture.homeTeam} vs ${fixture.awayTeam}`
@@ -573,13 +617,66 @@ async function runBatchedDailyPipeline(
         }
       );
 
+      if (
+        pipelineResult &&
+        typeof pipelineResult === "object" &&
+        "status" in pipelineResult &&
+        pipelineResult.status === "incomplete_deferred"
+      ) {
+        dataCompleteness.incompleteAnalysisRejected += 1;
+        dataCompleteness.recommendationsBlockedByCompleteness += 1;
+        if (pipelineResult.completeness.profileDeferred) {
+          dataCompleteness.profileDeferredCount += 1;
+        }
+        dataCompleteness.profileUnavailableCount +=
+          pipelineResult.completeness.profileUnavailableCount;
+        if (pipelineResult.completeness.groundingUnavailable) {
+          dataCompleteness.groundingUnavailableCount += 1;
+        }
+        dataCompleteness.snapshotMissingCount += 1;
+        if (!updatedQueue.deferredFixtureIds.includes(fixture.fixtureId)) {
+          updatedQueue.deferredFixtureIds.push(fixture.fixtureId);
+        }
+        items.push({
+          fixture,
+          status: "incomplete_rejected",
+          error: pipelineResult.completeness.reasons.join(", "),
+        });
+        logAdminError({
+          category: "scheduler",
+          message: `Daily analysis deferred due to incomplete data: ${fixture.homeTeam} vs ${fixture.awayTeam}`,
+          context: {
+            fixtureId: fixture.fixtureId,
+            reasons: pipelineResult.completeness.reasons,
+            quotaWarnings: pipelineResult.completeness.quotaWarnings,
+          },
+        });
+        continue;
+      }
+
+      const outcome =
+        pipelineResult &&
+        typeof pipelineResult === "object" &&
+        "status" in pipelineResult &&
+        pipelineResult.status === "saved"
+          ? pipelineResult.outcome
+          : (pipelineResult as SaveMatchOutcome);
+
       const item = recordDataCompletenessOutcome(dataCompleteness, outcome, fixture);
       items.push(item);
 
       if (outcome.status === "created" || outcome.status === "enriched") {
         created += 1;
+        dataCompleteness.snapshotPersistedCount += 1;
+        dataCompleteness.recommendationsCreatedWithCompleteData += 1;
       } else if (outcome.status === "duplicate") {
         duplicates += 1;
+      } else if (outcome.status === "incomplete_analysis_rejected") {
+        dataCompleteness.recommendationsBlockedByCompleteness += 1;
+        if (!updatedQueue.deferredFixtureIds.includes(fixture.fixtureId)) {
+          updatedQueue.deferredFixtureIds.push(fixture.fixtureId);
+        }
+        continue;
       }
 
       if (!updatedQueue.completedFixtureIds.includes(fixture.fixtureId)) {
@@ -825,18 +922,27 @@ export async function runDailyScheduler(
     queue = pipeline.updatedQueue;
     await saveDailyAnalysisQueue(queue);
 
-    const rebuildDailyRecommendations =
-      dependencies.rebuildDailyRecommendations ?? rebuildDailyRecommendationsForDate;
+    const rebuildDailyRecommendationsWithDiagnostics =
+      dependencies.rebuildDailyRecommendationsWithDiagnostics ??
+      rebuildDailyRecommendationsWithDiagnosticsForDate;
     let dailyRecommendationsCount = 0;
+    let rejectedByScore = 0;
+    let rejectedByConfidence = 0;
+    let rejectedByGrade = 0;
+    let eligibleRecommendationCount = 0;
     let dailyRecommendationsWarning: string | undefined;
     try {
       const refreshedRecords = await listRecords();
-      const rebuilt = await rebuildDailyRecommendations({
+      const rebuilt = await rebuildDailyRecommendationsWithDiagnostics({
         matchDate: runDate,
         schedulerRunId: execution.id,
         records: refreshedRecords,
       });
-      dailyRecommendationsCount = rebuilt.length;
+      dailyRecommendationsCount = rebuilt.records.length;
+      rejectedByScore = rebuilt.diagnostics.rejectedByScore;
+      rejectedByConfidence = rebuilt.diagnostics.rejectedByConfidence;
+      rejectedByGrade = rebuilt.diagnostics.rejectedByGrade;
+      eligibleRecommendationCount = rebuilt.diagnostics.eligibleRecommendationCount;
     } catch (error) {
       dailyRecommendationsWarning =
         error instanceof Error ? error.message : String(error);
@@ -885,6 +991,15 @@ export async function runDailyScheduler(
         startedFixtureSkipped: preMatch.stats.startedFixtureSkipped,
         terminalStatusSkipped: preMatch.stats.terminalStatusSkipped,
         eligibleUpcomingCount: preMatch.stats.eligibleUpcomingCount,
+        profileDeferredCount: pipeline.dataCompleteness?.profileDeferredCount,
+        profileUnavailableCount: pipeline.dataCompleteness?.profileUnavailableCount,
+        groundingUnavailableCount: pipeline.dataCompleteness?.groundingUnavailableCount,
+        snapshotPersistedCount: pipeline.dataCompleteness?.snapshotPersistedCount,
+        snapshotMissingCount: pipeline.dataCompleteness?.snapshotMissingCount,
+        recommendationsBlockedByCompleteness:
+          pipeline.dataCompleteness?.recommendationsBlockedByCompleteness,
+        recommendationsCreatedWithCompleteData:
+          pipeline.dataCompleteness?.recommendationsCreatedWithCompleteData,
         created: pipeline.created,
         duplicates: pipeline.duplicates,
         failed: pipeline.failed,
@@ -906,6 +1021,10 @@ export async function runDailyScheduler(
         schedulerOdds,
         dailyRecommendationsCount,
         dailyRecommendationsWarning,
+        rejectedByScore,
+        rejectedByConfidence,
+        rejectedByGrade,
+        eligibleRecommendationCount,
       }),
     });
 

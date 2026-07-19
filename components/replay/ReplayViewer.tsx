@@ -132,7 +132,7 @@ function FeatureRemovalTable(props: { rows: ReplayFeatureRemovalSimulation[] }) 
 export function ReplayViewer(props: { replay: ReplayResponse }) {
   const { replay } = props;
   const snapshot = replay.snapshot;
-  const { raw, providers, features, fusion, recommendation, decisionReplay, marketReplay, validation } =
+  const { raw, providers, features, fusion, recommendation, decisionReplay, marketReplay, validation, dataCompleteness } =
     snapshot;
 
   const featureMap = useMemo(
@@ -156,6 +156,32 @@ export function ReplayViewer(props: { replay: ReplayResponse }) {
         <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
           唯讀回放 — 不可修改任何資料
         </p>
+        {dataCompleteness ? (
+          <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <p className="font-medium text-zinc-900 dark:text-zinc-100">
+              資料完整性：{dataCompleteness.eligibleForRecommendation ? "可建立正式推薦" : "不可建立正式推薦"}
+            </p>
+            {dataCompleteness.legacySnapshot ? (
+              <p className="mt-1 text-amber-700 dark:text-amber-400">
+                舊版本未保存完整 replay snapshot，以下欄位可能為空。
+              </p>
+            ) : null}
+            {dataCompleteness.reasons.length > 0 ? (
+              <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+                原因：{dataCompleteness.reasons.join(", ")}
+              </p>
+            ) : null}
+            {dataCompleteness.quotaWarnings.length > 0 ? (
+              <p className="mt-1 text-rose-700 dark:text-rose-400">
+                Quota / Deferred：{dataCompleteness.quotaWarnings.join(" | ")}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-amber-700 dark:text-amber-400">
+            舊版本未保存資料完整性 metadata。
+          </p>
+        )}
       </header>
 
       <StepSection step={1} title="原始資料" defaultOpen>
@@ -170,11 +196,19 @@ export function ReplayViewer(props: { replay: ReplayResponse }) {
           </div>
           <div>
             <h3 className="mb-2 text-sm font-medium">API-Football Raw JSON</h3>
-            <JsonBlock value={raw.apiFootballRaw ?? "null"} />
+            {raw.apiFootballRaw ? (
+              <JsonBlock value={raw.apiFootballRaw} />
+            ) : (
+              <p className="text-sm text-zinc-500">無保存資料（舊版本或未捕獲 API normalized payload）</p>
+            )}
           </div>
           <div>
             <h3 className="mb-2 text-sm font-medium">Google Grounding Raw JSON</h3>
-            <JsonBlock value={raw.googleGroundingRaw ?? "null"} />
+            {raw.googleGroundingRaw ? (
+              <JsonBlock value={raw.googleGroundingRaw} />
+            ) : (
+              <p className="text-sm text-zinc-500">無保存資料（Google cache miss 或未執行 grounding）</p>
+            )}
           </div>
           <div>
             <h3 className="mb-2 text-sm font-medium">Citations ({raw.citations.length})</h3>
@@ -219,9 +253,15 @@ export function ReplayViewer(props: { replay: ReplayResponse }) {
               <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
                 <span className="font-mono text-xs">{feature.id}</span>
                 <SourceBadge source={feature.source} />
-                <span className="text-zinc-500">score {feature.score.toFixed(1)}</span>
+                <span className="text-zinc-500">
+                  score {feature.available === false || feature.score === null ? "Unavailable" : feature.score.toFixed(1)}
+                </span>
               </summary>
               <div className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                <p>Available: {feature.available === false ? "false" : "true"}</p>
+                {feature.unavailableReason ? (
+                  <p>Unavailable Reason: {feature.unavailableReason}</p>
+                ) : null}
                 <p>Category: {feature.category}</p>
                 <p>Confidence: {feature.confidence}</p>
                 <p>Weight: {feature.weight}</p>
