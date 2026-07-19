@@ -66,6 +66,7 @@ import {
   completeExecutionLog,
   startExecutionLog,
 } from "@/lib/scheduler/executionLogStore";
+import { rebuildDailyRecommendationsForDate } from "@/lib/supabase/services/dailyRecommendationService";
 
 export interface DailySchedulerDependencies {
   runDate?: string;
@@ -82,6 +83,7 @@ export interface DailySchedulerDependencies {
   loadRuntimeWeightConfig?: (
     deps?: RuntimeWeightConfigLoaderDeps
   ) => ReturnType<typeof loadRuntimeWeightConfigForProduction>;
+  rebuildDailyRecommendations?: typeof rebuildDailyRecommendationsForDate;
 }
 
 function todayKey(date = new Date()): string {
@@ -740,7 +742,29 @@ export async function runDailyScheduler(
     queue = pipeline.updatedQueue;
     await saveDailyAnalysisQueue(queue);
 
-    const summary = buildSchedulerDailySummary(runDate, records);
+    const rebuildDailyRecommendations =
+      dependencies.rebuildDailyRecommendations ?? rebuildDailyRecommendationsForDate;
+    let dailyRecommendationsCount = 0;
+    let dailyRecommendationsWarning: string | undefined;
+    try {
+      const refreshedRecords = await listRecords();
+      const rebuilt = await rebuildDailyRecommendations({
+        matchDate: runDate,
+        schedulerRunId: execution.id,
+        records: refreshedRecords,
+      });
+      dailyRecommendationsCount = rebuilt.length;
+    } catch (error) {
+      dailyRecommendationsWarning =
+        error instanceof Error ? error.message : String(error);
+      logAdminError({
+        category: "scheduler",
+        message: "Daily recommendations rebuild failed",
+        context: { runDate, error: dailyRecommendationsWarning },
+      });
+    }
+
+    const summary = buildSchedulerDailySummary(runDate, await listRecords());
 
     const queueCompleted = countRemaining(queue) === 0;
     if (queueCompleted) {
@@ -793,6 +817,8 @@ export async function runDailyScheduler(
         queueStatus: queue.status,
         weightConfig: pipeline.batchWeightConfig,
         schedulerOdds,
+        dailyRecommendationsCount,
+        dailyRecommendationsWarning,
       }),
     });
 

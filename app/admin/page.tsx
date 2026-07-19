@@ -434,6 +434,9 @@ export default async function AdminDashboardPage() {
               : ""}
           </p>
           <div className="flex flex-wrap gap-3 text-sm">
+            <a href="/admin/performance" className="text-emerald-700 hover:underline dark:text-emerald-400">
+              AI Performance
+            </a>
             <a href="/admin/operations" className="text-emerald-700 hover:underline dark:text-emerald-400">
               Operations
             </a>

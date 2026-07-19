@@ -12,6 +12,10 @@ import type { MarketSelection, MarketSide, MatchData } from "@/types/match";
 import { formatAsianLineRaw } from "@/lib/parser/asianLine";
 import { explainAnalysis } from "@/lib/explain";
 import type { ExplainReport } from "@/lib/explain";
+import type { DailyRecommendationRecord } from "@/lib/dailyRecommendations/dailyRecommendationTypes";
+import { AiPerformanceCenterSection } from "@/app/components/AiPerformanceCenterSection";
+import { DailyRecommendationsSection } from "@/app/components/DailyRecommendationsSection";
+import type { PerformanceCenterReport } from "@/lib/performance/performanceTypes";
 import {
   clearPersistedHistory,
   loadPersistedHistory,
@@ -1080,6 +1084,69 @@ export default function HomePage() {
     useState<StorageHealth>("supabase");
   const [betaStorageStatus, setBetaStorageStatus] =
     useState<StorageHealth>("supabase");
+  const [dailyRecommendations, setDailyRecommendations] = useState<
+    DailyRecommendationRecord[]
+  >([]);
+  const [dailyRecommendationsLoading, setDailyRecommendationsLoading] =
+    useState(true);
+  const [dailyRecommendationsError, setDailyRecommendationsError] = useState<
+    string | null
+  >(null);
+  const [performanceReport, setPerformanceReport] =
+    useState<PerformanceCenterReport | null>(null);
+  const [performanceLoading, setPerformanceLoading] = useState(true);
+  const [performanceError, setPerformanceError] = useState<string | null>(null);
+
+  async function refreshPerformanceReport() {
+    setPerformanceLoading(true);
+    setPerformanceError(null);
+    try {
+      const response = await fetch("/api/performance");
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        data?: PerformanceCenterReport;
+        message?: string;
+      };
+      if (!response.ok || !payload.ok || !payload.data) {
+        throw new Error(payload.message ?? `HTTP ${response.status}`);
+      }
+      setPerformanceReport(payload.data);
+    } catch (error) {
+      setPerformanceReport(null);
+      setPerformanceError(
+        error instanceof Error ? error.message : String(error)
+      );
+    } finally {
+      setPerformanceLoading(false);
+    }
+  }
+
+  async function refreshDailyRecommendations() {
+    setDailyRecommendationsLoading(true);
+    setDailyRecommendationsError(null);
+    try {
+      const matchDate = new Date().toISOString().slice(0, 10);
+      const response = await fetch(
+        `/api/data/daily-recommendations?matchDate=${encodeURIComponent(matchDate)}`
+      );
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        data?: DailyRecommendationRecord[];
+        message?: string;
+      };
+      if (!response.ok || !payload.ok || !Array.isArray(payload.data)) {
+        throw new Error(payload.message ?? `HTTP ${response.status}`);
+      }
+      setDailyRecommendations(payload.data);
+    } catch (error) {
+      setDailyRecommendations([]);
+      setDailyRecommendationsError(
+        error instanceof Error ? error.message : String(error)
+      );
+    } finally {
+      setDailyRecommendationsLoading(false);
+    }
+  }
 
   async function refreshBetaDashboard() {
     if (!isBetaRecommendationModeEnabled()) {
@@ -1112,6 +1179,8 @@ export default function HomePage() {
 
   useEffect(() => {
     void refreshHistory();
+    void refreshDailyRecommendations();
+    void refreshPerformanceReport();
     setApiUsage(getStoredApiUsage());
   }, []);
 
@@ -1205,6 +1274,7 @@ export default function HomePage() {
       }
 
       await refreshHistory();
+      await refreshDailyRecommendations();
     } catch (error) {
       const details =
         error instanceof Error
@@ -1259,6 +1329,17 @@ export default function HomePage() {
             正式資料來源：Supabase（Production 禁止 LocalStorage fallback）
           </p>
           <StatsSection stats={stats} />
+          <DailyRecommendationsSection
+            recommendations={dailyRecommendations}
+            loading={dailyRecommendationsLoading}
+            error={dailyRecommendationsError}
+          />
+          <AiPerformanceCenterSection
+            report={performanceReport}
+            loading={performanceLoading}
+            error={performanceError}
+            showAdminLink
+          />
           <BetaDashboardSection stats={betaStats} rollingReport={rollingReport} />
           <div className="flex justify-end gap-2">
             <button

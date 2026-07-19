@@ -217,6 +217,52 @@ export interface WeightConfigVersionInsert {
   archived_at?: string | null;
 }
 
+export interface DailyRecommendationRow {
+  id: string;
+  scheduler_run: string;
+  fixture_id: number | null;
+  match_date: string;
+  kickoff_time: string | null;
+  league_id: number | null;
+  league_name: string;
+  country: string;
+  home_team: string;
+  away_team: string;
+  market: string;
+  recommendation: string;
+  odds: number;
+  confidence: number;
+  score: number;
+  rank: number;
+  grade: string;
+  reasoning: string[];
+  analysis_snapshot: AnalysisSnapshot | null;
+  created_at: string;
+}
+
+export interface DailyRecommendationInsert {
+  id: string;
+  scheduler_run: string;
+  fixture_id?: number | null;
+  match_date: string;
+  kickoff_time?: string | null;
+  league_id?: number | null;
+  league_name?: string;
+  country?: string;
+  home_team: string;
+  away_team: string;
+  market: string;
+  recommendation: string;
+  odds: number;
+  confidence: number;
+  score: number;
+  rank: number;
+  grade: string;
+  reasoning?: string[];
+  analysis_snapshot?: AnalysisSnapshot | null;
+  created_at?: string;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -224,6 +270,12 @@ export type Database = {
         Row: MatchRecordRow;
         Insert: MatchRecordInsert;
         Update: Partial<MatchRecordInsert>;
+        Relationships: [];
+      };
+      daily_recommendations: {
+        Row: DailyRecommendationRow;
+        Insert: DailyRecommendationInsert;
+        Update: Partial<DailyRecommendationInsert>;
         Relationships: [];
       };
       beta_recommendations: {
