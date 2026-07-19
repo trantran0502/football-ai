@@ -57,6 +57,10 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   unmatchedPendingCount?: number;
   missingFullTimeScoreCount?: number;
   missingHalfTimeScoreCount?: number;
+  pastKickoffSkipped?: number;
+  startedFixtureSkipped?: number;
+  terminalStatusSkipped?: number;
+  eligibleUpcomingCount?: number;
 }
 
 export interface CompleteExecutionLogResult {

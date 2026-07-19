@@ -10,6 +10,7 @@ import {
   formatDailyRecommendationSelection,
   resolveDailyRecommendationGrade,
 } from "@/lib/dailyRecommendations/dailyRecommendationPresentation";
+import { isBettableMatchRecordForRecommendation } from "@/lib/dailyRecommendations/bettableRecommendationFilter";
 import type { RecommendationCandidate } from "@/lib/recommendation/recommendationTypes";
 import { sortRecommendationCandidates } from "@/lib/recommendation/recommendationPresentation";
 
@@ -145,8 +146,13 @@ export function selectDailyRecommendationEntries(
 export function buildDailyRecommendationRecords(
   input: BuildDailyRecommendationsInput
 ): DailyRecommendationRecord[] {
-  const now = input.now ?? (() => new Date());
-  const dayRecords = input.records.filter((record) => record.matchDate === input.matchDate);
+  const nowFn = input.now ?? (() => new Date());
+  const currentTime = nowFn();
+  const dayRecords = input.records.filter(
+    (record) =>
+      record.matchDate === input.matchDate &&
+      isBettableMatchRecordForRecommendation(record, currentTime)
+  );
   const selected = selectDailyRecommendationEntries(rankDailyRecommendationEntries(dayRecords));
 
   return selected.map((entry, index) => {
@@ -175,7 +181,7 @@ export function buildDailyRecommendationRecords(
       reasoning,
       analysisSnapshot: matchRecord.analysisSnapshot,
       matchRecordId: matchRecord.id,
-      createdAt: now().toISOString(),
+      createdAt: currentTime.toISOString(),
     };
   });
 }

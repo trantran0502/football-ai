@@ -215,7 +215,7 @@ function runTests(): void {
     matchDate: "2026-07-18",
     schedulerRunId: "run-1",
     records: [verifiedRecord, pendingRecord],
-    now: () => new Date("2026-07-19T01:00:00.000Z"),
+    now: () => new Date("2026-07-18T09:00:00.000Z"),
   });
 
   assert(recommendations.length >= 1, "should build recommendations");

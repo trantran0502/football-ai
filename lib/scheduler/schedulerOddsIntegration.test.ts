@@ -306,6 +306,7 @@ async function testExecutionLogIncludesSchedulerOdds(): Promise<void> {
         runDailyScheduler({
           runDate: "2026-07-16",
           ownerId: "scheduler-odds-log-test",
+          now: () => new Date("2026-07-16T12:00:00.000Z").getTime(),
           fetchFixtures: async () => ({
             fixtures: [
               mapApiFixtureToSchedulerSource({

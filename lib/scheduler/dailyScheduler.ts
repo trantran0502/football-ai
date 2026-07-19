@@ -31,6 +31,7 @@ import {
   filterAnalyzableFixtures,
   filterFixturesBySchedulerLeaguePolicy,
 } from "@/lib/scheduler/fixtureIntake";
+import { filterPreMatchEligibleFixtures } from "@/lib/scheduler/preMatchFixtureEligibility";
 import type { FixtureIntakeResult } from "@/lib/scheduler/fixtureMapping";
 import { isApiFootballQuotaExceededError } from "@/lib/scheduler/resultUpdateFixtureFetch";
 import { canMakeApiFootballRequest } from "@/lib/providers/apiFootball/apiFootballQuota";
@@ -760,7 +761,8 @@ export async function runDailyScheduler(
     }
 
     const analyzable = filterAnalyzableFixtures(intake.fixtures);
-    const whitelisted = filterFixturesBySchedulerLeaguePolicy(analyzable, {
+    const preMatch = filterPreMatchEligibleFixtures(analyzable, new Date(now()));
+    const whitelisted = filterFixturesBySchedulerLeaguePolicy(preMatch.eligible, {
       leagueIdWhitelist: config.leagueIdWhitelist,
       leagueWhitelist: config.leagueWhitelist,
     });
@@ -879,6 +881,10 @@ export async function runDailyScheduler(
         teamProfileApiRequestCount: pipeline.teamProfileApiRequestCount,
         fixturesAfterWhitelist: whitelisted.length,
         filterStats: filterStats as unknown as Record<string, unknown>,
+        pastKickoffSkipped: preMatch.stats.pastKickoffSkipped,
+        startedFixtureSkipped: preMatch.stats.startedFixtureSkipped,
+        terminalStatusSkipped: preMatch.stats.terminalStatusSkipped,
+        eligibleUpcomingCount: preMatch.stats.eligibleUpcomingCount,
         created: pipeline.created,
         duplicates: pipeline.duplicates,
         failed: pipeline.failed,

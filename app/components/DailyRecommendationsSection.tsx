@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { DailyRecommendationRecord } from "@/lib/dailyRecommendations/dailyRecommendationTypes";
+import { filterBettableDailyRecommendations } from "@/lib/dailyRecommendations/bettableRecommendationFilter";
 import {
   DAILY_RECOMMENDATION_RANK_LABELS,
   formatKickoffDisplay,
@@ -97,6 +98,8 @@ export function DailyRecommendationsSection({
   loading,
   error,
 }: DailyRecommendationsSectionProps) {
+  const bettableRecommendations = filterBettableDailyRecommendations(recommendations);
+
   return (
     <section className="rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-5">
       <h2 className="text-xl font-bold text-slate-900">🔥 今日 AI 推薦</h2>
@@ -114,12 +117,12 @@ export function DailyRecommendationsSection({
         </p>
       ) : null}
 
-      {!loading && !error && recommendations.length === 0 ? (
+      {!loading && !error && bettableRecommendations.length === 0 ? (
         <p className="mt-4 text-sm text-slate-500">今日尚未產生 AI 推薦。</p>
       ) : null}
 
       <div className="mt-4 space-y-4">
-        {recommendations.map((item) => (
+        {bettableRecommendations.map((item) => (
           <RecommendationCard key={item.id} item={item} />
         ))}
       </div>
