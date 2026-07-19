@@ -1,5 +1,8 @@
 const DAILY_LIMIT = 100;
 const MINUTE_LIMIT = 10;
+const DEFAULT_RESULT_UPDATE_RESERVED_DAILY = 15;
+
+export type ApiFootballQuotaPurpose = "general" | "result_update";
 
 interface QuotaWindow {
   dayKey: string;
@@ -9,19 +12,68 @@ interface QuotaWindow {
 }
 
 let quotaState: QuotaWindow = createWindow();
+let activeQuotaPurpose: ApiFootballQuotaPurpose = "general";
 
-export function canMakeApiFootballRequest(now = Date.now()): boolean {
+export function getApiFootballQuotaPurpose(): ApiFootballQuotaPurpose {
+  return activeQuotaPurpose;
+}
+
+export async function runWithApiFootballQuotaPurpose<T>(
+  purpose: ApiFootballQuotaPurpose,
+  fn: () => T | Promise<T>
+): Promise<T> {
+  const previous = activeQuotaPurpose;
+  activeQuotaPurpose = purpose;
+  try {
+    return await fn();
+  } finally {
+    activeQuotaPurpose = previous;
+  }
+}
+
+export function getResultUpdateReservedDailyQuota(): number {
+  const raw = process.env.API_FOOTBALL_RESULT_UPDATE_RESERVED?.trim();
+  const parsed = raw ? Number(raw) : DEFAULT_RESULT_UPDATE_RESERVED_DAILY;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_RESULT_UPDATE_RESERVED_DAILY;
+  }
+  return Math.min(Math.floor(parsed), DAILY_LIMIT - 1);
+}
+
+export function getGeneralDailyQuotaLimit(): number {
+  return Math.max(0, DAILY_LIMIT - getResultUpdateReservedDailyQuota());
+}
+
+export function canMakeApiFootballRequestForPurpose(
+  purpose: ApiFootballQuotaPurpose,
+  now = Date.now()
+): boolean {
   refreshWindow(now);
+  const dailyLimit =
+    purpose === "result_update" ? DAILY_LIMIT : getGeneralDailyQuotaLimit();
   return (
-    quotaState.dailyCount < DAILY_LIMIT && quotaState.minuteCount < MINUTE_LIMIT
+    quotaState.dailyCount < dailyLimit && quotaState.minuteCount < MINUTE_LIMIT
   );
 }
 
-export function getApiFootballQuotaBlockReason(
+export function canMakeApiFootballRequestForResultUpdate(
   now = Date.now()
+): boolean {
+  return canMakeApiFootballRequestForPurpose("result_update", now);
+}
+
+export function canMakeApiFootballRequest(now = Date.now()): boolean {
+  return canMakeApiFootballRequestForPurpose(getApiFootballQuotaPurpose(), now);
+}
+
+export function getApiFootballQuotaBlockReason(
+  now = Date.now(),
+  purpose: ApiFootballQuotaPurpose = getApiFootballQuotaPurpose()
 ): "minute_limit" | "daily_limit" | null {
   refreshWindow(now);
-  if (quotaState.dailyCount >= DAILY_LIMIT) {
+  const dailyLimit =
+    purpose === "result_update" ? DAILY_LIMIT : getGeneralDailyQuotaLimit();
+  if (quotaState.dailyCount >= dailyLimit) {
     return "daily_limit";
   }
   if (quotaState.minuteCount >= MINUTE_LIMIT) {

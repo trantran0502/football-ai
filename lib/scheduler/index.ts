@@ -109,16 +109,26 @@ export type {
 export { runResultScheduler } from "@/lib/scheduler/resultScheduler";
 export type { ResultSchedulerDependencies } from "@/lib/scheduler/resultScheduler";
 export {
+  buildGlobalFixturesByDateCacheKey,
   buildResultUpdateFixturesByDateCacheKey,
+  GLOBAL_FIXTURES_BY_DATE_CACHE_SCOPE,
+  readGlobalFixturesByDateCache,
   readResultUpdateFixturesByDateCache,
+  writeGlobalFixturesByDateCache,
   writeResultUpdateFixturesByDateCache,
 } from "@/lib/scheduler/resultUpdateFixtureCache";
 export {
   fetchResultUpdateFixturesByDate,
+  findCachedFixtureForPendingRecord,
   isApiFootballQuotaExceededError,
+  isCachedFixtureVerificationReady,
   RESULT_UPDATE_QUOTA_WARNING,
+  shouldRefreshGlobalFixturesCacheForVerification,
 } from "@/lib/scheduler/resultUpdateFixtureFetch";
-export type { ResultUpdateFixtureFetchOutcome } from "@/lib/scheduler/resultUpdateFixtureFetch";
+export type {
+  ResultUpdateFixtureFetchOutcome,
+  ResultUpdatePendingFixtureRecord,
+} from "@/lib/scheduler/resultUpdateFixtureFetch";
 export { runHistoricalMatchBackfillScheduler } from "@/lib/scheduler/historicalMatchBackfillScheduler";
 export type { HistoricalMatchBackfillDependencies } from "@/lib/scheduler/historicalMatchBackfillScheduler";
 export {

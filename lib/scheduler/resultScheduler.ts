@@ -123,6 +123,12 @@ export async function runResultScheduler(
 
         const fetchOutcome = await fetchResultUpdateFixturesByDate(runDate, {
           fetchFromApi: dependencies.fetchApiFixtures,
+          pendingRecords: pending.map((record) => ({
+            fixtureId: record.fixtureId ?? null,
+            homeTeam: record.homeTeam,
+            awayTeam: record.awayTeam,
+            matchDate: record.matchDate,
+          })),
         });
 
         const apiFootballRequestCount = Math.max(

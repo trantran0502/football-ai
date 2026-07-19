@@ -35,6 +35,8 @@ import type { FixtureIntakeResult } from "@/lib/scheduler/fixtureMapping";
 import { isApiFootballQuotaExceededError } from "@/lib/scheduler/resultUpdateFixtureFetch";
 import { canMakeApiFootballRequest } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { resolveSchedulerFixturesToProduction } from "@/lib/scheduler/schedulerOddsIntegration";
+import type { SchedulerOddsStats } from "@/lib/scheduler/schedulerOddsIntegration";
+import { buildSchedulerPlaceholderOdds } from "@/lib/scheduler/schedulerPlaceholderOdds";
 import { buildSchedulerDailySummary } from "@/lib/scheduler/dailySummary";
 import { withRetry, withTimeout } from "@/lib/scheduler/retry";
 import {
@@ -47,6 +49,8 @@ import type {
   DailySchedulerResult,
 } from "@/lib/scheduler/schedulerTypes";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import type { SchedulerFixtureSource } from "@/lib/scheduler/schedulerTypes";
+import { toProductionFixture } from "@/lib/scheduler/fixtureMapping";
 import {
   attachTeamProfilesToReport,
   buildMatchTeamProfilesSnapshot,
@@ -108,6 +112,69 @@ function teamProfileKey(
   season: number | null
 ): string {
   return `${teamId}:${leagueId ?? -1}:${season ?? -1}`;
+}
+
+function toProductionFixtureWithPlaceholder(
+  fixture: SchedulerFixtureSource
+): ProductionFixture {
+  return toProductionFixture({
+    ...fixture,
+    rawOdds: buildSchedulerPlaceholderOdds(fixture.homeTeam, fixture.awayTeam),
+  });
+}
+
+function selectAnalysisCandidateFixtures(
+  fixtures: SchedulerFixtureSource[],
+  queue: DailyAnalysisQueueState,
+  maxPerRun: number
+): SchedulerFixtureSource[] {
+  const byId = new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture]));
+  const candidates: SchedulerFixtureSource[] = [];
+  let cursor = queue.cursor;
+
+  while (candidates.length < maxPerRun && cursor < queue.fixtureIds.length) {
+    const fixtureId = queue.fixtureIds[cursor];
+    cursor += 1;
+
+    if (
+      queue.completedFixtureIds.includes(fixtureId) ||
+      queue.failedFixtureIds.includes(fixtureId)
+    ) {
+      continue;
+    }
+
+    const fixture = byId.get(fixtureId);
+    if (fixture) {
+      candidates.push(fixture);
+    }
+  }
+
+  return candidates;
+}
+
+function mergeSchedulerOddsStats(
+  whitelistedCount: number,
+  candidateOdds: SchedulerOddsStats
+): SchedulerOddsStats {
+  return {
+    ...candidateOdds,
+    total: whitelistedCount,
+  };
+}
+
+function buildProductionFixturesForQueue(
+  whitelisted: SchedulerFixtureSource[],
+  resolvedCandidates: ProductionFixture[]
+): ProductionFixture[] {
+  const resolvedById = new Map(
+    resolvedCandidates.map((fixture) => [fixture.fixtureId, fixture])
+  );
+
+  return whitelisted.map(
+    (fixture) =>
+      resolvedById.get(fixture.fixtureId) ??
+      toProductionFixtureWithPlaceholder(fixture)
+  );
 }
 
 function selectFixtureBatch(
@@ -701,18 +768,32 @@ export async function runDailyScheduler(
       leagueIdWhitelist: config.leagueIdWhitelist,
       leagueWhitelist: config.leagueWhitelist,
     });
-    const { productionFixtures, schedulerOdds } = await resolveSchedulerFixturesToProduction(
-      whitelisted
-    );
 
     const existingQueue = await loadDailyAnalysisQueue(runDate);
     let queue = mergeQueueWithEligibleFixtures(
       existingQueue,
       runDate,
-      productionFixtures.map((fixture) => fixture.fixtureId)
+      whitelisted.map((fixture) => fixture.fixtureId)
     );
     const records = await listRecords();
-    queue = syncQueueWithExistingRecords(queue, productionFixtures, records);
+    const placeholderFixtures = whitelisted.map(toProductionFixtureWithPlaceholder);
+    queue = syncQueueWithExistingRecords(queue, placeholderFixtures, records);
+
+    const analysisCandidates = selectAnalysisCandidateFixtures(
+      whitelisted,
+      queue,
+      config.maxFixturesPerRun
+    );
+    const { productionFixtures: resolvedCandidates, schedulerOdds: candidateOdds } =
+      await resolveSchedulerFixturesToProduction(analysisCandidates);
+    const productionFixtures = buildProductionFixturesForQueue(
+      whitelisted,
+      resolvedCandidates
+    );
+    const schedulerOdds = mergeSchedulerOddsStats(
+      whitelisted.length,
+      candidateOdds
+    );
 
     const saveMatch =
       dependencies.saveMatch ??

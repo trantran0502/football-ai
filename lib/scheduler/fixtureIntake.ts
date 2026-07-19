@@ -11,7 +11,7 @@ import {
   toProductionFixture,
   type FixtureIntakeResult,
 } from "@/lib/scheduler/fixtureMapping";
-import { buildSchedulerPlaceholderOdds } from "@/lib/scheduler/schedulerPlaceholderOdds";
+import { writeGlobalFixturesByDateCache } from "@/lib/scheduler/resultUpdateFixtureCache";
 import {
   buildFixtureFilterStats,
   filterAnalyzableFixtures,
@@ -72,6 +72,7 @@ export async function fetchFixturesByDate(
     });
 
   const apiFixtures = await fetchFromApi(matchDate);
+  writeGlobalFixturesByDateCache(matchDate, apiFixtures);
   const activeFixtures = apiFixtures.filter(
     (fixture) => fixture.status !== "CANC" && fixture.status !== "ABD"
   );
