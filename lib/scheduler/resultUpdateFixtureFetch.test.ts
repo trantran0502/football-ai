@@ -141,10 +141,10 @@ async function testRefreshesStaleNsCacheForPending(): Promise<void> {
   const finishedOnly = intakeApiFixtures(
     outcome.fixtures.filter((fixture) => ["FT", "AET", "PEN"].includes(fixture.status))
   ).fixtures;
-  const scored = attachScoresToFinishedFixtures(finishedOnly, outcome.fixtures);
+  const attachOutcome = attachScoresToFinishedFixtures(finishedOnly, outcome.fixtures);
   const updates = buildResultUpdatesFromFinishedFixtures(
     [buildPendingRecord() as HistoricalMatchRecord],
-    scored
+    attachOutcome.fixtures
   );
   assert(updates.length === 1, "refreshed FT cache should build verification update");
 }
@@ -184,10 +184,10 @@ async function testDaily0800NsThen1100ResultUpdateSimulation(): Promise<void> {
   const finishedOnly = intakeApiFixtures(
     outcome.fixtures.filter((fixture) => ["FT", "AET", "PEN"].includes(fixture.status))
   ).fixtures;
-  const scored = attachScoresToFinishedFixtures(finishedOnly, outcome.fixtures);
+  const attachOutcome = attachScoresToFinishedFixtures(finishedOnly, outcome.fixtures);
   const updates = buildResultUpdatesFromFinishedFixtures(
     [pending[0] as HistoricalMatchRecord],
-    scored
+    attachOutcome.fixtures
   );
   assert(updates.length === 1, "simulation should allow VERIFIED update after refresh");
 }

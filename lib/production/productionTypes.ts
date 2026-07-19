@@ -27,8 +27,8 @@ export interface ProductionResultUpdate {
   matchId: string;
   fullTimeHomeGoals: number;
   fullTimeAwayGoals: number;
-  halfTimeHomeGoals: number;
-  halfTimeAwayGoals: number;
+  halfTimeHomeGoals: number | null;
+  halfTimeAwayGoals: number | null;
 }
 
 export interface DailyPipelineItemResult {

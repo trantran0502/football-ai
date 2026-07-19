@@ -10,16 +10,35 @@ import {
 } from "@/lib/parser/asianRules";
 import type { MarketPeriod, MarketSelection } from "@/types/match";
 
+export function hasHalfTimeScores(matchResult: MatchResult): boolean {
+  return (
+    matchResult.halfTimeHomeGoals !== null && matchResult.halfTimeAwayGoals !== null
+  );
+}
+
+export function canSettleMarketSelection(
+  selection: MarketSelection,
+  matchResult: MatchResult
+): boolean {
+  if (selection.period === "half") {
+    return hasHalfTimeScores(matchResult);
+  }
+  return true;
+}
+
 function resolveGoalContext(
   period: MarketPeriod,
   matchResult: MatchResult
 ): GoalContext {
   if (period === "half") {
+    if (!hasHalfTimeScores(matchResult)) {
+      throw new Error("Half-time scores are required to settle half-period markets.");
+    }
     return {
-      homeGoals: matchResult.halfTimeHomeGoals,
-      awayGoals: matchResult.halfTimeAwayGoals,
+      homeGoals: matchResult.halfTimeHomeGoals!,
+      awayGoals: matchResult.halfTimeAwayGoals!,
       totalGoals:
-        matchResult.halfTimeHomeGoals + matchResult.halfTimeAwayGoals,
+        matchResult.halfTimeHomeGoals! + matchResult.halfTimeAwayGoals!,
     };
   }
 

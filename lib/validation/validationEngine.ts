@@ -1,5 +1,5 @@
 import { calculateProfit } from "@/lib/backtest/betEvaluator";
-import { settleBet } from "@/lib/backtest/settlement";
+import { canSettleMarketSelection, settleBet } from "@/lib/backtest/settlement";
 import { runFeatureRecommendationPipeline } from "@/lib/analysis/featureRecommendationPipeline";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import { getActionableRecommendations } from "@/lib/recommendation/recommendationPresentation";
@@ -48,7 +48,9 @@ export function validateMatchRecommendations(
     return [];
   }
 
-  const actionable = getActionableRecommendations(input.recommendation);
+  const actionable = getActionableRecommendations(input.recommendation).filter(
+    (candidate) => canSettleMarketSelection(candidate.selection, input.result)
+  );
   return actionable.map((candidate) => ({
     matchId: input.matchId,
     homeTeam: input.homeTeam,

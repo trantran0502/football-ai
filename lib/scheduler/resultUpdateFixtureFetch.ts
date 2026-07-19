@@ -46,9 +46,7 @@ export function isCachedFixtureVerificationReady(
   return (
     VERIFICATION_FINISHED_STATUSES.has(fixture.status) &&
     fixture.homeGoals !== null &&
-    fixture.awayGoals !== null &&
-    fixture.halfTimeHome !== null &&
-    fixture.halfTimeAway !== null
+    fixture.awayGoals !== null
   );
 }
 

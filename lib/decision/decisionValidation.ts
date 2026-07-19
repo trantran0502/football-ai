@@ -1,5 +1,5 @@
 import { calculateProfit } from "@/lib/backtest/betEvaluator";
-import { settleBet } from "@/lib/backtest/settlement";
+import { canSettleMarketSelection, settleBet } from "@/lib/backtest/settlement";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
 import type {
   DecisionLevel,
@@ -21,7 +21,11 @@ function evaluateDecisionProfit(
   result: MatchResult,
   stake = 1
 ): { profit: number; hit: boolean } {
-  if (!decision.selection || !BET_LEVELS.has(decision.decision)) {
+  if (
+    !decision.selection ||
+    !BET_LEVELS.has(decision.decision) ||
+    !canSettleMarketSelection(decision.selection, result)
+  ) {
     return { profit: 0, hit: false };
   }
 

@@ -21,7 +21,7 @@ import { getSchedulerConfig } from "@/lib/scheduler/schedulerConfig";
 import type { ResultSchedulerResult } from "@/lib/scheduler/schedulerTypes";
 import {
   attachScoresToFinishedFixtures,
-  buildResultUpdatesFromFinishedFixtures,
+  buildResultUpdatesFromFinishedFixturesWithDiagnostics,
 } from "@/lib/scheduler/resultIntake";
 import { intakeApiFixtures } from "@/lib/scheduler/fixtureMapping";
 import type { SchedulerFixtureSource } from "@/lib/scheduler/schedulerTypes";
@@ -187,10 +187,11 @@ export async function runResultScheduler(
         }
 
         const apiFixtures = fetchOutcome.fixtures;
+        const rawFinishedFixtures = apiFixtures.filter((fixture) =>
+          ["FT", "AET", "PEN"].includes(fixture.status)
+        );
 
-        const finishedOnly = intakeApiFixtures(
-          apiFixtures.filter((fixture) => ["FT", "AET", "PEN"].includes(fixture.status))
-        ).fixtures;
+        const finishedOnly = intakeApiFixtures(rawFinishedFixtures).fixtures;
 
         if (dependencies.fetchFixtures) {
           const custom = await dependencies.fetchFixtures(runDate);
@@ -210,8 +211,14 @@ export async function runResultScheduler(
           }
         }
 
-        const scored = attachScoresToFinishedFixtures(finishedOnly, apiFixtures);
-        const updates = buildResultUpdatesFromFinishedFixtures(pending, scored);
+        const attachOutcome = attachScoresToFinishedFixtures(finishedOnly, apiFixtures);
+        const scored = attachOutcome.fixtures;
+        const buildOutcome = buildResultUpdatesFromFinishedFixturesWithDiagnostics(
+          pending,
+          scored
+        );
+        const updates = buildOutcome.updates;
+        const matchDiagnostics = buildOutcome.diagnostics;
 
         const verifyMatch =
           dependencies.verifyMatch ??
@@ -255,6 +262,14 @@ export async function runResultScheduler(
             failed: pipeline.failed,
             cacheHit: fetchOutcome.cacheHit,
             fixtureSource: fetchOutcome.source,
+            rawFinishedFixtureCount: rawFinishedFixtures.length,
+            finishedFixtureCount: finishedOnly.length,
+            scoredFixtureCount: scored.length,
+            matchedByFixtureId: matchDiagnostics.matchedByFixtureId,
+            matchedByFallback: matchDiagnostics.matchedByFallback,
+            unmatchedPendingCount: matchDiagnostics.unmatchedPendingCount,
+            missingFullTimeScoreCount: attachOutcome.missingFullTimeScoreCount,
+            missingHalfTimeScoreCount: attachOutcome.missingHalfTimeScoreCount,
           }),
         });
 

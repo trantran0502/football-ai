@@ -14,6 +14,82 @@ export interface ResultUpdatePipelineDependencies {
   listPending?: () => Promise<HistoricalMatchRecord[]>;
 }
 
+export interface ResultUpdateFixtureScore {
+  fixtureId?: number | null;
+  homeTeam: string;
+  awayTeam: string;
+  matchDate: string;
+  fullTimeHomeGoals: number;
+  fullTimeAwayGoals: number;
+  halfTimeHomeGoals: number | null;
+  halfTimeAwayGoals: number | null;
+}
+
+export interface ResultUpdateBuildDiagnostics {
+  matchedByFixtureId: number;
+  matchedByFallback: number;
+  unmatchedPendingCount: number;
+  matchedPendingIds: string[];
+}
+
+export interface ResultUpdateBuildOutcome {
+  updates: ProductionResultUpdate[];
+  diagnostics: ResultUpdateBuildDiagnostics;
+}
+
+const TEAM_NAME_PUNCTUATION = /[.,'"()[\]]/g;
+
+export function normalizeResultUpdateMatchDate(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  return trimmed.split("T")[0]?.slice(0, 10) ?? trimmed;
+}
+
+export function normalizeResultUpdateTeamName(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(TEAM_NAME_PUNCTUATION, "")
+    .replace(/[-–—]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function findPendingMatchForScore(
+  pendingRecords: HistoricalMatchRecord[],
+  score: ResultUpdateFixtureScore,
+  usedPendingIds: Set<string>
+): { record: HistoricalMatchRecord; method: "fixtureId" | "fallback" } | null {
+  const available = pendingRecords.filter((item) => !usedPendingIds.has(item.id));
+
+  if (score.fixtureId != null) {
+    const byFixtureId = available.find(
+      (item) => item.fixtureId != null && item.fixtureId === score.fixtureId
+    );
+    if (byFixtureId) {
+      return { record: byFixtureId, method: "fixtureId" };
+    }
+  }
+
+  const normalizedDate = normalizeResultUpdateMatchDate(score.matchDate);
+  const normalizedHome = normalizeResultUpdateTeamName(score.homeTeam);
+  const normalizedAway = normalizeResultUpdateTeamName(score.awayTeam);
+
+  const byFallback = available.find(
+    (item) =>
+      normalizeResultUpdateMatchDate(item.matchDate) === normalizedDate &&
+      normalizeResultUpdateTeamName(item.homeTeam) === normalizedHome &&
+      normalizeResultUpdateTeamName(item.awayTeam) === normalizedAway
+  );
+  if (byFallback) {
+    return { record: byFallback, method: "fallback" };
+  }
+
+  return null;
+}
+
 export async function runResultUpdatePipeline(
   updates: ProductionResultUpdate[],
   dependencies: ResultUpdatePipelineDependencies = {}
@@ -89,32 +165,30 @@ export async function runResultUpdatePipeline(
   };
 }
 
-export function buildResultUpdatesFromFixtures(
+export function buildResultUpdatesFromFixturesWithDiagnostics(
   pendingRecords: HistoricalMatchRecord[],
-  finalScores: Array<{
-    homeTeam: string;
-    awayTeam: string;
-    matchDate: string;
-    fullTimeHomeGoals: number;
-    fullTimeAwayGoals: number;
-    halfTimeHomeGoals: number;
-    halfTimeAwayGoals: number;
-  }>
-): ProductionResultUpdate[] {
+  finalScores: ResultUpdateFixtureScore[]
+): ResultUpdateBuildOutcome {
   const updates: ProductionResultUpdate[] = [];
+  const usedPendingIds = new Set<string>();
+  let matchedByFixtureId = 0;
+  let matchedByFallback = 0;
 
   for (const score of finalScores) {
-    const record = pendingRecords.find(
-      (item) =>
-        item.homeTeam === score.homeTeam &&
-        item.awayTeam === score.awayTeam &&
-        item.matchDate === score.matchDate
-    );
-    if (!record) {
+    const match = findPendingMatchForScore(pendingRecords, score, usedPendingIds);
+    if (!match) {
       continue;
     }
+
+    usedPendingIds.add(match.record.id);
+    if (match.method === "fixtureId") {
+      matchedByFixtureId += 1;
+    } else {
+      matchedByFallback += 1;
+    }
+
     updates.push({
-      matchId: record.id,
+      matchId: match.record.id,
       fullTimeHomeGoals: score.fullTimeHomeGoals,
       fullTimeAwayGoals: score.fullTimeAwayGoals,
       halfTimeHomeGoals: score.halfTimeHomeGoals,
@@ -122,7 +196,25 @@ export function buildResultUpdatesFromFixtures(
     });
   }
 
-  return updates;
+  return {
+    updates,
+    diagnostics: {
+      matchedByFixtureId,
+      matchedByFallback,
+      unmatchedPendingCount: pendingRecords.filter(
+        (record) => !usedPendingIds.has(record.id)
+      ).length,
+      matchedPendingIds: [...usedPendingIds],
+    },
+  };
+}
+
+export function buildResultUpdatesFromFixtures(
+  pendingRecords: HistoricalMatchRecord[],
+  finalScores: ResultUpdateFixtureScore[]
+): ProductionResultUpdate[] {
+  return buildResultUpdatesFromFixturesWithDiagnostics(pendingRecords, finalScores)
+    .updates;
 }
 
 export function listPendingProductionMatches(

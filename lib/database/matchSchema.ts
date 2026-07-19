@@ -69,8 +69,8 @@ export interface AnalysisSnapshot {
 export interface MatchResult {
   fullTimeHomeGoals: number;
   fullTimeAwayGoals: number;
-  halfTimeHomeGoals: number;
-  halfTimeAwayGoals: number;
+  halfTimeHomeGoals: number | null;
+  halfTimeAwayGoals: number | null;
   winner: MatchWinner;
   totalGoals: number;
   bothTeamsScored: boolean;
@@ -159,8 +159,8 @@ export type SaveMatchOutcome =
 export interface UpdateMatchResultInput {
   fullTimeHomeGoals: number;
   fullTimeAwayGoals: number;
-  halfTimeHomeGoals: number;
-  halfTimeAwayGoals: number;
+  halfTimeHomeGoals: number | null;
+  halfTimeAwayGoals: number | null;
 }
 
 export function createAnalysisSnapshot(

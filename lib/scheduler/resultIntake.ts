@@ -1,11 +1,27 @@
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { buildResultUpdatesFromFixtures } from "@/lib/production/resultUpdatePipeline";
+import {
+  buildResultUpdatesFromFixturesWithDiagnostics,
+  type ResultUpdateBuildOutcome,
+} from "@/lib/production/resultUpdatePipeline";
 import type { ProductionResultUpdate } from "@/lib/production/productionTypes";
 import type { SchedulerFixtureSource } from "@/lib/scheduler/schedulerTypes";
 import { fetchFixturesByDate } from "@/lib/scheduler/fixtureIntake";
 import type { ApiFootballFixtureRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
 
 const FINISHED_STATUSES = new Set(["FT", "AET", "PEN"]);
+
+export type ScoredFinishedFixture = SchedulerFixtureSource & {
+  fullTimeHomeGoals: number;
+  fullTimeAwayGoals: number;
+  halfTimeHomeGoals: number | null;
+  halfTimeAwayGoals: number | null;
+};
+
+export interface AttachScoresOutcome {
+  fixtures: ScoredFinishedFixture[];
+  missingFullTimeScoreCount: number;
+  missingHalfTimeScoreCount: number;
+}
 
 export function isFinishedFixture(fixture: SchedulerFixtureSource | ApiFootballFixtureRecord): boolean {
   const status = "status" in fixture ? fixture.status : "";
@@ -22,20 +38,14 @@ export async function fetchFinishedFixturesByDate(
   return intake.fixtures.filter((fixture) => FINISHED_STATUSES.has(fixture.status));
 }
 
-export function buildResultUpdatesFromFinishedFixtures(
+export function buildResultUpdatesFromFinishedFixturesWithDiagnostics(
   pendingRecords: HistoricalMatchRecord[],
-  finishedFixtures: Array<
-    SchedulerFixtureSource & {
-      fullTimeHomeGoals: number;
-      fullTimeAwayGoals: number;
-      halfTimeHomeGoals: number;
-      halfTimeAwayGoals: number;
-    }
-  >
-): ProductionResultUpdate[] {
-  return buildResultUpdatesFromFixtures(
+  finishedFixtures: ScoredFinishedFixture[]
+): ResultUpdateBuildOutcome {
+  return buildResultUpdatesFromFixturesWithDiagnostics(
     pendingRecords,
     finishedFixtures.map((fixture) => ({
+      fixtureId: fixture.fixtureId,
       homeTeam: fixture.homeTeam,
       awayTeam: fixture.awayTeam,
       matchDate: fixture.matchDate,
@@ -47,25 +57,23 @@ export function buildResultUpdatesFromFinishedFixtures(
   );
 }
 
+export function buildResultUpdatesFromFinishedFixtures(
+  pendingRecords: HistoricalMatchRecord[],
+  finishedFixtures: ScoredFinishedFixture[]
+): ProductionResultUpdate[] {
+  return buildResultUpdatesFromFinishedFixturesWithDiagnostics(
+    pendingRecords,
+    finishedFixtures
+  ).updates;
+}
+
 export function attachScoresToFinishedFixtures(
   fixtures: SchedulerFixtureSource[],
   apiFixtures: ApiFootballFixtureRecord[]
-): Array<
-  SchedulerFixtureSource & {
-    fullTimeHomeGoals: number;
-    fullTimeAwayGoals: number;
-    halfTimeHomeGoals: number;
-    halfTimeAwayGoals: number;
-  }
-> {
-  const output: Array<
-    SchedulerFixtureSource & {
-      fullTimeHomeGoals: number;
-      fullTimeAwayGoals: number;
-      halfTimeHomeGoals: number;
-      halfTimeAwayGoals: number;
-    }
-  > = [];
+): AttachScoresOutcome {
+  const output: ScoredFinishedFixture[] = [];
+  let missingFullTimeScoreCount = 0;
+  let missingHalfTimeScoreCount = 0;
 
   for (const fixture of fixtures) {
     const apiFixture =
@@ -80,11 +88,14 @@ export function attachScoresToFinishedFixtures(
     if (
       !apiFixture ||
       apiFixture.homeGoals === null ||
-      apiFixture.awayGoals === null ||
-      apiFixture.halfTimeHome === null ||
-      apiFixture.halfTimeAway === null
+      apiFixture.awayGoals === null
     ) {
+      missingFullTimeScoreCount += 1;
       continue;
+    }
+
+    if (apiFixture.halfTimeHome === null || apiFixture.halfTimeAway === null) {
+      missingHalfTimeScoreCount += 1;
     }
 
     output.push({
@@ -96,5 +107,9 @@ export function attachScoresToFinishedFixtures(
     });
   }
 
-  return output;
+  return {
+    fixtures: output,
+    missingFullTimeScoreCount,
+    missingHalfTimeScoreCount,
+  };
 }

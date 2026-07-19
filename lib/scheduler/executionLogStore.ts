@@ -46,6 +46,17 @@ export interface ExecutionLogContext extends Record<string, unknown> {
     settleableMarketMissing: number;
     analysisSnapshotMissing: number;
   };
+  updatesBuilt?: number;
+  verified?: number;
+  failed?: number;
+  rawFinishedFixtureCount?: number;
+  finishedFixtureCount?: number;
+  scoredFixtureCount?: number;
+  matchedByFixtureId?: number;
+  matchedByFallback?: number;
+  unmatchedPendingCount?: number;
+  missingFullTimeScoreCount?: number;
+  missingHalfTimeScoreCount?: number;
 }
 
 export interface CompleteExecutionLogResult {
