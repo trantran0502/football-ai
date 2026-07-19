@@ -147,6 +147,8 @@ export interface HistoricalMatchBackfillResult {
 export interface SchedulerConfig {
   leagueWhitelist: string[];
   leagueIdWhitelist: number[];
+  dailyRunHoursUtc: number[];
+  resultRunHoursUtc: number[];
   dailyRunHourUtc: number;
   resultRunHourUtc: number;
   lockTtlMs: number;

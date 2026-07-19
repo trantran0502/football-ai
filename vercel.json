@@ -5,16 +5,36 @@
       "schedule": "0 0 * * *"
     },
     {
-      "path": "/api/admin/cron/result-update",
-      "schedule": "0 15 * * *"
+      "path": "/api/admin/cron/daily-analysis",
+      "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/admin/cron/daily-summary",
-      "schedule": "0 16 * * *"
+      "path": "/api/admin/cron/daily-analysis",
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/admin/cron/historical-match-backfill",
-      "schedule": "0 2 * * *"
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/admin/cron/result-update",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/admin/cron/result-update",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/admin/cron/result-update",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/admin/cron/result-update",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/admin/cron/daily-summary",
+      "schedule": "0 22 * * *"
     }
   ]
 }

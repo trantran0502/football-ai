@@ -1,5 +1,10 @@
 import type { SchedulerConfig } from "@/lib/scheduler/schedulerTypes";
 import { parseLeagueIdWhitelist } from "@/lib/scheduler/leagueWhitelist";
+import {
+  DEFAULT_DAILY_ANALYSIS_HOURS_UTC,
+  DEFAULT_RESULT_UPDATE_HOURS_UTC,
+  parseUtcHoursEnv,
+} from "@/lib/scheduler/cronSchedule";
 
 export function getSchedulerConfig(): SchedulerConfig {
   const leagueIdWhitelist = parseLeagueIdWhitelist(
@@ -14,6 +19,14 @@ export function getSchedulerConfig(): SchedulerConfig {
   return {
     leagueWhitelist,
     leagueIdWhitelist,
+    dailyRunHoursUtc: parseUtcHoursEnv(
+      process.env.SCHEDULER_DAILY_HOURS_UTC,
+      DEFAULT_DAILY_ANALYSIS_HOURS_UTC
+    ),
+    resultRunHoursUtc: parseUtcHoursEnv(
+      process.env.SCHEDULER_RESULT_HOURS_UTC,
+      DEFAULT_RESULT_UPDATE_HOURS_UTC
+    ),
     dailyRunHourUtc: Number(process.env.SCHEDULER_DAILY_HOUR_UTC ?? 0),
     resultRunHourUtc: Number(process.env.SCHEDULER_RESULT_HOUR_UTC ?? 15),
     lockTtlMs: Number(process.env.SCHEDULER_LOCK_TTL_MS ?? 30 * 60 * 1000),

@@ -440,6 +440,9 @@ export default async function AdminDashboardPage() {
             <a href="/admin/operations" className="text-emerald-700 hover:underline dark:text-emerald-400">
               Operations
             </a>
+            <a href="/admin/scheduler-status" className="text-emerald-700 hover:underline dark:text-emerald-400">
+              Scheduler Status
+            </a>
             <a href="/admin/system-health" className="text-emerald-700 hover:underline dark:text-emerald-400">
               System Health
             </a>

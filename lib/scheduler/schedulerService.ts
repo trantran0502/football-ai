@@ -8,6 +8,7 @@ import {
   loadSchedulerRuntimeState,
 } from "@/lib/scheduler/executionLogStore";
 import { buildSchedulerDailySummary } from "@/lib/scheduler/dailySummary";
+import { computeNextRunFromHours } from "@/lib/scheduler/cronSchedule";
 import { getSchedulerConfig } from "@/lib/scheduler/schedulerConfig";
 import { listActiveSchedulerLocks } from "@/lib/scheduler/schedulerLock";
 import type { SchedulerStatusResponse } from "@/lib/scheduler/schedulerTypes";
@@ -97,8 +98,12 @@ export async function getSchedulerStatus(
       summary: runtime.lastSummaryRun,
     },
     nextRun: {
-      daily: computeNextRun(config.dailyRunHourUtc),
-      result: computeNextRun(config.resultRunHourUtc),
+      daily:
+        computeNextRunFromHours(config.dailyRunHoursUtc, new Date()) ??
+        computeNextRun(config.dailyRunHourUtc),
+      result:
+        computeNextRunFromHours(config.resultRunHoursUtc, new Date()) ??
+        computeNextRun(config.resultRunHourUtc),
     },
     todayMatches,
     analyzedMatches: dayRecords.length,
