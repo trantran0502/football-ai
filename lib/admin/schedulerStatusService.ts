@@ -24,6 +24,7 @@ import {
   countTrulyPendingVerification,
   isTrulyPendingVerification,
 } from "@/lib/supabase/services/matchRecordPendingPolicy";
+import { buildUnifiedLiveMetricsSnapshot } from "@/lib/admin/unifiedLiveMetricsService";
 
 const MS_PER_HOUR = 60 * 60 * 1000;
 
@@ -332,11 +333,12 @@ export async function buildSchedulerStatusSnapshot(
   now = new Date()
 ): Promise<SchedulerStatusSnapshot> {
   const runDate = todayKey(now);
-  const [records, recentExecutions, errors, aggregatedUsage] = await Promise.all([
+  const [records, recentExecutions, errors, aggregatedUsage, unified] = await Promise.all([
     loadAdminMatchRecords(),
     loadRecentExecutionLogs(40),
     loadRecentAdminErrorsFromSupabase(10),
     aggregateApiFootballUsageForDate(runDate),
+    buildUnifiedLiveMetricsSnapshot(now),
   ]);
 
   const quotaSnapshot = getApiFootballQuotaSnapshot();
@@ -361,7 +363,13 @@ export async function buildSchedulerStatusSnapshot(
     .slice(0, 5)
     .map((entry) => buildSchedulerExecutionMetrics(entry));
 
-  const dataStatus = buildDataStatusSection(records, runDate, now);
+  const dataStatus = {
+    ...buildDataStatusSection(records, runDate, now),
+    totalAnalyzed: unified.matchRecords.total,
+    pending: unified.matchRecords.pending,
+    verified: unified.matchRecords.verified,
+    pendingOver24Hours: unified.pendingOver24h,
+  };
   const apiUsage = {
     usedToday,
     remainingToday: Math.max(0, dailyLimit - usedToday),

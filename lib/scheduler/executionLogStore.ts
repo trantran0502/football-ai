@@ -72,6 +72,21 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   rejectedByConfidence?: number;
   rejectedByGrade?: number;
   eligibleRecommendationCount?: number;
+  groundingConfigured?: boolean;
+  groundingCalled?: number;
+  groundingSucceeded?: number;
+  groundingCacheHit?: number;
+  groundingFailureReason?: string | null;
+  groundingSearchCount?: number;
+  profileCacheHit?: number;
+  profileCacheMiss?: number;
+  uniqueTeamsRequested?: number;
+  duplicateTeamRequestsAvoided?: number;
+  deferredProfileRetried?: number;
+  deferredProfileCompleted?: number;
+  pendingClassification?: Record<string, number>;
+  pendingOver24hCount?: number;
+  evidenceCoverage?: unknown[];
 }
 
 export interface CompleteExecutionLogResult {

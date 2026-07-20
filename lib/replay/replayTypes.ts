@@ -36,6 +36,15 @@ export interface ReplayMatchInfo {
 export interface ReplayRawSources {
   apiFootballRaw: unknown | null;
   googleGroundingRaw: unknown | null;
+  googleGroundingNormalized?: {
+    source: "google-grounding";
+    captureSource: "live" | "cache";
+    query: string;
+    capturedAt: string;
+    confidence: number;
+    citations: HybridCitation[];
+    payload: unknown;
+  } | null;
   citations: HybridCitation[];
   cacheSource: ReplayDataSource | null;
 }

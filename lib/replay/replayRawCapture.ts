@@ -50,6 +50,31 @@ export function buildApiFootballNormalizedPayload(
   };
 }
 
+function buildGoogleGroundingNormalized(
+  googleRecord: Awaited<ReturnType<typeof getCachedGoogleRecordAsync>>
+): ReplayRawSources["googleGroundingNormalized"] {
+  if (!googleRecord) {
+    return null;
+  }
+
+  const captureSource =
+    googleRecord.rawResponse &&
+    typeof googleRecord.rawResponse === "object" &&
+    (googleRecord.rawResponse as { captureSource?: string }).captureSource === "live"
+      ? "live"
+      : "cache";
+
+  return {
+    source: "google-grounding",
+    captureSource,
+    query: googleRecord.query,
+    capturedAt: googleRecord.searchTime,
+    confidence: googleRecord.confidence,
+    citations: googleRecord.citations,
+    payload: googleRecord.payload,
+  };
+}
+
 export async function captureReplayRawSources(input: {
   report: AnalysisReport;
   matchDate?: string;
@@ -62,11 +87,17 @@ export async function captureReplayRawSources(input: {
   });
   const googleRecord = await getCachedGoogleRecordAsync(cacheKey);
   const apiFootballRaw = buildApiFootballNormalizedPayload(input.report.teamProfiles);
+  const googleGroundingNormalized = buildGoogleGroundingNormalized(googleRecord);
 
   return {
     apiFootballRaw,
-    googleGroundingRaw: googleRecord?.rawResponse ?? googleRecord?.payload ?? null,
+    googleGroundingRaw:
+      googleRecord?.rawResponse ??
+      googleGroundingNormalized ??
+      googleRecord?.payload ??
+      null,
+    googleGroundingNormalized,
     citations: googleRecord?.citations ?? googleRecord?.payload.citations ?? [],
-    cacheSource: googleRecord ? "cache" : apiFootballRaw ? "api-football" : null,
+    cacheSource: googleRecord ? "google" : apiFootballRaw ? "api-football" : null,
   };
 }

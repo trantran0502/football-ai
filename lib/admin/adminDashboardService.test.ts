@@ -60,21 +60,20 @@ function buildSnapshotPayload(
   };
 }
 
-async function testUsesFreshSnapshot(): Promise<void> {
+async function testAlwaysUsesLiveQuery(): Promise<void> {
   resetAdminDashboardStoreForTests();
   const now = new Date("2026-07-19T12:00:00.000Z");
   const snapshotTime = "2026-07-19T11:30:00.000Z";
 
   seedSystemSnapshotForTests(buildSnapshotPayload(), snapshotTime);
 
-  const resolved = await resolveAdminSystemSnapshot(now);
-  assert(resolved.metadata.dataSource === "snapshot", "fresh snapshot should use snapshot source");
-  assert(resolved.metadata.snapshotTime === snapshotTime, "fresh snapshot should expose snapshot time");
-  assert(resolved.snapshot.analysis.pendingCount === 4, "fresh snapshot should keep snapshot counts");
-  assert(
-    isSystemSnapshotFresh(snapshotTime, now, ADMIN_DASHBOARD_SNAPSHOT_MAX_AGE_MS),
-    "snapshot time should be considered fresh"
-  );
+  const resolved = await resolveAdminSystemSnapshot(now, {
+    buildLiveSnapshot: async () =>
+      buildSnapshotPayload({ pendingCount: 11, verifiedCount: 110, anomalyCount: 0 }),
+  });
+  assert(resolved.metadata.dataSource === "live", "admin dashboard should always use live source");
+  assert(resolved.snapshot.analysis.pendingCount === 11, "live counts should override stale snapshot");
+  assert(resolved.metadata.isStale === false, "live snapshot should not be marked stale");
 }
 
 async function testUsesLiveQueryWhenSnapshotExpired(): Promise<void> {
@@ -93,7 +92,7 @@ async function testUsesLiveQueryWhenSnapshotExpired(): Promise<void> {
   });
 
   assert(resolved.metadata.dataSource === "live", "expired snapshot should fall back to live query");
-  assert(resolved.metadata.snapshotTime === null, "live query should not expose snapshot time");
+  assert(resolved.metadata.snapshotTime === "2026-07-19T00:00:00.000Z", "live query should expose sync time");
   assert(resolved.snapshot.analysis.pendingCount === 2, "expired snapshot should use live counts");
 }
 
@@ -102,7 +101,6 @@ async function testUsesLiveQueryWhenSnapshotMissing(): Promise<void> {
   const now = new Date("2026-07-19T12:00:00.000Z");
 
   const resolved = await resolveAdminSystemSnapshot(now, {
-    getSystemSnapshotRecord: async () => null,
     buildLiveSnapshot: async () =>
       buildSnapshotPayload({ pendingCount: 7, verifiedCount: 3, anomalyCount: 2 }),
   });
@@ -116,15 +114,19 @@ async function testBuildAdminDashboardResponseIncludesMetadata(): Promise<void> 
   seedSystemSnapshotForTests(buildSnapshotPayload(), "2026-07-19T11:45:00.000Z");
 
   const dashboard = await buildAdminDashboardResponse(new Date("2026-07-19T12:00:00.000Z"));
-  assert(dashboard.metadata.dataSource === "snapshot", "dashboard response should include snapshot metadata");
-  assert(dashboard.metadata.snapshotTime !== null, "dashboard response should include snapshot time");
+  assert(dashboard.metadata.dataSource === "live", "dashboard response should use live metadata");
+  assert(dashboard.metadata.snapshotTime !== null, "dashboard response should include sync time");
 }
 
 export async function runAdminDashboardServiceTests(): Promise<void> {
-  await testUsesFreshSnapshot();
+  await testAlwaysUsesLiveQuery();
   await testUsesLiveQueryWhenSnapshotExpired();
   await testUsesLiveQueryWhenSnapshotMissing();
   await testBuildAdminDashboardResponseIncludesMetadata();
+  assert(
+    isSystemSnapshotFresh("2026-07-19T11:56:00.000Z", new Date("2026-07-19T12:00:00.000Z"), ADMIN_DASHBOARD_SNAPSHOT_MAX_AGE_MS),
+    "snapshot freshness helper should still work"
+  );
 }
 
 void runAdminDashboardServiceTests()

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAdminError } from "@/lib/admin/adminErrorLog";
+import { recordCacheHit, recordCacheMiss } from "@/lib/admin/adminCacheMetrics";
 import type {
   TeamProfile,
   TeamProfileIdentity,
@@ -196,6 +197,7 @@ export async function getTeamProfile(
       .maybeSingle();
 
     if (requestedResult.data) {
+      recordCacheHit();
       return mapRowToProfile(requestedResult.data as Record<string, unknown>);
     }
 
@@ -208,9 +210,11 @@ export async function getTeamProfile(
       .maybeSingle();
 
     if (legacyResult.error || !legacyResult.data) {
+      recordCacheMiss();
       return null;
     }
 
+    recordCacheHit();
     return mapRowToProfile(legacyResult.data as Record<string, unknown>);
   } catch {
     return null;

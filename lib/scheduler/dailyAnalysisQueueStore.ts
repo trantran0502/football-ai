@@ -6,6 +6,7 @@ export interface DailyAnalysisQueueState {
   failedFixtureIds: number[];
   deferredFixtureIds: number[];
   deferredTeamProfileKeys: string[];
+  terminalDeferredFixtureIds?: number[];
   status: "in_progress" | "completed";
   updatedAt: string;
 }

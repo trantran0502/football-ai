@@ -1,3 +1,4 @@
+import { recordCacheHit } from "@/lib/admin/adminCacheMetrics";
 import type { HybridSourcePayload } from "@/lib/hybrid/hybridTypes";
 import type {
   GoogleSearchCachedRecord,
@@ -106,11 +107,13 @@ export async function getCachedGoogleRecordAsync(
 ): Promise<GoogleSearchCachedRecord | null> {
   const memoryHit = getCachedGoogleRecord(cacheKey);
   if (memoryHit) {
+    recordCacheHit();
     return memoryHit;
   }
 
   const supabaseHit = await readGoogleSearchSupabaseCache(cacheKey);
   if (supabaseHit) {
+    recordCacheHit();
     recordCache.set(cacheKey, supabaseHit);
     return supabaseHit;
   }

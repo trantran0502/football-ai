@@ -173,24 +173,7 @@ export async function resolveAdminSystemSnapshot(
   snapshot: AdminSystemSnapshotPayload;
   metadata: AdminDashboardMetadata;
 }> {
-  const getRecord = deps.getSystemSnapshotRecord ?? getSystemSnapshotRecordFromStore;
   const buildLive = deps.buildLiveSnapshot ?? buildLiveAdminSystemSnapshot;
-  const maxAgeMs = deps.snapshotMaxAgeMs ?? ADMIN_DASHBOARD_SNAPSHOT_MAX_AGE_MS;
-
-  try {
-    const record = await getRecord();
-    if (record && isSystemSnapshotFresh(record.updatedAt, now, maxAgeMs)) {
-      return {
-        snapshot: record.payload,
-        metadata: {
-          dataSource: "snapshot",
-          snapshotTime: record.updatedAt,
-        },
-      };
-    }
-  } catch {
-    // Fall through to live query.
-  }
 
   try {
     const liveSnapshot = await buildLive(now, deps.liveSnapshotDeps);
@@ -198,7 +181,8 @@ export async function resolveAdminSystemSnapshot(
       snapshot: liveSnapshot,
       metadata: {
         dataSource: "live",
-        snapshotTime: null,
+        snapshotTime: liveSnapshot.system.lastSyncAt,
+        isStale: false,
       },
     };
   } catch {
@@ -207,6 +191,7 @@ export async function resolveAdminSystemSnapshot(
       metadata: {
         dataSource: "live",
         snapshotTime: null,
+        isStale: true,
       },
     };
   }

@@ -2,6 +2,7 @@ import { fetchBrowserRuntimeWeightConfig } from "@/lib/recommendation/fetchBrows
 import { resetRuntimeWeightConfigCacheForTests } from "@/lib/recommendation/runtimeWeightConfigLoader";
 import { DEFAULT_PROVIDER_WEIGHTS } from "@/lib/recommendation/providerWeights";
 import { buildFallbackWeightConfig } from "@/lib/recommendation/weightConfigRuntime";
+import { PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION } from "@/lib/recommendation/productionWeightConfig";
 import type { RuntimeWeightConfig } from "@/lib/recommendation/weightConfigTypes";
 
 function assert(condition: boolean, message: string): void {
@@ -88,7 +89,10 @@ async function testFetchBrowserRuntimeWeightConfigFallback(): Promise<void> {
     });
 
     assert(dto.source === "fallback", "loader fallback should surface in browser dto");
-    assert(dto.activeVersion === null, "fallback dto should not expose activeVersion");
+    assert(
+      dto.activeVersion?.id === PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION,
+      "fallback dto should expose production baseline version id"
+    );
   } finally {
     if (previousUseDb === undefined) {
       delete process.env.USE_DB_WEIGHT_CONFIG;
@@ -116,9 +120,11 @@ async function testFetchBrowserRuntimeWeightConfigUsesFallbackWhenDisabled(): Pr
       },
     });
 
-    const fallback = buildFallbackWeightConfig();
-    assert(dto.source === fallback.source, "disabled db config should return fallback dto");
-    assert(dto.activeVersion === null, "disabled db config activeVersion null");
+    assert(dto.source === "fallback", "disabled db config should return fallback dto");
+    assert(
+      dto.activeVersion?.id === PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION,
+      "disabled db config should expose production baseline version"
+    );
   } finally {
     if (previous === undefined) {
       delete process.env.USE_DB_WEIGHT_CONFIG;

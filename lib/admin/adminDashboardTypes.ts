@@ -134,6 +134,7 @@ export type AdminDashboardDataSource = "snapshot" | "live";
 export interface AdminDashboardMetadata {
   dataSource: AdminDashboardDataSource;
   snapshotTime: string | null;
+  isStale?: boolean;
 }
 
 export interface AdminSystemSnapshotRecord {

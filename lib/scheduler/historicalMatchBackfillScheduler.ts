@@ -314,17 +314,8 @@ export async function runHistoricalMatchBackfillScheduler(
 
           if (fetchOutcome.kind === "plan_date_restricted") {
             hadPlanDateWarning = true;
-            warnings.push(fetchOutcome.restriction.message);
-            logAdminError({
-              category: "scheduler",
-              message: "Historical backfill plan date restriction",
-              context: {
-                requestedDate: cursor.currentDate,
-                allowedMinDate: fetchOutcome.restriction.minDate,
-                allowedMaxDate: fetchOutcome.restriction.maxDate,
-                warning: fetchOutcome.restriction.message,
-              },
-            });
+            stats.skipped += 1;
+            warnings.push(`plan_date_skipped:${fetchOutcome.restriction.message}`);
             cursor = applyPlanDateRestriction(
               cursor,
               config,

@@ -15,7 +15,14 @@ import {
 import {
   canMakeApiFootballRequest,
   getApiFootballQuotaBlockReason,
+  getApiFootballQuotaSnapshot,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
+import {
+  registerProfileTeamRequest,
+  recordProfileCacheHit,
+  recordDeferredProfileCompleted,
+  recordDeferredProfileRetried,
+} from "@/lib/teamProfile/profileCacheMetrics";
 import type {
   EnsureTeamProfilesInput,
   EnsureTeamProfilesResult,
@@ -91,6 +98,83 @@ export async function refreshTeamProfile(
   const side = input.side ?? "home";
   const matchLabel = input.matchLabel ?? input.teamName;
   const dedupe = dedupeKey(input.teamId, input.leagueId, input.season, runDate);
+  const batchRequest = registerProfileTeamRequest(
+    input.teamId,
+    input.leagueId,
+    input.season
+  );
+
+  if (batchRequest === "duplicate") {
+    const cached = await getTeamProfile(input.teamId, input.leagueId, input.season);
+    if (cached && cached.sampleSize > 0) {
+      recordProfileCacheHit();
+      return {
+        profile: cached,
+        completeness: cached.dataCompleteness,
+        warnings: ["Profile refresh skipped due to same-batch dedupe."],
+        diagnostics: buildSkippedDiagnostic({
+          identity: input,
+          side,
+          matchLabel,
+          skippedReason: "same_day_dedupe",
+          profile: cached,
+          warnings: ["Profile refresh skipped due to same-batch dedupe."],
+        }),
+        refreshed: false,
+        skippedReason: "same_day_dedupe",
+      };
+    }
+  }
+
+  const quotaSnapshot = getApiFootballQuotaSnapshot();
+  const minuteNearLimit =
+    quotaSnapshot.minuteCount >= Math.max(0, quotaSnapshot.minuteLimit - 1);
+  if ((input.allowApiFetch ?? true) && minuteNearLimit && !canMakeApiFootballRequest()) {
+    const existing = await getTeamProfile(input.teamId, input.leagueId, input.season);
+    if (existing) {
+      return {
+        profile: existing,
+        completeness: existing.dataCompleteness,
+        warnings: ["Profile refresh deferred due to API minute quota."],
+        diagnostics: buildSkippedDiagnostic({
+          identity: input,
+          side,
+          matchLabel,
+          skippedReason: "quota_exhausted",
+          profile: existing,
+          warnings: ["Profile refresh deferred due to API minute quota."],
+        }),
+        refreshed: false,
+        skippedReason: "quota_exhausted",
+      };
+    }
+
+    const failed = await markProfileRefreshFailure(
+      {
+        teamId: input.teamId,
+        teamName: input.teamName,
+        leagueId: input.leagueId,
+        leagueName: input.leagueName,
+        season: input.season,
+      },
+      "Profile refresh deferred due to API minute quota."
+    );
+    return {
+      profile: failed.profile,
+      completeness: failed.profile.dataCompleteness,
+      warnings: ["Profile refresh deferred due to API minute quota."],
+      diagnostics: buildSkippedDiagnostic({
+        identity: input,
+        side,
+        matchLabel,
+        skippedReason: "quota_exhausted",
+        profile: failed.profile,
+        warnings: ["Profile refresh deferred due to API minute quota."],
+      }),
+      refreshed: failed.persisted,
+      skippedReason: "quota_exhausted",
+    };
+  }
 
   if (refreshedToday.has(dedupe)) {
     const existing = await getTeamProfile(input.teamId, input.leagueId, input.season);
@@ -114,6 +198,7 @@ export async function refreshTeamProfile(
 
   const existing = await getTeamProfile(input.teamId, input.leagueId, input.season);
   if (existing && !isTeamProfileStale(existing) && existing.sampleSize > 0) {
+    recordProfileCacheHit();
     return {
       profile: existing,
       completeness: existing.dataCompleteness,
@@ -316,6 +401,7 @@ export async function ensureTeamProfilesForMatch(
 
   if (!input.skipDeferredRetry) {
     for (const item of deferred) {
+      recordDeferredProfileRetried();
       const retry = await refreshTeamProfile({
         ...item,
         matchLabel,
@@ -329,6 +415,9 @@ export async function ensureTeamProfilesForMatch(
         finalHome = retry;
       } else {
         finalAway = retry;
+      }
+      if (retry.refreshed) {
+        recordDeferredProfileCompleted();
       }
     }
   }

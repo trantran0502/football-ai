@@ -78,6 +78,23 @@ import {
 import {
   assessRecommendationDataCompleteness,
 } from "@/lib/analysis/analysisDataCompleteness";
+import { buildEvidenceCoverageDiagnostics } from "@/lib/analysis/evidenceCoverageDiagnostics";
+import { getGroundingRuntimeMetricsSnapshot } from "@/lib/admin/groundingRuntimeMetrics";
+import { captureReplayRawSources } from "@/lib/replay/replayRawCapture";
+import {
+  createDeferredFixtureAttemptState,
+  isTerminalDeferredFixture,
+  registerDeferredFixtureAttempt,
+  resolvePrimaryDeferredReason,
+} from "@/lib/scheduler/deferredAnalysisPolicy";
+import { hasCompleteAnalysisRecord } from "@/lib/supabase/services/matchRecordCompletenessGuard";
+import { summarizePendingRecordClassifications } from "@/lib/supabase/services/pendingRecordClassification";
+import { getGoogleSearchProvider } from "@/lib/providers/googleSearch/googleSearchProvider";
+import { initializeGroundingRuntimeMetrics } from "@/lib/admin/groundingRuntimeMetrics";
+import {
+  beginProfileCacheMetricsBatch,
+  getProfileCacheMetricsSnapshot,
+} from "@/lib/teamProfile/profileCacheMetrics";
 
 export interface DailySchedulerDependencies {
   runDate?: string;
@@ -185,7 +202,7 @@ function buildProductionFixturesForQueue(
   );
 }
 
-function selectFixtureBatch(
+export function selectFixtureBatch(
   fixtures: ProductionFixture[],
   queue: DailyAnalysisQueueState,
   maxPerRun: number
@@ -196,14 +213,36 @@ function selectFixtureBatch(
 } {
   const byId = new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture]));
   const batch: ProductionFixture[] = [];
+  const picked = new Set<number>();
   let cursor = queue.cursor;
   const cursorBefore = cursor;
+  const terminalDeferred = new Set(queue.terminalDeferredFixtureIds ?? []);
+
+  for (const fixtureId of queue.deferredFixtureIds) {
+    if (batch.length >= maxPerRun) {
+      break;
+    }
+    if (
+      terminalDeferred.has(fixtureId) ||
+      queue.completedFixtureIds.includes(fixtureId) ||
+      queue.failedFixtureIds.includes(fixtureId)
+    ) {
+      continue;
+    }
+    const fixture = byId.get(fixtureId);
+    if (fixture) {
+      batch.push(fixture);
+      picked.add(fixtureId);
+    }
+  }
 
   while (batch.length < maxPerRun && cursor < queue.fixtureIds.length) {
     const fixtureId = queue.fixtureIds[cursor];
     cursor += 1;
 
     if (
+      picked.has(fixtureId) ||
+      terminalDeferred.has(fixtureId) ||
       queue.completedFixtureIds.includes(fixtureId) ||
       queue.failedFixtureIds.includes(fixtureId)
     ) {
@@ -394,6 +433,8 @@ async function runBatchedDailyPipeline(
   const startedAt = dependencies.now();
   let teamProfileRefreshesUsed = 0;
   let timeBudgetReached = false;
+  const deferredAttemptState = createDeferredFixtureAttemptState();
+  beginProfileCacheMetricsBatch();
 
   const { batch, cursorBefore, cursorAfter } = selectFixtureBatch(
     fixtures,
@@ -406,6 +447,7 @@ async function runBatchedDailyPipeline(
     cursor: cursorAfter,
     deferredFixtureIds: [...queue.deferredFixtureIds],
     deferredTeamProfileKeys: [...queue.deferredTeamProfileKeys],
+    terminalDeferredFixtureIds: [...(queue.terminalDeferredFixtureIds ?? [])],
   };
 
   const runtimeWeightConfig = await dependencies.loadRuntimeWeightConfig();
@@ -427,6 +469,16 @@ async function runBatchedDailyPipeline(
     }
 
     try {
+      if (isTerminalDeferredFixture(fixture.fixtureId, deferredAttemptState)) {
+        items.push({
+          fixture,
+          status: "incomplete_rejected",
+          error: "terminal_deferred",
+        });
+        continue;
+      }
+
+      const isDeferredFixtureRetry = updatedQueue.deferredFixtureIds.includes(fixture.fixtureId);
       const pipelineResult = await withRetry(
         async () =>
           withTimeout(
@@ -449,7 +501,7 @@ async function runBatchedDailyPipeline(
                     leagueName: fixture.leagueName,
                     season: fixture.season,
                     waitForQuota: false,
-                    skipDeferredRetry: true,
+                    skipDeferredRetry: !isDeferredFixtureRetry,
                   });
                   profileSnapshot = profileResult.snapshot;
                   fixtureProfileDiagnostics = profileResult.profileDiagnostics;
@@ -581,9 +633,15 @@ async function runBatchedDailyPipeline(
                 profileDiagnostics: fixtureProfileDiagnostics,
               };
 
+              const rawSources = await captureReplayRawSources({
+                report,
+                matchDate: fixture.matchDate,
+              });
               const completeness = assessRecommendationDataCompleteness({
                 report,
+                matchId: String(fixture.fixtureId),
                 profileDiagnostics: fixtureProfileDiagnostics,
+                rawSources,
               });
               if (!completeness.eligibleForRecommendation) {
                 return {
@@ -623,6 +681,13 @@ async function runBatchedDailyPipeline(
         "status" in pipelineResult &&
         pipelineResult.status === "incomplete_deferred"
       ) {
+        const deferredRegistration = registerDeferredFixtureAttempt({
+          fixtureId: fixture.fixtureId,
+          state: deferredAttemptState,
+        });
+        const deferredReason = resolvePrimaryDeferredReason(
+          pipelineResult.completeness.reasons
+        );
         dataCompleteness.incompleteAnalysisRejected += 1;
         dataCompleteness.recommendationsBlockedByCompleteness += 1;
         if (pipelineResult.completeness.profileDeferred) {
@@ -633,20 +698,31 @@ async function runBatchedDailyPipeline(
         if (pipelineResult.completeness.groundingUnavailable) {
           dataCompleteness.groundingUnavailableCount += 1;
         }
-        dataCompleteness.snapshotMissingCount += 1;
         if (!updatedQueue.deferredFixtureIds.includes(fixture.fixtureId)) {
           updatedQueue.deferredFixtureIds.push(fixture.fixtureId);
+        }
+        if (deferredRegistration.terminal) {
+          updatedQueue.terminalDeferredFixtureIds = [
+            ...(updatedQueue.terminalDeferredFixtureIds ?? []),
+            fixture.fixtureId,
+          ];
+          updatedQueue.deferredFixtureIds = updatedQueue.deferredFixtureIds.filter(
+            (fixtureId) => fixtureId !== fixture.fixtureId
+          );
         }
         items.push({
           fixture,
           status: "incomplete_rejected",
-          error: pipelineResult.completeness.reasons.join(", "),
+          error: `${deferredReason}:${pipelineResult.completeness.reasons.join(", ")}`,
         });
         logAdminError({
           category: "scheduler",
           message: `Daily analysis deferred due to incomplete data: ${fixture.homeTeam} vs ${fixture.awayTeam}`,
           context: {
             fixtureId: fixture.fixtureId,
+            deferredReason,
+            attempt: deferredRegistration.attempt,
+            terminal: deferredRegistration.terminal,
             reasons: pipelineResult.completeness.reasons,
             quotaWarnings: pipelineResult.completeness.quotaWarnings,
           },
@@ -743,14 +819,15 @@ function syncQueueWithExistingRecords(
   fixtures: ProductionFixture[],
   records: HistoricalMatchRecord[]
 ): DailyAnalysisQueueState {
-  const recordKeys = new Set(
-    records.map((record) => `${record.matchDate}:${record.homeTeam}:${record.awayTeam}`)
+  const recordsByKey = new Map(
+    records.map((record) => [`${record.matchDate}:${record.homeTeam}:${record.awayTeam}`, record])
   );
   const completed = new Set(queue.completedFixtureIds);
 
   for (const fixture of fixtures) {
     const key = `${fixture.matchDate}:${fixture.homeTeam}:${fixture.awayTeam}`;
-    if (recordKeys.has(key)) {
+    const record = recordsByKey.get(key);
+    if (record && hasCompleteAnalysisRecord(record)) {
       completed.add(fixture.fixtureId);
     }
   }
@@ -835,6 +912,7 @@ export async function runDailyScheduler(
   }
 
   const apiQuotaStart = getApiFootballQuotaSnapshot().dailyCount;
+  initializeGroundingRuntimeMetrics(getGoogleSearchProvider().isConfigured());
 
   const execution = startExecutionLog({
     jobName: "daily_analysis",
@@ -969,6 +1047,15 @@ export async function runDailyScheduler(
     );
     const executionDurationMs = now() - executionStartedAt;
     const executionStatus = queueCompleted ? "success" : "partial_success";
+    const refreshedRecords = await listRecords();
+    const pendingClassification = summarizePendingRecordClassifications(refreshedRecords);
+    const groundingMetrics = getGroundingRuntimeMetricsSnapshot();
+    const profileCacheMetrics = getProfileCacheMetricsSnapshot();
+    const evidenceCoverage = buildEvidenceCoverageDiagnostics({
+      groundingConfigured: groundingMetrics.groundingConfigured,
+      groundingCalled: groundingMetrics.groundingCalled > 0,
+      groundingPersisted: groundingMetrics.groundingSucceeded > 0,
+    });
 
     const persistResult = await completeExecutionLog({
       id: execution.id,
@@ -1025,6 +1112,21 @@ export async function runDailyScheduler(
         rejectedByConfidence,
         rejectedByGrade,
         eligibleRecommendationCount,
+        groundingConfigured: groundingMetrics.groundingConfigured,
+        groundingCalled: groundingMetrics.groundingCalled,
+        groundingSucceeded: groundingMetrics.groundingSucceeded,
+        groundingCacheHit: groundingMetrics.groundingCacheHit,
+        groundingFailureReason: groundingMetrics.groundingFailureReason,
+        groundingSearchCount: groundingMetrics.groundingSearchCount,
+        profileCacheHit: profileCacheMetrics.profileCacheHit,
+        profileCacheMiss: profileCacheMetrics.profileCacheMiss,
+        uniqueTeamsRequested: profileCacheMetrics.uniqueTeamsRequested,
+        duplicateTeamRequestsAvoided: profileCacheMetrics.duplicateTeamRequestsAvoided,
+        deferredProfileRetried: profileCacheMetrics.deferredProfileRetried,
+        deferredProfileCompleted: profileCacheMetrics.deferredProfileCompleted,
+        pendingClassification: pendingClassification.byCategory,
+        pendingOver24hCount: pendingClassification.pendingOver24h,
+        evidenceCoverage,
       }),
     });
 

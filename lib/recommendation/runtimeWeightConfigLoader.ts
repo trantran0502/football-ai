@@ -1,5 +1,5 @@
 import { logAdminError } from "@/lib/admin/adminErrorLog";
-import { buildFallbackWeightConfig } from "@/lib/recommendation/weightConfigRuntime";
+import { buildProductionBaselineWeightConfig } from "@/lib/recommendation/productionWeightConfig";
 import type {
   DecisionRuntimeWeights,
   LoadedRuntimeWeightConfig,
@@ -64,7 +64,7 @@ function toLoadedRuntimeWeightConfig(
 
 function buildLoadedFallback(nowMs: number): LoadedRuntimeWeightConfig {
   return toLoadedRuntimeWeightConfig(
-    buildFallbackWeightConfig(),
+    buildProductionBaselineWeightConfig(new Date(nowMs)),
     new Date(nowMs).toISOString()
   );
 }
