@@ -1,6 +1,7 @@
 import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
 import { getGroundingRuntimeMetricsSnapshot } from "@/lib/admin/groundingRuntimeMetrics";
 import { getGroundingRequestBudgetSnapshot } from "@/lib/providers/googleSearch/groundingRequestBudget";
+import type { ProductionCombinedGroundingPrefetchResult } from "@/lib/providers/googleSearch/combinedGroundingProvider";
 import { getPlanCapabilityMetricsSnapshot } from "@/lib/teamProfile/planCapabilityCache";
 import {
   getProfileCacheMetricsSnapshot,
@@ -24,6 +25,8 @@ export interface FixtureGroundingChannelDiagnostic {
 
 export interface FixtureGroundingDiagnostic {
   fixtureId: number;
+  combinedGroundingRequestId: string | null;
+  combinedGroundingLiveRequest: boolean;
   squadAvailability: FixtureGroundingChannelDiagnostic;
   matchContext: FixtureGroundingChannelDiagnostic;
 }
@@ -63,6 +66,19 @@ export interface DailyAnalysisObservabilityDiagnostics {
   weightConfig: WeightConfigSnapshotMetadata;
 }
 
+export function buildFixtureGroundingDiagnostic(
+  fixtureId: number,
+  prefetch: ProductionCombinedGroundingPrefetchResult
+): FixtureGroundingDiagnostic {
+  return {
+    fixtureId,
+    combinedGroundingRequestId: prefetch.combinedGroundingRequestId,
+    combinedGroundingLiveRequest: prefetch.combinedGroundingLiveRequest,
+    squadAvailability: prefetch.squadGrounding,
+    matchContext: prefetch.matchContextGrounding,
+  };
+}
+
 export function buildDailyAnalysisObservabilityDiagnostics(input: {
   weightConfig: WeightConfigSnapshotMetadata;
   fixtureGroundingDiagnostics?: FixtureGroundingDiagnostic[];
@@ -74,11 +90,11 @@ export function buildDailyAnalysisObservabilityDiagnostics(input: {
 
   return {
     groundingConfigured: grounding.groundingConfigured,
-    groundingCalled: grounding.groundingCalled,
+    groundingCalled: budget.groundingRequestsUsed,
     groundingSucceeded: grounding.groundingSucceeded,
     groundingCacheHit: grounding.groundingCacheHit,
     groundingFailureReason: grounding.groundingFailureReason,
-    groundingSearchCount: grounding.groundingSearchCount,
+    groundingSearchCount: budget.combinedGroundingRequestCount,
     groundingHttpStatus: grounding.groundingHttpStatus,
     groundingModel: grounding.groundingModel,
     groundingCandidateCount: grounding.groundingCandidateCount,

@@ -84,6 +84,14 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   groundingSafetyBlockedCount?: number;
   groundingParseFailureCount?: number;
   groundingFallbackUsed?: boolean;
+  groundingRequestBudget?: number;
+  groundingRequestsUsed?: number;
+  groundingRequestsAvoidedByCache?: number;
+  groundingRequestsAvoidedByBudget?: number;
+  groundingRateLimitTriggered?: boolean;
+  groundingCooldownActive?: boolean;
+  groundingDeferredCount?: number;
+  combinedGroundingRequestCount?: number;
   profileCacheHit?: number;
   profileCacheMiss?: number;
   uniqueTeamsRequested?: number;

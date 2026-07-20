@@ -13,6 +13,7 @@ import {
 } from "@/lib/providers/googleSearch/groundingRequestBudget";
 import {
   prefetchProductionCombinedGrounding,
+  resetCombinedGroundingPrefetchGuardForTests,
 } from "@/lib/providers/googleSearch/combinedGroundingProvider";
 import {
   buildCombinedGroundingCacheKey,
@@ -33,6 +34,9 @@ import {
   resetApiFootballQuotaForTests,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { resetGroundingRuntimeMetricsForTests } from "@/lib/admin/groundingRuntimeMetrics";
+import { buildDailyAnalysisObservabilityDiagnostics } from "@/lib/scheduler/executionDiagnostics";
+import { buildProductionBaselineWeightConfig } from "@/lib/recommendation/productionWeightConfig";
+import { buildWeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigRuntime";
 import { clearProductionSquadAvailabilityCacheForTests } from "@/lib/providers/squadAvailability/squadAvailabilityCache";
 import { clearProductionMatchContextCacheForTests } from "@/lib/providers/matchContext/matchContextCache";
 import type { GeminiGenerateContentResponse } from "@/lib/providers/googleSearch/googleSearchTypes";
@@ -156,6 +160,7 @@ function resetGroundingTestState(): void {
   resetGoogleSearchProviderForTests();
   resetGroundingRuntimeMetricsForTests();
   resetGroundingRequestBudgetForTests();
+  resetCombinedGroundingPrefetchGuardForTests();
   clearProductionSquadAvailabilityCacheForTests();
   clearProductionMatchContextCacheForTests();
   delete process.env.GOOGLE_GROUNDING_REQUEST_BUDGET_PER_BATCH;
@@ -178,6 +183,17 @@ async function testSingleFixtureUsesOneGeminiRequest(): Promise<void> {
   assert(result.squadResolution != null, "squad resolution should be populated");
   assert(result.matchContextResolution != null, "match context resolution should be populated");
   assert(result.combinedGrounding.called === true, "combined grounding should be marked called");
+  assert(result.squadGrounding.called === false, "squad channel should not count as separate HTTP call");
+  assert(result.matchContextGrounding.called === false, "match context channel should not count as separate HTTP call");
+  assert(
+    result.squadGrounding.skippedReason === "combined_grounding_channel",
+    "squad channel should reference combined grounding"
+  );
+  assert(
+    result.matchContextGrounding.skippedReason === "combined_grounding_channel",
+    "match context channel should reference combined grounding"
+  );
+  assert(result.combinedGroundingRequestId.length > 0, "combined request id should be present");
   delete process.env.GOOGLE_GEMINI_API_KEY;
 }
 
@@ -478,6 +494,78 @@ function testResultUpdateReservedQuotaUnaffected(): void {
   );
 }
 
+async function testDuplicateCombinedPrefetchUsesSingleHttpRequest(): Promise<void> {
+  resetGroundingTestState();
+  beginGroundingRequestBudgetBatch();
+  let calls = 0;
+  setGeminiFetchForTests(async () => {
+    calls += 1;
+    return new Response(JSON.stringify(successGeminiResponse()), { status: 200 });
+  });
+  process.env.GOOGLE_GEMINI_API_KEY = "test-key";
+
+  await prefetchProductionCombinedGrounding(FIXTURE);
+  await prefetchProductionCombinedGrounding(FIXTURE);
+
+  assert(calls === 1, "duplicate combined prefetch for same fixture must not refetch");
+  delete process.env.GOOGLE_GEMINI_API_KEY;
+}
+
+function testObservabilityDiagnosticsIncludeBudgetFields(): void {
+  resetGroundingTestState();
+  beginGroundingRequestBudgetBatch();
+  const diagnostics = buildDailyAnalysisObservabilityDiagnostics({
+    weightConfig: buildWeightConfigSnapshotMetadata(
+      buildProductionBaselineWeightConfig(new Date("2026-07-20T00:00:00.000Z"))
+    ),
+  });
+
+  assert(diagnostics.groundingRequestBudget === 2, "groundingRequestBudget should default to 2");
+  assert(typeof diagnostics.groundingRequestsUsed === "number", "groundingRequestsUsed required");
+  assert(
+    typeof diagnostics.groundingRequestsAvoidedByBudget === "number",
+    "groundingRequestsAvoidedByBudget required"
+  );
+  assert(
+    typeof diagnostics.groundingRateLimitTriggered === "boolean",
+    "groundingRateLimitTriggered required"
+  );
+  assert(typeof diagnostics.groundingCooldownActive === "boolean", "groundingCooldownActive required");
+  assert(typeof diagnostics.groundingDeferredCount === "number", "groundingDeferredCount required");
+  assert(
+    typeof diagnostics.combinedGroundingRequestCount === "number",
+    "combinedGroundingRequestCount required"
+  );
+  assert(
+    diagnostics.groundingCalled === diagnostics.groundingRequestsUsed,
+    "groundingCalled must equal actual HTTP request count"
+  );
+  assert(
+    diagnostics.groundingSearchCount === diagnostics.combinedGroundingRequestCount,
+    "groundingSearchCount must equal combined request count"
+  );
+}
+
+async function testCombinedSplitIncrementsGroundingCalledOnce(): Promise<void> {
+  resetGroundingTestState();
+  beginGroundingRequestBudgetBatch();
+  setGeminiFetchForTests(async () =>
+    new Response(JSON.stringify(successGeminiResponse()), { status: 200 })
+  );
+  process.env.GOOGLE_GEMINI_API_KEY = "test-key";
+
+  await prefetchProductionCombinedGrounding(FIXTURE);
+  const diagnostics = buildDailyAnalysisObservabilityDiagnostics({
+    weightConfig: buildWeightConfigSnapshotMetadata(
+      buildProductionBaselineWeightConfig(new Date("2026-07-20T00:00:00.000Z"))
+    ),
+  });
+
+  assert(diagnostics.groundingCalled === 1, "combined split must count one HTTP request");
+  assert(diagnostics.combinedGroundingRequestCount === 1, "combined request count must be 1");
+  delete process.env.GOOGLE_GEMINI_API_KEY;
+}
+
 async function runTests(): Promise<void> {
   await testSingleFixtureUsesOneGeminiRequest();
   await testThreeFixturesWithBudgetTwoOnlyCallsTwice();
@@ -488,6 +576,9 @@ async function runTests(): Promise<void> {
   testGroundingUnavailableDoesNotFabricateData();
   testPastKickoffDeferredFixtureSkipsRetry();
   testResultUpdateReservedQuotaUnaffected();
+  await testDuplicateCombinedPrefetchUsesSingleHttpRequest();
+  testObservabilityDiagnosticsIncludeBudgetFields();
+  await testCombinedSplitIncrementsGroundingCalledOnce();
   console.log("groundingRateLimit.test.ts passed");
 }
 

@@ -1,6 +1,5 @@
 import type { SquadAvailabilityProviderRequest } from "@/lib/analysis/featureScore/providers/squadAvailabilityProvider";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { prefetchProductionCombinedGrounding } from "@/lib/providers/googleSearch/combinedGroundingProvider";
 import type { GroundingChannelDiagnostic } from "@/lib/providers/googleSearch/googleSearchService";
 import {
   isSquadAvailabilitySampleUsable,
@@ -115,18 +114,47 @@ export async function prefetchProductionSquadAvailability(
   resolution: ProductionSquadAvailabilityResolution | null;
   grounding: GroundingPrefetchOutcome;
 }> {
-  const combined = await prefetchProductionCombinedGrounding({
-    fixtureId: context.fixtureId ?? 0,
+  const productionRequest = {
     homeTeam: context.homeTeam,
     awayTeam: context.awayTeam,
     matchDate: context.matchDate,
+    fixtureId: context.fixtureId,
     kickoffTime: context.kickoffTime,
-    matchRecords: context.matchRecords,
-  });
+  };
+  const resolution = readProductionSquadAvailabilityResolution(productionRequest);
+  const grounding: GroundingPrefetchOutcome = resolution
+    ? {
+        called: false,
+        cacheHit: true,
+        skippedReason: "legacy_prefetch_disabled_use_combined",
+        succeeded: true,
+        failureReason: null,
+        httpStatus: null,
+        model: null,
+        candidateCount: 0,
+        parseFailureReason: null,
+        groundingFallbackUsed: false,
+        hasResponseText: false,
+        hasGroundingMetadata: false,
+      }
+    : {
+        called: false,
+        cacheHit: false,
+        skippedReason: "legacy_prefetch_disabled_use_combined",
+        succeeded: false,
+        failureReason: "legacy_prefetch_disabled_use_combined",
+        httpStatus: null,
+        model: null,
+        candidateCount: 0,
+        parseFailureReason: null,
+        groundingFallbackUsed: false,
+        hasResponseText: false,
+        hasGroundingMetadata: false,
+      };
 
   return {
-    resolution: combined.squadResolution,
-    grounding: combined.squadGrounding,
+    resolution,
+    grounding,
   };
 }
 

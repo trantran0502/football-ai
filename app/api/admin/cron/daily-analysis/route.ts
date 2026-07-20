@@ -77,9 +77,15 @@ async function handleDailyAnalysis(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      observabilityWarning: result.observabilityWarning,
-      diagnostics: result.diagnostics,
       ...result,
+      diagnostics: result.diagnostics,
+      groundingRequestBudget: result.diagnostics?.groundingRequestBudget,
+      groundingRequestsUsed: result.diagnostics?.groundingRequestsUsed,
+      groundingRequestsAvoidedByBudget: result.diagnostics?.groundingRequestsAvoidedByBudget,
+      groundingRateLimitTriggered: result.diagnostics?.groundingRateLimitTriggered,
+      groundingCooldownActive: result.diagnostics?.groundingCooldownActive,
+      groundingDeferredCount: result.diagnostics?.groundingDeferredCount,
+      combinedGroundingRequestCount: result.diagnostics?.combinedGroundingRequestCount,
     });
   } catch {
     return genericErrorResponse();

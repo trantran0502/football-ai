@@ -1,6 +1,7 @@
 import type { SquadAvailabilityProviderRequest } from "@/lib/analysis/featureScore/providers/squadAvailabilityProvider";
 import type { MatchContextProviderRequest } from "@/lib/analysis/featureScore/providers/matchContextProvider";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
+import { buildCombinedGroundingCacheKey } from "@/lib/providers/googleSearch/googleSearchCache";
 import {
   buildGroundingChannelDiagnostic,
   fetchGoogleLiveResultWithOutcome,
@@ -47,12 +48,19 @@ export interface ProductionCombinedGroundingContext {
 export interface ProductionCombinedGroundingPrefetchResult {
   squadResolution: ProductionSquadAvailabilityResolution | null;
   matchContextResolution: ProductionMatchContextResolution | null;
+  combinedGroundingRequestId: string;
+  combinedGroundingLiveRequest: boolean;
   combinedGrounding: GroundingChannelDiagnostic;
   squadGrounding: GroundingChannelDiagnostic;
   matchContextGrounding: GroundingChannelDiagnostic;
   groundingDeferred: boolean;
   groundingDeferredReason: string | null;
 }
+
+const completedCombinedPrefetches = new Map<
+  number,
+  ProductionCombinedGroundingPrefetchResult
+>();
 
 function buildDeferredGroundingDiagnostic(
   skippedReason: string
@@ -73,15 +81,46 @@ function buildDeferredGroundingDiagnostic(
   };
 }
 
-function cloneGroundingDiagnostic(
-  diagnostic: GroundingChannelDiagnostic
+function buildCombinedGroundingRequestId(
+  context: ProductionCombinedGroundingContext
+): string {
+  return buildCombinedGroundingCacheKey({
+    fixtureId: context.fixtureId,
+    homeTeam: context.homeTeam,
+    awayTeam: context.awayTeam,
+    matchDate: context.matchDate,
+    kickoffTime: context.kickoffTime,
+  });
+}
+
+function buildDerivedChannelDiagnostic(
+  combined: GroundingChannelDiagnostic,
+  requestId: string
 ): GroundingChannelDiagnostic {
-  return { ...diagnostic };
+  return {
+    ...combined,
+    called: false,
+    skippedReason: combined.cacheHit
+      ? combined.skippedReason ?? "production_resolution_cache"
+      : combined.called
+        ? "combined_grounding_channel"
+        : combined.skippedReason,
+  };
+}
+
+export function resetCombinedGroundingPrefetchGuardForTests(): void {
+  completedCombinedPrefetches.clear();
 }
 
 export async function prefetchProductionCombinedGrounding(
   context: ProductionCombinedGroundingContext
 ): Promise<ProductionCombinedGroundingPrefetchResult> {
+  const cachedPrefetch = completedCombinedPrefetches.get(context.fixtureId);
+  if (cachedPrefetch) {
+    return cachedPrefetch;
+  }
+
+  const combinedGroundingRequestId = buildCombinedGroundingRequestId(context);
   const squadRequest: SquadAvailabilityProviderRequest = {
     homeTeam: context.homeTeam,
     awayTeam: context.awayTeam,
@@ -124,7 +163,7 @@ export async function prefetchProductionCombinedGrounding(
       hasResponseText: false,
       hasGroundingMetadata: false,
     };
-    return {
+    const cachedResult: ProductionCombinedGroundingPrefetchResult = {
       squadResolution: {
         ...existingSquad,
         diagnostics: { ...existingSquad.diagnostics, cacheHit: true },
@@ -133,12 +172,19 @@ export async function prefetchProductionCombinedGrounding(
         ...existingMatch,
         diagnostics: { ...existingMatch.diagnostics, cacheHit: true },
       },
+      combinedGroundingRequestId,
+      combinedGroundingLiveRequest: false,
       combinedGrounding: cachedDiagnostic,
-      squadGrounding: cloneGroundingDiagnostic(cachedDiagnostic),
-      matchContextGrounding: cloneGroundingDiagnostic(cachedDiagnostic),
+      squadGrounding: buildDerivedChannelDiagnostic(cachedDiagnostic, combinedGroundingRequestId),
+      matchContextGrounding: buildDerivedChannelDiagnostic(
+        cachedDiagnostic,
+        combinedGroundingRequestId
+      ),
       groundingDeferred: false,
       groundingDeferredReason: null,
     };
+    completedCombinedPrefetches.set(context.fixtureId, cachedResult);
+    return cachedResult;
   }
 
   setActiveProductionSquadAvailabilityContext({
@@ -161,8 +207,14 @@ export async function prefetchProductionCombinedGrounding(
       kickoffTime: context.kickoffTime,
     });
     const combinedGrounding = buildGroundingChannelDiagnostic(groundingOutcome);
-    const squadGrounding = cloneGroundingDiagnostic(combinedGrounding);
-    const matchContextGrounding = cloneGroundingDiagnostic(combinedGrounding);
+    const squadGrounding = buildDerivedChannelDiagnostic(
+      combinedGrounding,
+      combinedGroundingRequestId
+    );
+    const matchContextGrounding = buildDerivedChannelDiagnostic(
+      combinedGrounding,
+      combinedGroundingRequestId
+    );
 
     const groundingDeferred =
       !groundingOutcome.result &&
@@ -227,15 +279,19 @@ export async function prefetchProductionCombinedGrounding(
       matchContextResolution = existingMatch;
     }
 
-    return {
+    const result: ProductionCombinedGroundingPrefetchResult = {
       squadResolution,
       matchContextResolution,
+      combinedGroundingRequestId,
+      combinedGroundingLiveRequest: combinedGrounding.called,
       combinedGrounding,
       squadGrounding,
       matchContextGrounding,
       groundingDeferred,
       groundingDeferredReason,
     };
+    completedCombinedPrefetches.set(context.fixtureId, result);
+    return result;
   } finally {
     clearActiveProductionSquadAvailabilityContext();
     clearActiveProductionMatchContextContext();
@@ -243,6 +299,7 @@ export async function prefetchProductionCombinedGrounding(
 }
 
 export function buildSkippedCombinedGroundingPrefetch(input: {
+  context: ProductionCombinedGroundingContext;
   budgetExhausted?: boolean;
   rateLimited?: boolean;
   cooldownActive?: boolean;
@@ -255,12 +312,15 @@ export function buildSkippedCombinedGroundingPrefetch(input: {
   }
 
   const diagnostic = buildDeferredGroundingDiagnostic(skippedReason);
+  const requestId = buildCombinedGroundingRequestId(input.context);
   return {
     squadResolution: null,
     matchContextResolution: null,
+    combinedGroundingRequestId: requestId,
+    combinedGroundingLiveRequest: false,
     combinedGrounding: diagnostic,
-    squadGrounding: cloneGroundingDiagnostic(diagnostic),
-    matchContextGrounding: cloneGroundingDiagnostic(diagnostic),
+    squadGrounding: buildDerivedChannelDiagnostic(diagnostic, requestId),
+    matchContextGrounding: buildDerivedChannelDiagnostic(diagnostic, requestId),
     groundingDeferred: true,
     groundingDeferredReason: skippedReason,
   };

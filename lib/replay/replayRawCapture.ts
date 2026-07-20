@@ -1,10 +1,9 @@
 import type { AnalysisReport } from "@/lib/analysis/types";
 import type { MatchTeamProfilesSnapshot } from "@/lib/teamProfile/teamProfileTypes";
 import {
-  buildGoogleSearchCacheKey,
+  buildCombinedGroundingCacheKey,
   getCachedGoogleRecordAsync,
 } from "@/lib/providers/googleSearch/googleSearchCache";
-import { TEAM_CONTEXT_QUERY } from "@/lib/providers/googleSearch/googleSearchService";
 import type { ReplayRawSources } from "@/lib/replay/replayTypes";
 
 function serializeTeamProfilePayload(
@@ -103,12 +102,15 @@ function buildGoogleGroundingNormalized(
 export async function captureReplayRawSources(input: {
   report: AnalysisReport;
   matchDate?: string;
+  fixtureId?: number;
+  kickoffTime?: string;
 }): Promise<ReplayRawSources> {
-  const cacheKey = buildGoogleSearchCacheKey({
+  const cacheKey = buildCombinedGroundingCacheKey({
+    fixtureId: input.fixtureId,
     homeTeam: input.report.match.homeTeam,
     awayTeam: input.report.match.awayTeam,
     matchDate: input.matchDate,
-    query: TEAM_CONTEXT_QUERY,
+    kickoffTime: input.kickoffTime,
   });
   const googleRecord = await getCachedGoogleRecordAsync(cacheKey);
   const apiFootballRaw = buildApiFootballNormalizedPayload(input.report.teamProfiles);

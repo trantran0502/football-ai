@@ -24,7 +24,6 @@ import type { GeminiGroundingDiagnostics } from "@/lib/providers/googleSearch/go
 import type { HybridSourcePayload } from "@/lib/hybrid/hybridTypes";
 import type { GoogleSearchLiveResult } from "@/lib/providers/googleSearch/googleSearchTypes";
 import {
-  initializeGroundingRuntimeMetrics,
   recordGroundingCacheHit,
   recordGroundingLiveCall,
   recordGroundingNotConfigured,
@@ -71,7 +70,6 @@ export async function fetchGoogleLiveResultWithOutcome(
 ): Promise<GoogleFetchOutcome> {
   const provider = getGoogleSearchProvider();
   const configured = provider.isConfigured();
-  initializeGroundingRuntimeMetrics(configured);
 
   if (!configured) {
     recordGroundingNotConfigured();
@@ -160,7 +158,6 @@ export async function fetchGoogleLiveResultWithOutcome(
   }
 
   if (!canSearchForMatch(matchKey)) {
-    recordGroundingLiveCall({ succeeded: false, failureReason: "match_search_limit_reached" });
     return {
       result: null,
       cacheHit: false,

@@ -86,6 +86,7 @@ import {
 } from "@/lib/admin/groundingRuntimeMetrics";
 import {
   buildDailyAnalysisObservabilityDiagnostics,
+  buildFixtureGroundingDiagnostic,
   observabilityDiagnosticsToExecutionContext,
   type FixtureGroundingDiagnostic,
 } from "@/lib/scheduler/executionDiagnostics";
@@ -509,6 +510,37 @@ async function runBatchedDailyPipeline(
         }
       }
 
+      const matchRecordsForH2H = await loadProductionH2HMatchRecords();
+      await prefetchProductionH2H({
+        homeTeam: fixture.homeTeam,
+        awayTeam: fixture.awayTeam,
+        matchDate: fixture.matchDate,
+        homeTeamId: fixture.homeTeamId,
+        awayTeamId: fixture.awayTeamId,
+        matchRecords: matchRecordsForH2H,
+      });
+      await prefetchProductionLeagueStrength({
+        leagueName: fixture.league,
+        matchDate: fixture.matchDate,
+        matchRecords: matchRecordsForH2H,
+      });
+      const combinedGroundingPrefetch = await prefetchProductionCombinedGrounding({
+        fixtureId: fixture.fixtureId,
+        homeTeam: fixture.homeTeam,
+        awayTeam: fixture.awayTeam,
+        matchDate: fixture.matchDate,
+        kickoffTime: fixture.kickoffTime,
+        matchRecords: matchRecordsForH2H,
+      });
+      if (combinedGroundingPrefetch.groundingDeferred) {
+        if (!updatedQueue.deferredFixtureIds.includes(fixture.fixtureId)) {
+          updatedQueue.deferredFixtureIds.push(fixture.fixtureId);
+        }
+      }
+      fixtureGroundingDiagnostics.push(
+        buildFixtureGroundingDiagnostic(fixture.fixtureId, combinedGroundingPrefetch)
+      );
+
       const pipelineResult = await withRetry(
         async () =>
           withTimeout(
@@ -602,39 +634,6 @@ async function runBatchedDailyPipeline(
                 );
               }
 
-              const matchRecordsForH2H = await loadProductionH2HMatchRecords();
-              await prefetchProductionH2H({
-                homeTeam: fixture.homeTeam,
-                awayTeam: fixture.awayTeam,
-                matchDate: fixture.matchDate,
-                homeTeamId: fixture.homeTeamId,
-                awayTeamId: fixture.awayTeamId,
-                matchRecords: matchRecordsForH2H,
-              });
-              await prefetchProductionLeagueStrength({
-                leagueName: fixture.league,
-                matchDate: fixture.matchDate,
-                matchRecords: matchRecordsForH2H,
-              });
-              const combinedGroundingPrefetch = await prefetchProductionCombinedGrounding({
-                fixtureId: fixture.fixtureId,
-                homeTeam: fixture.homeTeam,
-                awayTeam: fixture.awayTeam,
-                matchDate: fixture.matchDate,
-                kickoffTime: fixture.kickoffTime,
-                matchRecords: matchRecordsForH2H,
-              });
-              if (combinedGroundingPrefetch.groundingDeferred) {
-                if (!updatedQueue.deferredFixtureIds.includes(fixture.fixtureId)) {
-                  updatedQueue.deferredFixtureIds.push(fixture.fixtureId);
-                }
-              }
-              fixtureGroundingDiagnostics.push({
-                fixtureId: fixture.fixtureId,
-                squadAvailability: combinedGroundingPrefetch.squadGrounding,
-                matchContext: combinedGroundingPrefetch.matchContextGrounding,
-              });
-
               const report = attachTeamProfilesToReport(
                 enrichAnalysisReportWithFixture(
                   analyzeMatch(fixture.rawOdds, {
@@ -681,6 +680,8 @@ async function runBatchedDailyPipeline(
               const rawSources = await captureReplayRawSources({
                 report,
                 matchDate: fixture.matchDate,
+                fixtureId: fixture.fixtureId,
+                kickoffTime: fixture.kickoffTime,
               });
               const completeness = assessRecommendationDataCompleteness({
                 report,
