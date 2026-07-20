@@ -78,6 +78,12 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   groundingCacheHit?: number;
   groundingFailureReason?: string | null;
   groundingSearchCount?: number;
+  groundingHttpStatus?: number | null;
+  groundingModel?: string | null;
+  groundingCandidateCount?: number;
+  groundingSafetyBlockedCount?: number;
+  groundingParseFailureCount?: number;
+  groundingFallbackUsed?: boolean;
   profileCacheHit?: number;
   profileCacheMiss?: number;
   uniqueTeamsRequested?: number;

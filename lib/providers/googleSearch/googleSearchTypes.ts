@@ -30,6 +30,7 @@ export interface GoogleSearchLiveResult {
   searchTime: string;
   query: string;
   rawResponse: unknown;
+  model?: string;
 }
 
 export interface GoogleSearchCachedRecord {
@@ -50,9 +51,19 @@ export interface GeminiGroundingChunk {
   };
 }
 
+export interface GeminiGroundingSupport {
+  segment?: {
+    startIndex?: number;
+    endIndex?: number;
+    text?: string;
+  };
+  groundingChunkIndices?: number[];
+}
+
 export interface GeminiGroundingMetadata {
   webSearchQueries?: string[];
   groundingChunks?: GeminiGroundingChunk[];
+  groundingSupports?: GeminiGroundingSupport[];
   searchEntryPoint?: {
     renderedContent?: string;
   };
@@ -66,11 +77,43 @@ export interface GeminiGenerateContentResponse {
       }>;
     };
     groundingMetadata?: GeminiGroundingMetadata;
+    finishReason?: string;
+    safetyRatings?: Array<{
+      category?: string;
+      blocked?: boolean;
+    }>;
   }>;
+  promptFeedback?: {
+    blockReason?: string;
+  };
   error?: {
     message?: string;
     code?: number;
+    status?: string;
   };
+}
+
+export interface GeminiGroundingDiagnostics {
+  httpStatus: number | null;
+  model: string;
+  groundingFallbackUsed: boolean;
+  geminiErrorCode: number | null;
+  geminiErrorMessage: string | null;
+  candidateCount: number;
+  finishReason: string | null;
+  safetyBlockReason: string | null;
+  hasResponseText: boolean;
+  hasGroundingMetadata: boolean;
+  parseFailureReason: string | null;
+  failureReason: string | null;
+  groundingChunksCount: number;
+  groundingSupportsCount: number;
+  webSearchQueriesCount: number;
+}
+
+export interface GeminiGroundingFetchOutcome {
+  result: GoogleSearchLiveResult | null;
+  diagnostics: GeminiGroundingDiagnostics;
 }
 
 export interface GeminiFootballMatchRecord {
@@ -158,6 +201,7 @@ export interface GeminiFootballStructuredResponse {
 export interface GoogleSearchProviderConfig {
   apiKey?: string;
   model?: string;
+  fallbackModel?: string;
   timeoutMs?: number;
   maxRequestsPerMinute?: number;
 }

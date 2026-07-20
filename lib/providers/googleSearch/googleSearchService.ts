@@ -11,6 +11,7 @@ import {
   getGoogleSearchProvider,
   type GoogleSearchMatchRequest,
 } from "@/lib/providers/googleSearch/googleSearchProvider";
+import type { GeminiGroundingDiagnostics } from "@/lib/providers/googleSearch/googleSearchTypes";
 import type { HybridSourcePayload } from "@/lib/hybrid/hybridTypes";
 import type { GoogleSearchLiveResult } from "@/lib/providers/googleSearch/googleSearchTypes";
 import {
@@ -29,16 +30,26 @@ export interface GoogleFetchOutcome {
   configured: boolean;
   called: boolean;
   failureReason: string | null;
+  diagnostics: GeminiGroundingDiagnostics | null;
 }
 
 function buildNormalizedGroundingPayload(
   result: GoogleSearchLiveResult,
   source: "live" | "cache"
 ): Record<string, unknown> {
+  const existing =
+    result.rawResponse &&
+    typeof result.rawResponse === "object" &&
+    !Array.isArray(result.rawResponse)
+      ? (result.rawResponse as Record<string, unknown>)
+      : {};
+
   return {
+    ...existing,
     source: "google-grounding",
     captureSource: source,
     query: result.query,
+    model: result.model ?? existing.model ?? null,
     capturedAt: result.searchTime,
     confidence: result.confidence,
     citations: result.citations,
@@ -61,6 +72,7 @@ export async function fetchGoogleLiveResultWithOutcome(
       configured: false,
       called: false,
       failureReason: "not_configured",
+      diagnostics: null,
     };
   }
 
@@ -91,6 +103,12 @@ export async function fetchGoogleLiveResultWithOutcome(
         },
         "cache"
       ),
+      model:
+        typeof cached.rawResponse === "object" &&
+        cached.rawResponse &&
+        typeof (cached.rawResponse as { model?: unknown }).model === "string"
+          ? ((cached.rawResponse as { model: string }).model)
+          : undefined,
     };
     return {
       result,
@@ -98,6 +116,7 @@ export async function fetchGoogleLiveResultWithOutcome(
       configured: true,
       called: false,
       failureReason: null,
+      diagnostics: null,
     };
   }
 
@@ -111,28 +130,43 @@ export async function fetchGoogleLiveResultWithOutcome(
       configured: true,
       called: false,
       failureReason: "match_search_limit_reached",
+      diagnostics: null,
     };
   }
+
+  let lastDiagnostics: GeminiGroundingDiagnostics | null = null;
+  let lastFailureReason: string | null = null;
 
   const liveResult = await dedupeGoogleFetch(cacheKey, async () => {
     recordMatchSearch(matchKey);
     try {
-      const result = await provider.fetchTeamContext(request);
-      if (!result) {
-        recordGroundingLiveCall({ succeeded: false, failureReason: "empty_grounding_response" });
+      const outcome = await provider.fetchTeamContextWithDiagnostics(request);
+      lastDiagnostics = outcome.diagnostics;
+      lastFailureReason = outcome.diagnostics.failureReason;
+
+      if (!outcome.result) {
+        recordGroundingLiveCall({
+          succeeded: false,
+          failureReason: outcome.diagnostics.failureReason ?? "empty_grounding_response",
+          diagnostics: outcome.diagnostics,
+        });
         return null;
       }
-      const normalizedRaw = buildNormalizedGroundingPayload(result, "live");
+
+      const normalizedRaw = buildNormalizedGroundingPayload(outcome.result, "live");
       const persisted: GoogleSearchLiveResult = {
-        ...result,
+        ...outcome.result,
         rawResponse: normalizedRaw,
       };
       rememberGoogleLiveResult(cacheKey, persisted);
-      recordGroundingLiveCall({ succeeded: true });
+      recordGroundingLiveCall({
+        succeeded: true,
+        diagnostics: outcome.diagnostics,
+      });
       return persisted;
     } catch (error) {
       const failureReason =
-        error instanceof Error ? error.message : "grounding_fetch_failed";
+        error instanceof Error ? error.message : "network_error";
       recordGroundingLiveCall({ succeeded: false, failureReason });
       console.warn("Gemini unavailable:", error);
       return null;
@@ -144,7 +178,10 @@ export async function fetchGoogleLiveResultWithOutcome(
     cacheHit: false,
     configured: true,
     called: true,
-    failureReason: liveResult ? null : "grounding_fetch_failed",
+    failureReason: liveResult
+      ? null
+      : lastFailureReason ?? "grounding_fetch_failed",
+    diagnostics: lastDiagnostics,
   };
 }
 
@@ -163,3 +200,39 @@ export async function fetchGoogleHybridPayload(
 }
 
 export { TEAM_CONTEXT_QUERY };
+
+export interface GroundingChannelDiagnostic {
+  called: boolean;
+  cacheHit: boolean;
+  skippedReason: string | null;
+  succeeded: boolean;
+  failureReason: string | null;
+  httpStatus: number | null;
+  model: string | null;
+  candidateCount: number;
+  parseFailureReason: string | null;
+  groundingFallbackUsed: boolean;
+  hasResponseText: boolean;
+  hasGroundingMetadata: boolean;
+}
+
+export function buildGroundingChannelDiagnostic(
+  outcome: GoogleFetchOutcome,
+  skippedReasonOverride?: string | null
+): GroundingChannelDiagnostic {
+  const diagnostics = outcome.diagnostics;
+  return {
+    called: outcome.called,
+    cacheHit: outcome.cacheHit,
+    skippedReason: skippedReasonOverride ?? outcome.failureReason,
+    succeeded: Boolean(outcome.result),
+    failureReason: outcome.failureReason,
+    httpStatus: diagnostics?.httpStatus ?? null,
+    model: diagnostics?.model ?? outcome.result?.model ?? null,
+    candidateCount: diagnostics?.candidateCount ?? 0,
+    parseFailureReason: diagnostics?.parseFailureReason ?? null,
+    groundingFallbackUsed: diagnostics?.groundingFallbackUsed ?? false,
+    hasResponseText: diagnostics?.hasResponseText ?? Boolean(outcome.result),
+    hasGroundingMetadata: diagnostics?.hasGroundingMetadata ?? false,
+  };
+}

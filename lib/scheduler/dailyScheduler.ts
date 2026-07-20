@@ -610,16 +610,8 @@ async function runBatchedDailyPipeline(
               });
               fixtureGroundingDiagnostics.push({
                 fixtureId: fixture.fixtureId,
-                squadAvailability: {
-                  called: squadPrefetch.grounding.called,
-                  cacheHit: squadPrefetch.grounding.cacheHit,
-                  skippedReason: squadPrefetch.grounding.skippedReason,
-                },
-                matchContext: {
-                  called: matchContextPrefetch.grounding.called,
-                  cacheHit: matchContextPrefetch.grounding.cacheHit,
-                  skippedReason: matchContextPrefetch.grounding.skippedReason,
-                },
+                squadAvailability: squadPrefetch.grounding,
+                matchContext: matchContextPrefetch.grounding,
               });
 
               const report = attachTeamProfilesToReport(

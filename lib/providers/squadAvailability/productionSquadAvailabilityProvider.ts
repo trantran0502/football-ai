@@ -1,6 +1,6 @@
 import type { SquadAvailabilityProviderRequest } from "@/lib/analysis/featureScore/providers/squadAvailabilityProvider";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { fetchGoogleLiveResultWithOutcome } from "@/lib/providers/googleSearch/googleSearchService";
+import { fetchGoogleLiveResultWithOutcome, buildGroundingChannelDiagnostic, type GroundingChannelDiagnostic } from "@/lib/providers/googleSearch/googleSearchService";
 import {
   isSquadAvailabilitySampleUsable,
 } from "@/lib/providers/squadAvailability/squadAvailabilityConfidence";
@@ -102,12 +102,7 @@ export function fetchProductionSquadAvailabilitySourceData(
   return null;
 }
 
-export interface GroundingPrefetchOutcome {
-  called: boolean;
-  cacheHit: boolean;
-  skippedReason: string | null;
-  succeeded: boolean;
-}
+export type GroundingPrefetchOutcome = GroundingChannelDiagnostic;
 
 export async function prefetchProductionSquadAvailability(
   context: ProductionSquadAvailabilityContext
@@ -138,6 +133,14 @@ export async function prefetchProductionSquadAvailability(
         cacheHit: true,
         skippedReason: "production_resolution_cache",
         succeeded: true,
+        failureReason: null,
+        httpStatus: null,
+        model: null,
+        candidateCount: 0,
+        parseFailureReason: null,
+        groundingFallbackUsed: false,
+        hasResponseText: false,
+        hasGroundingMetadata: false,
       },
     };
   }
@@ -149,12 +152,7 @@ export async function prefetchProductionSquadAvailability(
       awayTeam: context.awayTeam,
       matchDate: context.matchDate,
     });
-    const grounding: GroundingPrefetchOutcome = {
-      called: groundingOutcome.called,
-      cacheHit: groundingOutcome.cacheHit,
-      skippedReason: groundingOutcome.failureReason,
-      succeeded: groundingOutcome.result !== null,
-    };
+    const grounding = buildGroundingChannelDiagnostic(groundingOutcome);
 
     const fromGoogle = resolveSquadAvailabilityFromGoogleSearch({
       request,

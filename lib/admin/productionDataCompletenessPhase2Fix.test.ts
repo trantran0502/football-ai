@@ -189,6 +189,35 @@ async function testGroundingSuccessPersistsCitations(): Promise<void> {
       searchTime: "2026-07-20T00:00:00.000Z",
       query: "team context grounding",
       rawResponse: {},
+      model: "gemini-2.0-flash",
+    }),
+    fetchTeamContextWithDiagnostics: async () => ({
+      result: {
+        payload: { injuries: [] },
+        citations: [{ title: "Example", url: "https://example.com" }],
+        confidence: 0.8,
+        searchTime: "2026-07-20T00:00:00.000Z",
+        query: "team context grounding",
+        rawResponse: {},
+        model: "gemini-2.0-flash",
+      },
+      diagnostics: {
+        httpStatus: 200,
+        model: "gemini-2.0-flash",
+        groundingFallbackUsed: false,
+        geminiErrorCode: null,
+        geminiErrorMessage: null,
+        candidateCount: 1,
+        finishReason: "STOP",
+        safetyBlockReason: null,
+        hasResponseText: true,
+        hasGroundingMetadata: true,
+        parseFailureReason: null,
+        failureReason: null,
+        groundingChunksCount: 1,
+        groundingSupportsCount: 0,
+        webSearchQueriesCount: 1,
+      },
     }),
   } as unknown as GoogleSearchProvider;
   setGoogleSearchProviderForTests(mockProvider);
@@ -217,6 +246,26 @@ async function testGroundingFailureHasReason(): Promise<void> {
     isConfigured: () => true,
     canMakeRequest: () => true,
     fetchTeamContext: async () => null,
+    fetchTeamContextWithDiagnostics: async () => ({
+      result: null,
+      diagnostics: {
+        httpStatus: 200,
+        model: "gemini-2.0-flash",
+        groundingFallbackUsed: false,
+        geminiErrorCode: null,
+        geminiErrorMessage: null,
+        candidateCount: 1,
+        finishReason: "STOP",
+        safetyBlockReason: null,
+        hasResponseText: false,
+        hasGroundingMetadata: false,
+        parseFailureReason: "metadata_only_no_text",
+        failureReason: "empty_text",
+        groundingChunksCount: 0,
+        groundingSupportsCount: 0,
+        webSearchQueriesCount: 0,
+      },
+    }),
   } as unknown as GoogleSearchProvider;
   setGoogleSearchProviderForTests(mockProvider);
 
@@ -246,6 +295,8 @@ function testExecutionAndResponseDiagnosticsShape(): void {
   const context = observabilityDiagnosticsToExecutionContext(diagnostics);
   assert(typeof context.groundingConfigured === "boolean", "execution context should include groundingConfigured");
   assert(typeof context.profileCacheHit === "number", "execution context should include profileCacheHit");
+  assert(typeof context.groundingHttpStatus !== "undefined", "execution context should include groundingHttpStatus");
+  assert(typeof context.groundingFallbackUsed === "boolean", "execution context should include groundingFallbackUsed");
   assert(context.diagnostics != null, "execution context should include nested diagnostics");
 }
 

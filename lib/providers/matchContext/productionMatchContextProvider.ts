@@ -1,6 +1,6 @@
 import type { MatchContextProviderRequest } from "@/lib/analysis/featureScore/providers/matchContextProvider";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { fetchGoogleLiveResultWithOutcome } from "@/lib/providers/googleSearch/googleSearchService";
+import { fetchGoogleLiveResultWithOutcome, buildGroundingChannelDiagnostic, type GroundingChannelDiagnostic } from "@/lib/providers/googleSearch/googleSearchService";
 import { isMatchContextSampleUsable } from "@/lib/providers/matchContext/matchContextConfidence";
 import {
   readProductionMatchContextResolution,
@@ -99,12 +99,7 @@ export function fetchProductionMatchContextSourceData(
   return null;
 }
 
-export interface GroundingPrefetchOutcome {
-  called: boolean;
-  cacheHit: boolean;
-  skippedReason: string | null;
-  succeeded: boolean;
-}
+export type GroundingPrefetchOutcome = GroundingChannelDiagnostic;
 
 export async function prefetchProductionMatchContext(
   context: ProductionMatchContextContext
@@ -135,6 +130,14 @@ export async function prefetchProductionMatchContext(
         cacheHit: true,
         skippedReason: "production_resolution_cache",
         succeeded: true,
+        failureReason: null,
+        httpStatus: null,
+        model: null,
+        candidateCount: 0,
+        parseFailureReason: null,
+        groundingFallbackUsed: false,
+        hasResponseText: false,
+        hasGroundingMetadata: false,
       },
     };
   }
@@ -146,12 +149,7 @@ export async function prefetchProductionMatchContext(
       awayTeam: context.awayTeam,
       matchDate: context.matchDate,
     });
-    const grounding: GroundingPrefetchOutcome = {
-      called: groundingOutcome.called,
-      cacheHit: groundingOutcome.cacheHit,
-      skippedReason: groundingOutcome.failureReason,
-      succeeded: groundingOutcome.result !== null,
-    };
+    const grounding = buildGroundingChannelDiagnostic(groundingOutcome);
 
     const fromGoogle = resolveMatchContextFromGoogleSearch({
       request,

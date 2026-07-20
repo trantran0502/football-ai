@@ -124,10 +124,40 @@ export function mapGeminiStructuredToHybridPayload(
   metadata: GeminiGroundingMetadata | undefined,
   searchTime: string,
   query: string,
-  rawResponse: unknown
+  rawResponse: unknown,
+  options?: {
+    model?: string;
+    captureSource?: "live" | "cache";
+    normalizedAnswer?: string | null;
+    groundingMetadata?: GeminiGroundingMetadata | null;
+    httpStatus?: number | null;
+    groundingFallbackUsed?: boolean;
+  }
 ): GoogleSearchLiveResult {
   const citations = extractCitationsFromGrounding(metadata, structured);
   const confidence = calculateConfidence(structured, citations.length);
+  const normalizedRaw =
+    rawResponse &&
+    typeof rawResponse === "object" &&
+    !Array.isArray(rawResponse) &&
+    (rawResponse as { source?: string }).source === "google-grounding"
+      ? rawResponse
+      : {
+          source: "google-grounding",
+          captureSource: options?.captureSource ?? "live",
+          query,
+          model: options?.model ?? null,
+          capturedAt: searchTime,
+          confidence,
+          citations,
+          normalizedAnswer: options?.normalizedAnswer ?? null,
+          groundingMetadata: options?.groundingMetadata ?? metadata ?? null,
+          groundingChunks: metadata?.groundingChunks ?? [],
+          groundingSupports: metadata?.groundingSupports ?? [],
+          httpStatus: options?.httpStatus ?? null,
+          groundingFallbackUsed: options?.groundingFallbackUsed ?? false,
+          payload: null,
+        };
 
   const payload: HybridSourcePayload = {
     source: "googleSearch",
@@ -183,18 +213,35 @@ export function mapGeminiStructuredToHybridPayload(
       : null,
   };
 
+  const resolvedRawResponse =
+    normalizedRaw &&
+    typeof normalizedRaw === "object" &&
+    !Array.isArray(normalizedRaw) &&
+    (normalizedRaw as { source?: string }).source === "google-grounding" &&
+    (normalizedRaw as { payload?: unknown }).payload == null
+      ? { ...(normalizedRaw as Record<string, unknown>), payload }
+      : normalizedRaw;
+
   return {
     payload,
     citations,
     confidence,
     searchTime,
     query,
-    rawResponse,
+    rawResponse: resolvedRawResponse,
+    model: options?.model,
   };
 }
 
 export function parseGeminiStructuredJson(text: string): GeminiFootballStructuredResponse {
-  const parsed = JSON.parse(text) as GeminiFootballStructuredResponse;
+  let parsed: GeminiFootballStructuredResponse;
+  try {
+    parsed = JSON.parse(text) as GeminiFootballStructuredResponse;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "Invalid Gemini JSON payload."
+    );
+  }
   return {
     recentFormLast10Official: parsed.recentFormLast10Official ?? [],
     recentFormLast5Home: parsed.recentFormLast5Home ?? [],

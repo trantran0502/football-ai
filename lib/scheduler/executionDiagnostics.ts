@@ -6,18 +6,25 @@ import {
   type ProfileCacheMetricsSnapshot,
 } from "@/lib/teamProfile/profileCacheMetrics";
 
+export interface FixtureGroundingChannelDiagnostic {
+  called: boolean;
+  cacheHit: boolean;
+  skippedReason: string | null;
+  succeeded?: boolean;
+  failureReason?: string | null;
+  httpStatus?: number | null;
+  model?: string | null;
+  candidateCount?: number;
+  parseFailureReason?: string | null;
+  groundingFallbackUsed?: boolean;
+  hasResponseText?: boolean;
+  hasGroundingMetadata?: boolean;
+}
+
 export interface FixtureGroundingDiagnostic {
   fixtureId: number;
-  squadAvailability: {
-    called: boolean;
-    cacheHit: boolean;
-    skippedReason: string | null;
-  };
-  matchContext: {
-    called: boolean;
-    cacheHit: boolean;
-    skippedReason: string | null;
-  };
+  squadAvailability: FixtureGroundingChannelDiagnostic;
+  matchContext: FixtureGroundingChannelDiagnostic;
 }
 
 export interface DailyAnalysisObservabilityDiagnostics {
@@ -27,6 +34,12 @@ export interface DailyAnalysisObservabilityDiagnostics {
   groundingCacheHit: number;
   groundingFailureReason: string | null;
   groundingSearchCount: number;
+  groundingHttpStatus: number | null;
+  groundingModel: string | null;
+  groundingCandidateCount: number;
+  groundingSafetyBlockedCount: number;
+  groundingParseFailureCount: number;
+  groundingFallbackUsed: boolean;
   profileCacheHit: number;
   profileCacheMiss: number;
   uniqueTeamsRequested: number;
@@ -56,6 +69,12 @@ export function buildDailyAnalysisObservabilityDiagnostics(input: {
     groundingCacheHit: grounding.groundingCacheHit,
     groundingFailureReason: grounding.groundingFailureReason,
     groundingSearchCount: grounding.groundingSearchCount,
+    groundingHttpStatus: grounding.groundingHttpStatus,
+    groundingModel: grounding.groundingModel,
+    groundingCandidateCount: grounding.groundingCandidateCount,
+    groundingSafetyBlockedCount: grounding.groundingSafetyBlockedCount,
+    groundingParseFailureCount: grounding.groundingParseFailureCount,
+    groundingFallbackUsed: grounding.groundingFallbackUsed,
     profileCacheHit: profile.profileCacheHit,
     profileCacheMiss: profile.profileCacheMiss,
     uniqueTeamsRequested: profile.uniqueTeamsRequested,

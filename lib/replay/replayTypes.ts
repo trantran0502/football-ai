@@ -40,9 +40,13 @@ export interface ReplayRawSources {
     source: "google-grounding";
     captureSource: "live" | "cache";
     query: string;
+    model?: string | null;
     capturedAt: string;
     confidence: number;
     citations: HybridCitation[];
+    normalizedAnswer?: string | null;
+    groundingChunks?: unknown[];
+    groundingSupports?: unknown[];
     payload: unknown;
   } | null;
   citations: HybridCitation[];

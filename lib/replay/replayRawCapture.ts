@@ -68,9 +68,34 @@ function buildGoogleGroundingNormalized(
     source: "google-grounding",
     captureSource,
     query: googleRecord.query,
+    model:
+      typeof googleRecord.rawResponse === "object" &&
+      googleRecord.rawResponse &&
+      typeof (googleRecord.rawResponse as { model?: unknown }).model === "string"
+        ? (googleRecord.rawResponse as { model: string }).model
+        : null,
     capturedAt: googleRecord.searchTime,
     confidence: googleRecord.confidence,
     citations: googleRecord.citations,
+    normalizedAnswer:
+      typeof googleRecord.rawResponse === "object" &&
+      googleRecord.rawResponse &&
+      typeof (googleRecord.rawResponse as { normalizedAnswer?: unknown }).normalizedAnswer ===
+        "string"
+        ? (googleRecord.rawResponse as { normalizedAnswer: string }).normalizedAnswer
+        : null,
+    groundingChunks:
+      typeof googleRecord.rawResponse === "object" &&
+      googleRecord.rawResponse &&
+      Array.isArray((googleRecord.rawResponse as { groundingChunks?: unknown }).groundingChunks)
+        ? ((googleRecord.rawResponse as { groundingChunks: unknown[] }).groundingChunks)
+        : [],
+    groundingSupports:
+      typeof googleRecord.rawResponse === "object" &&
+      googleRecord.rawResponse &&
+      Array.isArray((googleRecord.rawResponse as { groundingSupports?: unknown }).groundingSupports)
+        ? ((googleRecord.rawResponse as { groundingSupports: unknown[] }).groundingSupports)
+        : [],
     payload: googleRecord.payload,
   };
 }
