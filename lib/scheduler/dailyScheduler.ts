@@ -23,8 +23,9 @@ import {
   loadProductionLeagueStrengthMatchRecords,
   prefetchProductionLeagueStrength,
 } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
-import { prefetchProductionSquadAvailability } from "@/lib/providers/squadAvailability/productionSquadAvailabilityProvider";
-import { prefetchProductionMatchContext } from "@/lib/providers/matchContext/productionMatchContextProvider";
+import { prefetchProductionCombinedGrounding } from "@/lib/providers/googleSearch/combinedGroundingProvider";
+import { beginGroundingRequestBudgetBatch } from "@/lib/providers/googleSearch/groundingRequestBudget";
+import { shouldSkipGroundingDeferredRetry } from "@/lib/providers/googleSearch/groundingDeferredPolicy";
 import {
   fetchFixturesByDate,
   buildFixtureFilterStats,
@@ -489,6 +490,25 @@ async function runBatchedDailyPipeline(
       }
 
       const isDeferredFixtureRetry = updatedQueue.deferredFixtureIds.includes(fixture.fixtureId);
+      if (isDeferredFixtureRetry) {
+        if (
+          shouldSkipGroundingDeferredRetry({
+            kickoffTime: fixture.kickoffTime,
+            now: new Date(dependencies.now()),
+          })
+        ) {
+          items.push({
+            fixture,
+            status: "incomplete_rejected",
+            error: "grounding_deferred_kickoff_elapsed",
+          });
+          updatedQueue.deferredFixtureIds = updatedQueue.deferredFixtureIds.filter(
+            (fixtureId) => fixtureId !== fixture.fixtureId
+          );
+          continue;
+        }
+      }
+
       const pipelineResult = await withRetry(
         async () =>
           withTimeout(
@@ -596,22 +616,23 @@ async function runBatchedDailyPipeline(
                 matchDate: fixture.matchDate,
                 matchRecords: matchRecordsForH2H,
               });
-              const squadPrefetch = await prefetchProductionSquadAvailability({
+              const combinedGroundingPrefetch = await prefetchProductionCombinedGrounding({
+                fixtureId: fixture.fixtureId,
                 homeTeam: fixture.homeTeam,
                 awayTeam: fixture.awayTeam,
                 matchDate: fixture.matchDate,
+                kickoffTime: fixture.kickoffTime,
                 matchRecords: matchRecordsForH2H,
               });
-              const matchContextPrefetch = await prefetchProductionMatchContext({
-                homeTeam: fixture.homeTeam,
-                awayTeam: fixture.awayTeam,
-                matchDate: fixture.matchDate,
-                matchRecords: matchRecordsForH2H,
-              });
+              if (combinedGroundingPrefetch.groundingDeferred) {
+                if (!updatedQueue.deferredFixtureIds.includes(fixture.fixtureId)) {
+                  updatedQueue.deferredFixtureIds.push(fixture.fixtureId);
+                }
+              }
               fixtureGroundingDiagnostics.push({
                 fixtureId: fixture.fixtureId,
-                squadAvailability: squadPrefetch.grounding,
-                matchContext: matchContextPrefetch.grounding,
+                squadAvailability: combinedGroundingPrefetch.squadGrounding,
+                matchContext: combinedGroundingPrefetch.matchContextGrounding,
               });
 
               const report = attachTeamProfilesToReport(
@@ -636,12 +657,16 @@ async function runBatchedDailyPipeline(
                       homeTeam: fixture.homeTeam,
                       awayTeam: fixture.awayTeam,
                       matchDate: fixture.matchDate,
+                      fixtureId: fixture.fixtureId,
+                      kickoffTime: fixture.kickoffTime,
                       matchRecords: matchRecordsForH2H,
                     },
                     matchContextContext: {
                       homeTeam: fixture.homeTeam,
                       awayTeam: fixture.awayTeam,
                       matchDate: fixture.matchDate,
+                      fixtureId: fixture.fixtureId,
+                      kickoffTime: fixture.kickoffTime,
                       matchRecords: matchRecordsForH2H,
                     },
                   }),
@@ -934,6 +959,7 @@ export async function runDailyScheduler(
 
   const apiQuotaStart = getApiFootballQuotaSnapshot().dailyCount;
   beginGroundingRuntimeMetricsBatch(getGoogleSearchProvider().isConfigured());
+  beginGroundingRequestBudgetBatch();
 
   const execution = startExecutionLog({
     jobName: "daily_analysis",

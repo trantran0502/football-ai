@@ -1,12 +1,21 @@
 import {
+  buildCombinedGroundingCacheKey,
   buildGoogleMatchKey,
-  buildGoogleSearchCacheKey,
+  COMBINED_GROUNDING_QUERY,
   canSearchForMatch,
   dedupeGoogleFetch,
   getCachedGoogleRecordAsync,
   recordMatchSearch,
   rememberGoogleLiveResult,
 } from "@/lib/providers/googleSearch/googleSearchCache";
+import {
+  canMakeGroundingLiveRequest,
+  isGroundingRateLimitCooldownActive,
+  recordGroundingLiveRequestUsed,
+  recordGroundingRequestAvoidedByBudget,
+  recordGroundingRequestAvoidedByCache,
+  triggerGroundingRateLimitCooldown,
+} from "@/lib/providers/googleSearch/groundingRequestBudget";
 import {
   getGoogleSearchProvider,
   type GoogleSearchMatchRequest,
@@ -22,7 +31,7 @@ import {
 } from "@/lib/admin/groundingRuntimeMetrics";
 import { recordCacheHit, recordCacheMiss } from "@/lib/admin/adminCacheMetrics";
 
-const TEAM_CONTEXT_QUERY = "team context grounding";
+export const TEAM_CONTEXT_QUERY = COMBINED_GROUNDING_QUERY;
 
 export interface GoogleFetchOutcome {
   result: GoogleSearchLiveResult | null;
@@ -77,14 +86,18 @@ export async function fetchGoogleLiveResultWithOutcome(
   }
 
   const matchKey = buildGoogleMatchKey(request);
-  const cacheKey = buildGoogleSearchCacheKey({
-    ...request,
-    query: TEAM_CONTEXT_QUERY,
+  const cacheKey = buildCombinedGroundingCacheKey({
+    fixtureId: request.fixtureId,
+    homeTeam: request.homeTeam,
+    awayTeam: request.awayTeam,
+    kickoffTime: request.kickoffTime,
+    matchDate: request.matchDate,
   });
 
   const cached = await getCachedGoogleRecordAsync(cacheKey);
   if (cached) {
     recordGroundingCacheHit();
+    recordGroundingRequestAvoidedByCache();
     recordCacheHit();
     const result: GoogleSearchLiveResult = {
       payload: cached.payload,
@@ -122,6 +135,30 @@ export async function fetchGoogleLiveResultWithOutcome(
 
   recordCacheMiss();
 
+  if (isGroundingRateLimitCooldownActive()) {
+    recordGroundingRequestAvoidedByBudget();
+    return {
+      result: null,
+      cacheHit: false,
+      configured: true,
+      called: false,
+      failureReason: "grounding_cooldown",
+      diagnostics: null,
+    };
+  }
+
+  if (!canMakeGroundingLiveRequest()) {
+    recordGroundingRequestAvoidedByBudget();
+    return {
+      result: null,
+      cacheHit: false,
+      configured: true,
+      called: false,
+      failureReason: "grounding_budget_exhausted",
+      diagnostics: null,
+    };
+  }
+
   if (!canSearchForMatch(matchKey)) {
     recordGroundingLiveCall({ succeeded: false, failureReason: "match_search_limit_reached" });
     return {
@@ -139,15 +176,24 @@ export async function fetchGoogleLiveResultWithOutcome(
 
   const liveResult = await dedupeGoogleFetch(cacheKey, async () => {
     recordMatchSearch(matchKey);
+    recordGroundingLiveRequestUsed();
     try {
       const outcome = await provider.fetchTeamContextWithDiagnostics(request);
       lastDiagnostics = outcome.diagnostics;
       lastFailureReason = outcome.diagnostics.failureReason;
 
+      if (
+        outcome.diagnostics.httpStatus === 429 ||
+        outcome.diagnostics.failureReason === "rate_limited"
+      ) {
+        triggerGroundingRateLimitCooldown();
+        lastFailureReason = "grounding_rate_limited";
+      }
+
       if (!outcome.result) {
         recordGroundingLiveCall({
           succeeded: false,
-          failureReason: outcome.diagnostics.failureReason ?? "empty_grounding_response",
+          failureReason: lastFailureReason ?? outcome.diagnostics.failureReason ?? "empty_grounding_response",
           diagnostics: outcome.diagnostics,
         });
         return null;
@@ -180,7 +226,10 @@ export async function fetchGoogleLiveResultWithOutcome(
     called: true,
     failureReason: liveResult
       ? null
-      : lastFailureReason ?? "grounding_fetch_failed",
+      : lastFailureReason ??
+        (isGroundingRateLimitCooldownActive()
+          ? "grounding_rate_limited"
+          : "grounding_fetch_failed"),
     diagnostics: lastDiagnostics,
   };
 }
@@ -198,8 +247,6 @@ export async function fetchGoogleHybridPayload(
   const result = await fetchGoogleLiveResult(request);
   return result?.payload ?? null;
 }
-
-export { TEAM_CONTEXT_QUERY };
 
 export interface GroundingChannelDiagnostic {
   called: boolean;

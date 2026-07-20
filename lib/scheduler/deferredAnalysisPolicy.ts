@@ -4,6 +4,9 @@ export type DeferredFixtureReason =
   | "profile_deferred"
   | "profile_unavailable"
   | "grounding_unavailable"
+  | "grounding_budget_exhausted"
+  | "grounding_rate_limited"
+  | "grounding_cooldown"
   | "data_completeness_insufficient"
   | "quota_exhausted"
   | "time_budget_reached";
@@ -57,6 +60,18 @@ export function resolvePrimaryDeferredReason(reasons: string[]): DeferredFixture
   }
   if (reasons.some((reason) => reason.includes("profile"))) {
     return "profile_unavailable";
+  }
+  if (reasons.includes("grounding_rate_limited")) {
+    return "grounding_rate_limited";
+  }
+  if (reasons.includes("grounding_cooldown")) {
+    return "grounding_cooldown";
+  }
+  if (reasons.includes("grounding_budget_exhausted")) {
+    return "grounding_budget_exhausted";
+  }
+  if (reasons.includes("grounding_supplemental_unavailable")) {
+    return "grounding_unavailable";
   }
   if (reasons.includes("trusted_external_source_missing")) {
     return "grounding_unavailable";

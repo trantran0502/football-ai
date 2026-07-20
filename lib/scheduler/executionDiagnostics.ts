@@ -1,5 +1,6 @@
 import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
 import { getGroundingRuntimeMetricsSnapshot } from "@/lib/admin/groundingRuntimeMetrics";
+import { getGroundingRequestBudgetSnapshot } from "@/lib/providers/googleSearch/groundingRequestBudget";
 import { getPlanCapabilityMetricsSnapshot } from "@/lib/teamProfile/planCapabilityCache";
 import {
   getProfileCacheMetricsSnapshot,
@@ -40,6 +41,14 @@ export interface DailyAnalysisObservabilityDiagnostics {
   groundingSafetyBlockedCount: number;
   groundingParseFailureCount: number;
   groundingFallbackUsed: boolean;
+  groundingRequestBudget: number;
+  groundingRequestsUsed: number;
+  groundingRequestsAvoidedByCache: number;
+  groundingRequestsAvoidedByBudget: number;
+  groundingRateLimitTriggered: boolean;
+  groundingCooldownActive: boolean;
+  groundingDeferredCount: number;
+  combinedGroundingRequestCount: number;
   profileCacheHit: number;
   profileCacheMiss: number;
   uniqueTeamsRequested: number;
@@ -59,6 +68,7 @@ export function buildDailyAnalysisObservabilityDiagnostics(input: {
   fixtureGroundingDiagnostics?: FixtureGroundingDiagnostic[];
 }): DailyAnalysisObservabilityDiagnostics {
   const grounding = getGroundingRuntimeMetricsSnapshot();
+  const budget = getGroundingRequestBudgetSnapshot();
   const profile = getProfileCacheMetricsSnapshot();
   const plan = getPlanCapabilityMetricsSnapshot();
 
@@ -75,6 +85,14 @@ export function buildDailyAnalysisObservabilityDiagnostics(input: {
     groundingSafetyBlockedCount: grounding.groundingSafetyBlockedCount,
     groundingParseFailureCount: grounding.groundingParseFailureCount,
     groundingFallbackUsed: grounding.groundingFallbackUsed,
+    groundingRequestBudget: budget.groundingRequestBudget,
+    groundingRequestsUsed: budget.groundingRequestsUsed,
+    groundingRequestsAvoidedByCache: budget.groundingRequestsAvoidedByCache,
+    groundingRequestsAvoidedByBudget: budget.groundingRequestsAvoidedByBudget,
+    groundingRateLimitTriggered: budget.groundingRateLimitTriggered,
+    groundingCooldownActive: budget.groundingCooldownActive,
+    groundingDeferredCount: budget.groundingDeferredCount,
+    combinedGroundingRequestCount: budget.combinedGroundingRequestCount,
     profileCacheHit: profile.profileCacheHit,
     profileCacheMiss: profile.profileCacheMiss,
     uniqueTeamsRequested: profile.uniqueTeamsRequested,

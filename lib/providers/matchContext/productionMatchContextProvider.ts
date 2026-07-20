@@ -1,10 +1,10 @@
 import type { MatchContextProviderRequest } from "@/lib/analysis/featureScore/providers/matchContextProvider";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { fetchGoogleLiveResultWithOutcome, buildGroundingChannelDiagnostic, type GroundingChannelDiagnostic } from "@/lib/providers/googleSearch/googleSearchService";
+import { prefetchProductionCombinedGrounding } from "@/lib/providers/googleSearch/combinedGroundingProvider";
+import type { GroundingChannelDiagnostic } from "@/lib/providers/googleSearch/googleSearchService";
 import { isMatchContextSampleUsable } from "@/lib/providers/matchContext/matchContextConfidence";
 import {
   readProductionMatchContextResolution,
-  rememberProductionMatchContextResolution,
 } from "@/lib/providers/matchContext/matchContextCache";
 import { resolveMatchContextFromGoogleSearch } from "@/lib/providers/matchContext/matchContextGoogleSource";
 import { resolveMatchContextFromMatchRecords } from "@/lib/providers/matchContext/matchContextMatchRecordsSource";
@@ -33,6 +33,8 @@ function toProductionRequest(
     homeTeam: request.homeTeam,
     awayTeam: request.awayTeam,
     matchDate: context?.matchDate ?? request.matchDate,
+    fixtureId: context?.fixtureId,
+    kickoffTime: context?.kickoffTime,
   };
 }
 
@@ -79,10 +81,13 @@ export function fetchProductionMatchContextSourceData(
     }
   }
 
+  const context = getActiveProductionMatchContextContext();
   if (!expectedSource || expectedSource === "googleSearch") {
     const fromGoogle = resolveMatchContextFromGoogleSearch({
       request,
       referenceDate: request.matchDate,
+      fixtureId: context?.fixtureId,
+      kickoffTime: context?.kickoffTime,
     });
     if (fromGoogle && isMatchContextSampleUsable(fromGoogle.snapshot.sampleSize)) {
       return fromGoogle.snapshot;
@@ -107,74 +112,19 @@ export async function prefetchProductionMatchContext(
   resolution: ProductionMatchContextResolution | null;
   grounding: GroundingPrefetchOutcome;
 }> {
-  const request: MatchContextProviderRequest = {
+  const combined = await prefetchProductionCombinedGrounding({
+    fixtureId: context.fixtureId ?? 0,
     homeTeam: context.homeTeam,
     awayTeam: context.awayTeam,
     matchDate: context.matchDate,
+    kickoffTime: context.kickoffTime,
+    matchRecords: context.matchRecords,
+  });
+
+  return {
+    resolution: combined.matchContextResolution,
+    grounding: combined.matchContextGrounding,
   };
-  const productionRequest: ProductionMatchContextRequest = {
-    homeTeam: context.homeTeam,
-    awayTeam: context.awayTeam,
-    matchDate: context.matchDate,
-  };
-
-  const existing = readProductionMatchContextResolution(productionRequest);
-  if (existing) {
-    return {
-      resolution: {
-        ...existing,
-        diagnostics: { ...existing.diagnostics, cacheHit: true },
-      },
-      grounding: {
-        called: false,
-        cacheHit: true,
-        skippedReason: "production_resolution_cache",
-        succeeded: true,
-        failureReason: null,
-        httpStatus: null,
-        model: null,
-        candidateCount: 0,
-        parseFailureReason: null,
-        groundingFallbackUsed: false,
-        hasResponseText: false,
-        hasGroundingMetadata: false,
-      },
-    };
-  }
-
-  setActiveProductionMatchContextContext(context);
-  try {
-    const groundingOutcome = await fetchGoogleLiveResultWithOutcome({
-      homeTeam: context.homeTeam,
-      awayTeam: context.awayTeam,
-      matchDate: context.matchDate,
-    });
-    const grounding = buildGroundingChannelDiagnostic(groundingOutcome);
-
-    const fromGoogle = resolveMatchContextFromGoogleSearch({
-      request,
-      referenceDate: context.matchDate,
-    });
-    if (fromGoogle) {
-      rememberProductionMatchContextResolution(productionRequest, fromGoogle);
-      return { resolution: fromGoogle, grounding };
-    }
-
-    const records = context.matchRecords ?? [];
-    const fromRecords = resolveMatchContextFromMatchRecords({
-      request,
-      records,
-      referenceDate: context.matchDate,
-    });
-    if (fromRecords) {
-      rememberProductionMatchContextResolution(productionRequest, fromRecords);
-      return { resolution: fromRecords, grounding };
-    }
-
-    return { resolution: null, grounding };
-  } finally {
-    clearActiveProductionMatchContextContext();
-  }
 }
 
 export function getProductionMatchContextResolution(
@@ -185,9 +135,12 @@ export function getProductionMatchContextResolution(
     return cached;
   }
 
+  const context = getActiveProductionMatchContextContext();
   const fromGoogle = resolveMatchContextFromGoogleSearch({
     request,
     referenceDate: request.matchDate,
+    fixtureId: context?.fixtureId,
+    kickoffTime: context?.kickoffTime,
   });
   if (fromGoogle) {
     return fromGoogle;

@@ -10,16 +10,18 @@ export type GoogleCacheCategory =
 
 export const GOOGLE_CACHE_TTL_MS: Record<GoogleCacheCategory, number> = {
   news: 2 * 60 * 60 * 1000,
-  injuries: 2 * 60 * 60 * 1000,
+  injuries: 4 * 60 * 60 * 1000,
   weather: 3 * 60 * 60 * 1000,
   recentForm: 12 * 60 * 60 * 1000,
-  h2h: 24 * 60 * 60 * 1000,
+  h2h: 18 * 60 * 60 * 1000,
 };
 
 export interface GoogleSearchMatchRequest {
+  fixtureId?: number;
   homeTeam: string;
   awayTeam: string;
   matchDate?: string;
+  kickoffTime?: string;
   leagueName?: string;
 }
 

@@ -1,12 +1,12 @@
 import type { SquadAvailabilityProviderRequest } from "@/lib/analysis/featureScore/providers/squadAvailabilityProvider";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { fetchGoogleLiveResultWithOutcome, buildGroundingChannelDiagnostic, type GroundingChannelDiagnostic } from "@/lib/providers/googleSearch/googleSearchService";
+import { prefetchProductionCombinedGrounding } from "@/lib/providers/googleSearch/combinedGroundingProvider";
+import type { GroundingChannelDiagnostic } from "@/lib/providers/googleSearch/googleSearchService";
 import {
   isSquadAvailabilitySampleUsable,
 } from "@/lib/providers/squadAvailability/squadAvailabilityConfidence";
 import {
   readProductionSquadAvailabilityResolution,
-  rememberProductionSquadAvailabilityResolution,
 } from "@/lib/providers/squadAvailability/squadAvailabilityCache";
 import { resolveSquadAvailabilityFromGoogleSearch } from "@/lib/providers/squadAvailability/squadAvailabilityGoogleSource";
 import { resolveSquadAvailabilityFromMatchRecords } from "@/lib/providers/squadAvailability/squadAvailabilityMatchRecordsSource";
@@ -36,6 +36,8 @@ function toProductionRequest(
     homeTeam: request.homeTeam,
     awayTeam: request.awayTeam,
     matchDate: context?.matchDate ?? request.matchDate,
+    fixtureId: context?.fixtureId,
+    kickoffTime: context?.kickoffTime,
   };
 }
 
@@ -82,10 +84,13 @@ export function fetchProductionSquadAvailabilitySourceData(
     }
   }
 
+  const context = getActiveProductionSquadAvailabilityContext();
   if (!expectedSource || expectedSource === "googleSearch") {
     const fromGoogle = resolveSquadAvailabilityFromGoogleSearch({
       request,
       referenceDate: request.matchDate,
+      fixtureId: context?.fixtureId,
+      kickoffTime: context?.kickoffTime,
     });
     if (fromGoogle && isSquadAvailabilitySampleUsable(fromGoogle.snapshot.sampleSize)) {
       return fromGoogle.snapshot;
@@ -110,74 +115,19 @@ export async function prefetchProductionSquadAvailability(
   resolution: ProductionSquadAvailabilityResolution | null;
   grounding: GroundingPrefetchOutcome;
 }> {
-  const request: SquadAvailabilityProviderRequest = {
+  const combined = await prefetchProductionCombinedGrounding({
+    fixtureId: context.fixtureId ?? 0,
     homeTeam: context.homeTeam,
     awayTeam: context.awayTeam,
     matchDate: context.matchDate,
+    kickoffTime: context.kickoffTime,
+    matchRecords: context.matchRecords,
+  });
+
+  return {
+    resolution: combined.squadResolution,
+    grounding: combined.squadGrounding,
   };
-  const productionRequest: ProductionSquadAvailabilityRequest = {
-    homeTeam: context.homeTeam,
-    awayTeam: context.awayTeam,
-    matchDate: context.matchDate,
-  };
-
-  const existing = readProductionSquadAvailabilityResolution(productionRequest);
-  if (existing) {
-    return {
-      resolution: {
-        ...existing,
-        diagnostics: { ...existing.diagnostics, cacheHit: true },
-      },
-      grounding: {
-        called: false,
-        cacheHit: true,
-        skippedReason: "production_resolution_cache",
-        succeeded: true,
-        failureReason: null,
-        httpStatus: null,
-        model: null,
-        candidateCount: 0,
-        parseFailureReason: null,
-        groundingFallbackUsed: false,
-        hasResponseText: false,
-        hasGroundingMetadata: false,
-      },
-    };
-  }
-
-  setActiveProductionSquadAvailabilityContext(context);
-  try {
-    const groundingOutcome = await fetchGoogleLiveResultWithOutcome({
-      homeTeam: context.homeTeam,
-      awayTeam: context.awayTeam,
-      matchDate: context.matchDate,
-    });
-    const grounding = buildGroundingChannelDiagnostic(groundingOutcome);
-
-    const fromGoogle = resolveSquadAvailabilityFromGoogleSearch({
-      request,
-      referenceDate: context.matchDate,
-    });
-    if (fromGoogle) {
-      rememberProductionSquadAvailabilityResolution(productionRequest, fromGoogle);
-      return { resolution: fromGoogle, grounding };
-    }
-
-    const records = context.matchRecords ?? [];
-    const fromRecords = resolveSquadAvailabilityFromMatchRecords({
-      request,
-      records,
-      referenceDate: context.matchDate,
-    });
-    if (fromRecords) {
-      rememberProductionSquadAvailabilityResolution(productionRequest, fromRecords);
-      return { resolution: fromRecords, grounding };
-    }
-
-    return { resolution: null, grounding };
-  } finally {
-    clearActiveProductionSquadAvailabilityContext();
-  }
 }
 
 export function getProductionSquadAvailabilityResolution(
@@ -188,9 +138,12 @@ export function getProductionSquadAvailabilityResolution(
     return cached;
   }
 
+  const context = getActiveProductionSquadAvailabilityContext();
   const fromGoogle = resolveSquadAvailabilityFromGoogleSearch({
     request,
     referenceDate: request.matchDate,
+    fixtureId: context?.fixtureId,
+    kickoffTime: context?.kickoffTime,
   });
   if (fromGoogle) {
     return fromGoogle;

@@ -15,6 +15,8 @@ export interface ProductionMatchContextRequest {
   homeTeam: string;
   awayTeam: string;
   matchDate?: string;
+  fixtureId?: number;
+  kickoffTime?: string;
 }
 
 export interface ProductionMatchContextResolution {

@@ -4,6 +4,8 @@ export interface ProductionMatchContextContext {
   homeTeam: string;
   awayTeam: string;
   matchDate?: string;
+  fixtureId?: number;
+  kickoffTime?: string;
   matchRecords?: HistoricalMatchRecord[];
 }
 

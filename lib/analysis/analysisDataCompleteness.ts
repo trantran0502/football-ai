@@ -11,6 +11,14 @@ import type { MatchData } from "@/types/match";
 export const MIN_PROFILE_SAMPLE_SIZE = 3;
 export const MIN_PROFILE_COMPLETENESS = 40;
 
+export function isGroundingRequiredForRecommendation(): boolean {
+  const raw = process.env.REQUIRE_GROUNDING_FOR_RECOMMENDATION?.trim().toLowerCase();
+  if (!raw) {
+    return false;
+  }
+  return raw === "true" || raw === "1" || raw === "yes";
+}
+
 const TRUSTED_REPLAY_SOURCES = new Set<ReplayDataSource>([
   "api",
   "api-football",
@@ -194,6 +202,16 @@ export function assessRecommendationDataCompleteness(
   }
   if (profileDeferred) {
     reasons.push("team_profile_deferred");
+  }
+
+  if (
+    groundingUnavailable &&
+    isGroundingRequiredForRecommendation() &&
+    !trustedExternalSourceAvailable
+  ) {
+    reasons.push("grounding_supplemental_unavailable");
+  } else if (groundingUnavailable) {
+    quotaWarnings.push("Google grounding supplemental data unavailable");
   }
 
   const eligibleForRecommendation = reasons.length === 0;

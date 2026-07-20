@@ -108,6 +108,8 @@ export class GoogleSearchProvider {
     const primary = await this.fetchWithModel(request, this.model, false);
     if (
       primary.result ||
+      primary.diagnostics.httpStatus === 429 ||
+      primary.diagnostics.failureReason === "rate_limited" ||
       !shouldRetryGroundingWithFallbackModel({
         httpStatus: primary.diagnostics.httpStatus,
         geminiErrorMessage: primary.diagnostics.geminiErrorMessage,

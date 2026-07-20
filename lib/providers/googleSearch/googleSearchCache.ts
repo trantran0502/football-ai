@@ -18,12 +18,50 @@ const recordCache = new Map<string, GoogleSearchCachedRecord>();
 const matchSearchCounts = new Map<string, number>();
 const inFlightQueries = new Map<string, Promise<GoogleSearchLiveResult | null>>();
 
+export const COMBINED_GROUNDING_QUERY = "combined fixture grounding";
+
+export function resolveGroundingKickoffDate(input: {
+  kickoffTime?: string;
+  matchDate?: string;
+}): string {
+  if (input.kickoffTime?.trim()) {
+    return input.kickoffTime.trim().slice(0, 10);
+  }
+  if (input.matchDate?.trim()) {
+    return input.matchDate.trim().slice(0, 10);
+  }
+  return "";
+}
+
+export function buildCombinedGroundingCacheKey(input: {
+  fixtureId?: number;
+  homeTeam: string;
+  awayTeam: string;
+  kickoffTime?: string;
+  matchDate?: string;
+}): string {
+  return stableSerialize({
+    provider: "googleSearchCombined",
+    fixtureId: input.fixtureId ?? 0,
+    homeTeam: input.homeTeam,
+    awayTeam: input.awayTeam,
+    kickoffDate: resolveGroundingKickoffDate(input),
+    query: COMBINED_GROUNDING_QUERY,
+  });
+}
+
 export function buildGoogleSearchCacheKey(input: {
+  fixtureId?: number;
   homeTeam: string;
   awayTeam: string;
   matchDate?: string;
+  kickoffTime?: string;
   query: string;
 }): string {
+  if (input.query === COMBINED_GROUNDING_QUERY) {
+    return buildCombinedGroundingCacheKey(input);
+  }
+
   return stableSerialize({
     provider: "googleSearch",
     homeTeam: input.homeTeam,
