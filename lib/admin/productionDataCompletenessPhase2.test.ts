@@ -143,7 +143,7 @@ function testProviderHealthNotConfigured(): void {
 
 function testProductionBaselineWeightConfig(): void {
   const config = buildProductionBaselineWeightConfig(new Date("2026-07-20T00:00:00.000Z"));
-  assert(config.source === "fallback", "production baseline should keep fallback source with version metadata");
+  assert(config.source === "production_baseline", "production baseline should use production_baseline source");
   assert(config.activeVersion?.id != null, "production baseline should have version id");
 }
 

@@ -82,6 +82,12 @@ export interface ExecutionLogContext extends Record<string, unknown> {
   profileCacheMiss?: number;
   uniqueTeamsRequested?: number;
   duplicateTeamRequestsAvoided?: number;
+  profileRequestsAvoidedByQuota?: number;
+  planRestrictedRequestsAvoided?: number;
+  effectiveProfileSeason?: number | null;
+  capabilityCacheHit?: number;
+  fixtureGroundingDiagnostics?: unknown[];
+  diagnostics?: Record<string, unknown>;
   deferredProfileRetried?: number;
   deferredProfileCompleted?: number;
   pendingClassification?: Record<string, number>;

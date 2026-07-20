@@ -1,6 +1,6 @@
 import type { MatchContextProviderRequest } from "@/lib/analysis/featureScore/providers/matchContextProvider";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { fetchGoogleLiveResult } from "@/lib/providers/googleSearch/googleSearchService";
+import { fetchGoogleLiveResultWithOutcome } from "@/lib/providers/googleSearch/googleSearchService";
 import { isMatchContextSampleUsable } from "@/lib/providers/matchContext/matchContextConfidence";
 import {
   readProductionMatchContextResolution,
@@ -99,9 +99,19 @@ export function fetchProductionMatchContextSourceData(
   return null;
 }
 
+export interface GroundingPrefetchOutcome {
+  called: boolean;
+  cacheHit: boolean;
+  skippedReason: string | null;
+  succeeded: boolean;
+}
+
 export async function prefetchProductionMatchContext(
   context: ProductionMatchContextContext
-): Promise<ProductionMatchContextResolution | null> {
+): Promise<{
+  resolution: ProductionMatchContextResolution | null;
+  grounding: GroundingPrefetchOutcome;
+}> {
   const request: MatchContextProviderRequest = {
     homeTeam: context.homeTeam,
     awayTeam: context.awayTeam,
@@ -116,18 +126,32 @@ export async function prefetchProductionMatchContext(
   const existing = readProductionMatchContextResolution(productionRequest);
   if (existing) {
     return {
-      ...existing,
-      diagnostics: { ...existing.diagnostics, cacheHit: true },
+      resolution: {
+        ...existing,
+        diagnostics: { ...existing.diagnostics, cacheHit: true },
+      },
+      grounding: {
+        called: false,
+        cacheHit: true,
+        skippedReason: "production_resolution_cache",
+        succeeded: true,
+      },
     };
   }
 
   setActiveProductionMatchContextContext(context);
   try {
-    await fetchGoogleLiveResult({
+    const groundingOutcome = await fetchGoogleLiveResultWithOutcome({
       homeTeam: context.homeTeam,
       awayTeam: context.awayTeam,
       matchDate: context.matchDate,
     });
+    const grounding: GroundingPrefetchOutcome = {
+      called: groundingOutcome.called,
+      cacheHit: groundingOutcome.cacheHit,
+      skippedReason: groundingOutcome.failureReason,
+      succeeded: groundingOutcome.result !== null,
+    };
 
     const fromGoogle = resolveMatchContextFromGoogleSearch({
       request,
@@ -135,7 +159,7 @@ export async function prefetchProductionMatchContext(
     });
     if (fromGoogle) {
       rememberProductionMatchContextResolution(productionRequest, fromGoogle);
-      return fromGoogle;
+      return { resolution: fromGoogle, grounding };
     }
 
     const records = context.matchRecords ?? [];
@@ -146,10 +170,10 @@ export async function prefetchProductionMatchContext(
     });
     if (fromRecords) {
       rememberProductionMatchContextResolution(productionRequest, fromRecords);
-      return fromRecords;
+      return { resolution: fromRecords, grounding };
     }
 
-    return null;
+    return { resolution: null, grounding };
   } finally {
     clearActiveProductionMatchContextContext();
   }

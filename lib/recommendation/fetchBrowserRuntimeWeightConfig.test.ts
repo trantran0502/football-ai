@@ -88,7 +88,7 @@ async function testFetchBrowserRuntimeWeightConfigFallback(): Promise<void> {
       },
     });
 
-    assert(dto.source === "fallback", "loader fallback should surface in browser dto");
+    assert(dto.source === "production_baseline", "loader fallback should surface production baseline in browser dto");
     assert(
       dto.activeVersion?.id === PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION,
       "fallback dto should expose production baseline version id"
@@ -120,7 +120,7 @@ async function testFetchBrowserRuntimeWeightConfigUsesFallbackWhenDisabled(): Pr
       },
     });
 
-    assert(dto.source === "fallback", "disabled db config should return fallback dto");
+    assert(dto.source === "production_baseline", "disabled db config should return production baseline dto");
     assert(
       dto.activeVersion?.id === PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION,
       "disabled db config should expose production baseline version"

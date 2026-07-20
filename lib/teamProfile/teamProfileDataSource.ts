@@ -1,10 +1,12 @@
 import type { ApiFootballTeamStatisticsRecord } from "@/lib/providers/apiFootball/apiFootballTypes";
+import { isFreeMode } from "@/lib/providers/free/config";
 import {
   ApiFootballClient,
   getApiFootballClient,
 } from "@/lib/providers/apiFootball/apiFootballClient";
 import {
   canMakeApiFootballRequest,
+  canMakeProfileApiFootballRequest,
   getApiFootballQuotaBlockReason,
   getApiFootballQuotaSnapshot,
   waitForApiFootballQuota,
@@ -27,7 +29,12 @@ import {
   parsePlanLastParameterRestrictionFromText,
   parsePlanSeasonRestrictionFromText,
 } from "@/lib/providers/apiFootball/apiFootballPlanErrors";
-import { isFreeMode } from "@/lib/providers/free/config";
+import {
+  cachePlanSeasonRestriction,
+  recordPlanRestrictedRequestAvoided,
+  resolveProfileFetchSeason,
+  setEffectiveProfileSeason,
+} from "@/lib/teamProfile/planCapabilityCache";
 import {
   buildHistoricalBaselineWarning,
   computeStalenessYears,
@@ -449,28 +456,13 @@ async function fetchTeamFixturesFromApi(
   const requestBudget = { used: 0 };
 
   if (requestedSeason !== null && identity.leagueId !== null) {
-    const requestedAttempt = await fetchTeamFormForProfile(
-      client,
-      identity,
-      warnings,
-      diagnostics,
-      requestBudget,
-      {
-        leagueId: identity.leagueId,
-        season: requestedSeason,
-        status: "FT",
-      }
-    );
+    const seasonPlan = resolveProfileFetchSeason({
+      leagueId: identity.leagueId,
+      requestedSeason,
+    });
 
-    if (requestedAttempt?.planRange) {
-      planSeasonRange = requestedAttempt.planRange;
-    }
-
-    matches = requestedAttempt?.matches ?? [];
-    if (matches.length > 0) {
-      dataSeason = requestedSeason;
-    } else if (requestedAttempt?.planRange) {
-      const historicalSeason = requestedAttempt.planRange.maxSeason;
+    if (seasonPlan.skipRequestedSeasonAttempt && seasonPlan.initialFetchSeason !== null) {
+      const historicalSeason = seasonPlan.initialFetchSeason;
       fallbackReason = "historical_season_fallback";
       const historicalAttempt = await fetchTeamFormForProfile(
         client,
@@ -486,8 +478,13 @@ async function fetchTeamFixturesFromApi(
         }
       );
 
+      if (historicalAttempt?.planRange) {
+        planSeasonRange = historicalAttempt.planRange;
+      }
+
       matches = historicalAttempt?.matches ?? [];
       dataSeason = historicalSeason;
+      setEffectiveProfileSeason(historicalSeason);
 
       if (matches.length > 0) {
         warnings.push(
@@ -517,10 +514,89 @@ async function fetchTeamFixturesFromApi(
             `Historical fallback season=${historicalSeason} returned no official completed matches.`
           );
         }
-      } else {
-        warnings.push(
-          `Historical fallback season=${historicalSeason} returned no official completed matches.`
+      }
+    } else {
+      const requestedAttempt = await fetchTeamFormForProfile(
+        client,
+        identity,
+        warnings,
+        diagnostics,
+        requestBudget,
+        {
+          leagueId: identity.leagueId,
+          season: requestedSeason,
+          status: "FT",
+        }
+      );
+
+      if (requestedAttempt?.planRange) {
+        planSeasonRange = requestedAttempt.planRange;
+        cachePlanSeasonRestriction({
+          leagueId: identity.leagueId,
+          requestedSeason,
+          planRange: requestedAttempt.planRange,
+        });
+      }
+
+      matches = requestedAttempt?.matches ?? [];
+      if (matches.length > 0) {
+        dataSeason = requestedSeason;
+        setEffectiveProfileSeason(requestedSeason);
+      } else if (requestedAttempt?.planRange) {
+        const historicalSeason = requestedAttempt.planRange.maxSeason;
+        fallbackReason = "historical_season_fallback";
+        recordPlanRestrictedRequestAvoided();
+        const historicalAttempt = await fetchTeamFormForProfile(
+          client,
+          identity,
+          warnings,
+          diagnostics,
+          requestBudget,
+          {
+            leagueId: identity.leagueId,
+            season: historicalSeason,
+            status: "FT",
+            attemptFallbackReason: "historical_season_fallback",
+          }
         );
+
+        matches = historicalAttempt?.matches ?? [];
+        dataSeason = historicalSeason;
+        setEffectiveProfileSeason(historicalSeason);
+
+        if (matches.length > 0) {
+          warnings.push(
+            buildHistoricalBaselineWarning(historicalSeason, requestedSeason)
+          );
+        } else if (requestBudget.used < MAX_TEAM_PROFILE_FIXTURE_REQUESTS) {
+          const leagueFallbackAttempt = await fetchTeamFormForProfile(
+            client,
+            identity,
+            warnings,
+            diagnostics,
+            requestBudget,
+            {
+              season: historicalSeason,
+              status: "FT",
+              attemptFallbackReason: "historical_season_fallback",
+            }
+          );
+          matches = leagueFallbackAttempt?.matches ?? [];
+          if (matches.length > 0) {
+            dataSeason = historicalSeason;
+            warnings.push(
+              buildHistoricalBaselineWarning(historicalSeason, requestedSeason)
+            );
+          } else {
+            warnings.push(
+              `Historical fallback season=${historicalSeason} returned no official completed matches.`
+            );
+          }
+        } else {
+          warnings.push(
+            `Historical fallback season=${historicalSeason} returned no official completed matches.`
+          );
+        }
       }
     }
   }
@@ -571,6 +647,10 @@ async function fetchTeamFormForProfile(
   if (requestBudget.used >= MAX_TEAM_PROFILE_FIXTURE_REQUESTS) {
     warnings.push("Team profile fixture request budget exhausted.");
     return null;
+  }
+  if (!canMakeProfileApiFootballRequest()) {
+    markQuotaExhausted(diagnostics, warnings, "fixture fetch");
+    return { matches: [], planRange: null };
   }
   requestBudget.used += 1;
 
@@ -902,7 +982,7 @@ async function fetchAdvancedStatsFromApi(
     return null;
   }
 
-  if (!canMakeApiFootballRequest()) {
+  if (!canMakeProfileApiFootballRequest()) {
     markQuotaExhausted(diagnostics, warnings, "team statistics fetch");
     return null;
   }

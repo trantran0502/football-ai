@@ -2,6 +2,10 @@ import { FEATURE_PROVIDER_KEYS } from "@/lib/providers/registry/types";
 import { MARKET_ENGINE_INITIAL_WEIGHT } from "@/lib/recommendation/marketEngine/marketScore";
 import { DEFAULT_PROVIDER_WEIGHTS } from "@/lib/recommendation/providerWeights";
 import { buildFallbackWeightConfig } from "@/lib/recommendation/weightConfigRuntime";
+import {
+  buildProductionBaselineWeightConfig,
+  PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION,
+} from "@/lib/recommendation/productionWeightConfig";
 import type { RuntimeWeightConfig } from "@/lib/recommendation/weightConfigTypes";
 import {
   invalidateRuntimeWeightConfigCache,
@@ -98,14 +102,14 @@ async function testKillSwitchUsesFallbackWithoutDb(): Promise<void> {
   );
 
   assert(calls === 0, "kill switch should not query DB");
-  assert(config.source === "fallback", "kill switch should use fallback source");
+  assert(config.source === "production_baseline", "kill switch should use production baseline source");
   assertNear(config.marketBlendWeight, MARKET_ENGINE_INITIAL_WEIGHT, "fallback market blend");
   for (const key of FEATURE_PROVIDER_KEYS) {
     assertNear(config.providerWeights[key], DEFAULT_PROVIDER_WEIGHTS[key], `fallback ${key}`);
   }
 }
 
-async function testNoActiveRowReturnsFallback(): Promise<void> {
+async function testNoActiveRowReturnsProductionBaseline(): Promise<void> {
   resetRuntimeWeightConfigCacheForTests();
 
   const config = await withEnv(
@@ -116,12 +120,16 @@ async function testNoActiveRowReturnsFallback(): Promise<void> {
     () =>
       loadRuntimeWeightConfigForProduction({
         now: () => FIXED_NOW,
-        getActiveWeightConfig: async () => buildFallbackWeightConfig(),
+        getActiveWeightConfig: async () =>
+          buildProductionBaselineWeightConfig(new Date(FIXED_NOW)),
       })
   );
 
-  assert(config.source === "fallback", "no active row should resolve to fallback");
-  assert(config.activeVersion === null, "fallback should not expose active version");
+  assert(config.source === "production_baseline", "no active row should resolve to production baseline");
+  assert(
+    config.activeVersion?.id === PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION,
+    "production baseline should expose version id"
+  );
 }
 
 async function testRestErrorFallsBack(): Promise<void> {
@@ -141,8 +149,12 @@ async function testRestErrorFallsBack(): Promise<void> {
       })
   );
 
-  assert(config.source === "fallback", "REST error should fallback");
-  assert(config.loadedAt === new Date(FIXED_NOW).toISOString(), "fallback loadedAt");
+  assert(config.source === "production_baseline", "REST error should use production baseline");
+  assert(config.loadedAt === new Date(FIXED_NOW).toISOString(), "baseline loadedAt");
+  assert(
+    config.activeVersion?.id === PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION,
+    "REST error baseline should expose version id"
+  );
 }
 
 async function testMalformedConfigFallsBack(): Promise<void> {
@@ -162,7 +174,11 @@ async function testMalformedConfigFallsBack(): Promise<void> {
       })
   );
 
-  assert(config.source === "fallback", "malformed config should fallback");
+  assert(config.source === "production_baseline", "malformed config should use production baseline");
+  assert(
+    config.activeVersion?.id === PRODUCTION_BASELINE_WEIGHT_CONFIG_VERSION,
+    "malformed config baseline should expose version id"
+  );
 }
 
 async function testActiveConfigLoadsSuccessfully(): Promise<void> {
@@ -378,14 +394,14 @@ async function testLoaderNeverThrows(): Promise<void> {
           throw new Error("timeout");
         },
       });
-      assert(config.source === "fallback", "loader must always resolve");
+      assert(config.source === "production_baseline", "loader must always resolve to production baseline");
     }
   );
 }
 
 export async function runRuntimeWeightConfigLoaderTests(): Promise<void> {
   await testKillSwitchUsesFallbackWithoutDb();
-  await testNoActiveRowReturnsFallback();
+  await testNoActiveRowReturnsProductionBaseline();
   await testRestErrorFallsBack();
   await testMalformedConfigFallsBack();
   await testActiveConfigLoadsSuccessfully();

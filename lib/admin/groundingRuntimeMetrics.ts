@@ -25,8 +25,20 @@ export function resetGroundingRuntimeMetricsForTests(): void {
   metrics.groundingSearchCount = 0;
 }
 
+export function beginGroundingRuntimeMetricsBatch(configured: boolean): void {
+  metrics.groundingConfigured = configured;
+  metrics.groundingCalled = 0;
+  metrics.groundingSucceeded = 0;
+  metrics.groundingCacheHit = 0;
+  metrics.groundingFailureReason = configured ? null : "not_configured";
+  metrics.groundingSearchCount = 0;
+}
+
 export function initializeGroundingRuntimeMetrics(configured: boolean): void {
   metrics.groundingConfigured = configured;
+  if (!configured) {
+    metrics.groundingFailureReason = "not_configured";
+  }
 }
 
 export function recordGroundingCacheHit(): void {

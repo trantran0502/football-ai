@@ -1,6 +1,7 @@
 import type { DailyPipelineResult } from "@/lib/production/productionTypes";
 import type { ResultPipelineResult } from "@/lib/production/productionTypes";
 import type { AdminErrorLogEntry } from "@/lib/admin/adminDashboardTypes";
+import type { DailyAnalysisObservabilityDiagnostics } from "@/lib/scheduler/executionDiagnostics";
 
 export type SchedulerJobName =
   | "daily_analysis"
@@ -104,6 +105,7 @@ export interface DailySchedulerResult {
   skippedDueToLock: boolean;
   intakeWarnings: string[];
   observabilityWarning?: string;
+  diagnostics?: DailyAnalysisObservabilityDiagnostics;
   batchProgress?: DailySchedulerBatchProgress;
   executionStatus?: "success" | "partial_success" | "failed" | "skipped";
 }

@@ -1,6 +1,6 @@
 import type { SquadAvailabilityProviderRequest } from "@/lib/analysis/featureScore/providers/squadAvailabilityProvider";
 import type { HistoricalMatchRecord } from "@/lib/database/matchSchema";
-import { fetchGoogleLiveResult } from "@/lib/providers/googleSearch/googleSearchService";
+import { fetchGoogleLiveResultWithOutcome } from "@/lib/providers/googleSearch/googleSearchService";
 import {
   isSquadAvailabilitySampleUsable,
 } from "@/lib/providers/squadAvailability/squadAvailabilityConfidence";
@@ -102,9 +102,19 @@ export function fetchProductionSquadAvailabilitySourceData(
   return null;
 }
 
+export interface GroundingPrefetchOutcome {
+  called: boolean;
+  cacheHit: boolean;
+  skippedReason: string | null;
+  succeeded: boolean;
+}
+
 export async function prefetchProductionSquadAvailability(
   context: ProductionSquadAvailabilityContext
-): Promise<ProductionSquadAvailabilityResolution | null> {
+): Promise<{
+  resolution: ProductionSquadAvailabilityResolution | null;
+  grounding: GroundingPrefetchOutcome;
+}> {
   const request: SquadAvailabilityProviderRequest = {
     homeTeam: context.homeTeam,
     awayTeam: context.awayTeam,
@@ -119,18 +129,32 @@ export async function prefetchProductionSquadAvailability(
   const existing = readProductionSquadAvailabilityResolution(productionRequest);
   if (existing) {
     return {
-      ...existing,
-      diagnostics: { ...existing.diagnostics, cacheHit: true },
+      resolution: {
+        ...existing,
+        diagnostics: { ...existing.diagnostics, cacheHit: true },
+      },
+      grounding: {
+        called: false,
+        cacheHit: true,
+        skippedReason: "production_resolution_cache",
+        succeeded: true,
+      },
     };
   }
 
   setActiveProductionSquadAvailabilityContext(context);
   try {
-    await fetchGoogleLiveResult({
+    const groundingOutcome = await fetchGoogleLiveResultWithOutcome({
       homeTeam: context.homeTeam,
       awayTeam: context.awayTeam,
       matchDate: context.matchDate,
     });
+    const grounding: GroundingPrefetchOutcome = {
+      called: groundingOutcome.called,
+      cacheHit: groundingOutcome.cacheHit,
+      skippedReason: groundingOutcome.failureReason,
+      succeeded: groundingOutcome.result !== null,
+    };
 
     const fromGoogle = resolveSquadAvailabilityFromGoogleSearch({
       request,
@@ -138,7 +162,7 @@ export async function prefetchProductionSquadAvailability(
     });
     if (fromGoogle) {
       rememberProductionSquadAvailabilityResolution(productionRequest, fromGoogle);
-      return fromGoogle;
+      return { resolution: fromGoogle, grounding };
     }
 
     const records = context.matchRecords ?? [];
@@ -149,10 +173,10 @@ export async function prefetchProductionSquadAvailability(
     });
     if (fromRecords) {
       rememberProductionSquadAvailabilityResolution(productionRequest, fromRecords);
-      return fromRecords;
+      return { resolution: fromRecords, grounding };
     }
 
-    return null;
+    return { resolution: null, grounding };
   } finally {
     clearActiveProductionSquadAvailabilityContext();
   }

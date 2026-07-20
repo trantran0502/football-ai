@@ -134,9 +134,11 @@ export function buildRuntimeWeightConfigFromActive(
 export function buildWeightConfigSnapshotMetadata(
   config: LoadedRuntimeWeightConfig
 ): WeightConfigSnapshotMetadata {
+  const versionLabel = config.activeVersion?.id ?? null;
   return {
-    versionId: config.activeVersion?.id ?? null,
+    versionId: versionLabel,
     version: config.activeVersion?.version ?? null,
+    versionLabel,
     source: config.source,
     loadedAt: config.loadedAt,
   };

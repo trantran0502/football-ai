@@ -3,7 +3,7 @@ import type { WeightOptimizerReport } from "@/lib/recommendation/weightOptimizer
 
 export type WeightConfigStatus = "draft" | "active" | "archived";
 
-export type WeightConfigSource = "active" | "fallback";
+export type WeightConfigSource = "active" | "fallback" | "production_baseline";
 
 export type DecisionEvidenceWeightId =
   | "ODDS_IMPLIED_VALUE"
@@ -42,6 +42,7 @@ export interface LoadedRuntimeWeightConfig extends RuntimeWeightConfig {
 export interface WeightConfigSnapshotMetadata {
   versionId: string | null;
   version: number | null;
+  versionLabel: string | null;
   source: WeightConfigSource;
   loadedAt: string;
 }

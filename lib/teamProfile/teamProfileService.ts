@@ -14,15 +14,20 @@ import {
 } from "@/lib/teamProfile/teamProfileRepository";
 import {
   canMakeApiFootballRequest,
+  canMakeProfileApiFootballRequest,
   getApiFootballQuotaBlockReason,
   getApiFootballQuotaSnapshot,
+  getProfileApiMinuteBlockReason,
 } from "@/lib/providers/apiFootball/apiFootballQuota";
 import {
   registerProfileTeamRequest,
   recordProfileCacheHit,
+  recordProfileCacheMiss,
   recordDeferredProfileCompleted,
   recordDeferredProfileRetried,
+  recordProfileRequestsAvoidedByQuota,
 } from "@/lib/teamProfile/profileCacheMetrics";
+import { resolveProfileFetchSeason } from "@/lib/teamProfile/planCapabilityCache";
 import type {
   EnsureTeamProfilesInput,
   EnsureTeamProfilesResult,
@@ -97,11 +102,16 @@ export async function refreshTeamProfile(
   const runDate = input.runDate ?? new Date().toISOString().slice(0, 10);
   const side = input.side ?? "home";
   const matchLabel = input.matchLabel ?? input.teamName;
+  const seasonPlan = resolveProfileFetchSeason({
+    leagueId: input.leagueId,
+    requestedSeason: input.season,
+  });
+  const batchSeason = seasonPlan.effectiveProfileSeason ?? input.season;
   const dedupe = dedupeKey(input.teamId, input.leagueId, input.season, runDate);
   const batchRequest = registerProfileTeamRequest(
     input.teamId,
     input.leagueId,
-    input.season
+    batchSeason
   );
 
   if (batchRequest === "duplicate") {
@@ -126,10 +136,9 @@ export async function refreshTeamProfile(
     }
   }
 
-  const quotaSnapshot = getApiFootballQuotaSnapshot();
-  const minuteNearLimit =
-    quotaSnapshot.minuteCount >= Math.max(0, quotaSnapshot.minuteLimit - 1);
-  if ((input.allowApiFetch ?? true) && minuteNearLimit && !canMakeApiFootballRequest()) {
+  const profileMinuteBlock = getProfileApiMinuteBlockReason();
+  if ((input.allowApiFetch ?? true) && profileMinuteBlock) {
+    recordProfileRequestsAvoidedByQuota();
     const existing = await getTeamProfile(input.teamId, input.leagueId, input.season);
     if (existing) {
       return {
@@ -217,6 +226,12 @@ export async function refreshTeamProfile(
   }
 
   try {
+    if (!(input.allowApiFetch ?? true) || !canMakeProfileApiFootballRequest()) {
+      recordProfileRequestsAvoidedByQuota();
+      throw new Error("Profile API request blocked by quota budget.");
+    }
+
+    recordProfileCacheMiss();
     const fetched = await fetchTeamProfileData(
       {
         teamId: input.teamId,

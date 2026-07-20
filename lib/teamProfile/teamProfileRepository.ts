@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAdminError } from "@/lib/admin/adminErrorLog";
 import { recordCacheHit, recordCacheMiss } from "@/lib/admin/adminCacheMetrics";
+import {
+  recordProfileCacheHit,
+  recordProfileCacheMiss,
+} from "@/lib/teamProfile/profileCacheMetrics";
 import type {
   TeamProfile,
   TeamProfileIdentity,
@@ -198,6 +202,7 @@ export async function getTeamProfile(
 
     if (requestedResult.data) {
       recordCacheHit();
+      recordProfileCacheHit();
       return mapRowToProfile(requestedResult.data as Record<string, unknown>);
     }
 
@@ -211,10 +216,12 @@ export async function getTeamProfile(
 
     if (legacyResult.error || !legacyResult.data) {
       recordCacheMiss();
+      recordProfileCacheMiss();
       return null;
     }
 
     recordCacheHit();
+    recordProfileCacheHit();
     return mapRowToProfile(legacyResult.data as Record<string, unknown>);
   } catch {
     return null;

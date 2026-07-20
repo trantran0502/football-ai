@@ -78,6 +78,7 @@ async function handleDailyAnalysis(request: Request) {
     return NextResponse.json({
       ok: true,
       observabilityWarning: result.observabilityWarning,
+      diagnostics: result.diagnostics,
       ...result,
     });
   } catch {

@@ -34,7 +34,7 @@ import {
 import { filterPreMatchEligibleFixtures } from "@/lib/scheduler/preMatchFixtureEligibility";
 import type { FixtureIntakeResult } from "@/lib/scheduler/fixtureMapping";
 import { isApiFootballQuotaExceededError } from "@/lib/scheduler/resultUpdateFixtureFetch";
-import { canMakeApiFootballRequest } from "@/lib/providers/apiFootball/apiFootballQuota";
+import { canMakeApiFootballRequest, canMakeProfileApiFootballRequest } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { resolveSchedulerFixturesToProduction } from "@/lib/scheduler/schedulerOddsIntegration";
 import type { SchedulerOddsStats } from "@/lib/scheduler/schedulerOddsIntegration";
 import { buildSchedulerPlaceholderOdds } from "@/lib/scheduler/schedulerPlaceholderOdds";
@@ -65,6 +65,7 @@ import {
   type RuntimeWeightConfigLoaderDeps,
 } from "@/lib/recommendation/runtimeWeightConfigLoader";
 import { buildWeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigRuntime";
+import { buildProductionBaselineWeightConfig } from "@/lib/recommendation/productionWeightConfig";
 import type { WeightConfigSnapshotMetadata } from "@/lib/recommendation/weightConfigTypes";
 import {
   buildExecutionLogContext,
@@ -79,7 +80,14 @@ import {
   assessRecommendationDataCompleteness,
 } from "@/lib/analysis/analysisDataCompleteness";
 import { buildEvidenceCoverageDiagnostics } from "@/lib/analysis/evidenceCoverageDiagnostics";
-import { getGroundingRuntimeMetricsSnapshot } from "@/lib/admin/groundingRuntimeMetrics";
+import {
+  beginGroundingRuntimeMetricsBatch,
+} from "@/lib/admin/groundingRuntimeMetrics";
+import {
+  buildDailyAnalysisObservabilityDiagnostics,
+  observabilityDiagnosticsToExecutionContext,
+  type FixtureGroundingDiagnostic,
+} from "@/lib/scheduler/executionDiagnostics";
 import { captureReplayRawSources } from "@/lib/replay/replayRawCapture";
 import {
   createDeferredFixtureAttemptState,
@@ -90,10 +98,9 @@ import {
 import { hasCompleteAnalysisRecord } from "@/lib/supabase/services/matchRecordCompletenessGuard";
 import { summarizePendingRecordClassifications } from "@/lib/supabase/services/pendingRecordClassification";
 import { getGoogleSearchProvider } from "@/lib/providers/googleSearch/googleSearchProvider";
-import { initializeGroundingRuntimeMetrics } from "@/lib/admin/groundingRuntimeMetrics";
+import { beginPlanCapabilityMetricsBatch } from "@/lib/teamProfile/planCapabilityCache";
 import {
   beginProfileCacheMetricsBatch,
-  getProfileCacheMetricsSnapshot,
 } from "@/lib/teamProfile/profileCacheMetrics";
 
 export interface DailySchedulerDependencies {
@@ -418,6 +425,7 @@ async function runBatchedDailyPipeline(
     batchProgress: DailyAnalysisBatchProgress;
     batchWeightConfig: WeightConfigSnapshotMetadata;
     updatedQueue: DailyAnalysisQueueState;
+    fixtureGroundingDiagnostics: FixtureGroundingDiagnostic[];
   }
 > {
   const items: DailyPipelineResult["items"] = [];
@@ -427,6 +435,7 @@ async function runBatchedDailyPipeline(
   const dataCompleteness = createEmptyDataCompletenessStats();
   const teamProfileWarnings: string[] = [];
   const teamProfileDiagnostics: TeamProfileTeamDiagnostic[] = [];
+  const fixtureGroundingDiagnostics: FixtureGroundingDiagnostic[] = [];
   const deferredFixtures: number[] = [];
   const deferredTeamProfiles: string[] = [];
   const teamProfileQuotaStart = getApiFootballQuotaSnapshot().dailyCount;
@@ -435,6 +444,7 @@ async function runBatchedDailyPipeline(
   let timeBudgetReached = false;
   const deferredAttemptState = createDeferredFixtureAttemptState();
   beginProfileCacheMetricsBatch();
+  beginPlanCapabilityMetricsBatch();
 
   const { batch, cursorBefore, cursorAfter } = selectFixtureBatch(
     fixtures,
@@ -486,6 +496,7 @@ async function runBatchedDailyPipeline(
               let profileSnapshot = buildMatchTeamProfilesSnapshot(null, null, []);
               let fixtureProfileDiagnostics: TeamProfileTeamDiagnostic[] = [];
               const canAttemptProfileRefresh =
+                canMakeProfileApiFootballRequest() &&
                 teamProfileRefreshesUsed + 2 <=
                 dependencies.maxTeamProfileRefreshesPerRun;
 
@@ -507,7 +518,11 @@ async function runBatchedDailyPipeline(
                   fixtureProfileDiagnostics = profileResult.profileDiagnostics;
                   teamProfileWarnings.push(...profileResult.profileWarnings);
                   teamProfileDiagnostics.push(...profileResult.profileDiagnostics);
-                  teamProfileRefreshesUsed += 2;
+                  teamProfileRefreshesUsed += profileResult.profileDiagnostics.filter(
+                    (diagnostic) =>
+                      diagnostic.skippedReason !== "fresh_profile" &&
+                      diagnostic.skippedReason !== "same_day_dedupe"
+                  ).length;
 
                   for (const diagnostic of profileResult.profileDiagnostics) {
                     if (diagnostic.skippedReason === "quota_exhausted") {
@@ -581,17 +596,30 @@ async function runBatchedDailyPipeline(
                 matchDate: fixture.matchDate,
                 matchRecords: matchRecordsForH2H,
               });
-              await prefetchProductionSquadAvailability({
+              const squadPrefetch = await prefetchProductionSquadAvailability({
                 homeTeam: fixture.homeTeam,
                 awayTeam: fixture.awayTeam,
                 matchDate: fixture.matchDate,
                 matchRecords: matchRecordsForH2H,
               });
-              await prefetchProductionMatchContext({
+              const matchContextPrefetch = await prefetchProductionMatchContext({
                 homeTeam: fixture.homeTeam,
                 awayTeam: fixture.awayTeam,
                 matchDate: fixture.matchDate,
                 matchRecords: matchRecordsForH2H,
+              });
+              fixtureGroundingDiagnostics.push({
+                fixtureId: fixture.fixtureId,
+                squadAvailability: {
+                  called: squadPrefetch.grounding.called,
+                  cacheHit: squadPrefetch.grounding.cacheHit,
+                  skippedReason: squadPrefetch.grounding.skippedReason,
+                },
+                matchContext: {
+                  called: matchContextPrefetch.grounding.called,
+                  cacheHit: matchContextPrefetch.grounding.cacheHit,
+                  skippedReason: matchContextPrefetch.grounding.skippedReason,
+                },
               });
 
               const report = attachTeamProfilesToReport(
@@ -811,6 +839,7 @@ async function runBatchedDailyPipeline(
     batchProgress,
     batchWeightConfig,
     updatedQueue,
+    fixtureGroundingDiagnostics,
   };
 }
 
@@ -912,7 +941,7 @@ export async function runDailyScheduler(
   }
 
   const apiQuotaStart = getApiFootballQuotaSnapshot().dailyCount;
-  initializeGroundingRuntimeMetrics(getGoogleSearchProvider().isConfigured());
+  beginGroundingRuntimeMetricsBatch(getGoogleSearchProvider().isConfigured());
 
   const execution = startExecutionLog({
     jobName: "daily_analysis",
@@ -1049,12 +1078,14 @@ export async function runDailyScheduler(
     const executionStatus = queueCompleted ? "success" : "partial_success";
     const refreshedRecords = await listRecords();
     const pendingClassification = summarizePendingRecordClassifications(refreshedRecords);
-    const groundingMetrics = getGroundingRuntimeMetricsSnapshot();
-    const profileCacheMetrics = getProfileCacheMetricsSnapshot();
+    const observabilityDiagnostics = buildDailyAnalysisObservabilityDiagnostics({
+      weightConfig: pipeline.batchWeightConfig,
+      fixtureGroundingDiagnostics: pipeline.fixtureGroundingDiagnostics,
+    });
     const evidenceCoverage = buildEvidenceCoverageDiagnostics({
-      groundingConfigured: groundingMetrics.groundingConfigured,
-      groundingCalled: groundingMetrics.groundingCalled > 0,
-      groundingPersisted: groundingMetrics.groundingSucceeded > 0,
+      groundingConfigured: observabilityDiagnostics.groundingConfigured,
+      groundingCalled: observabilityDiagnostics.groundingCalled > 0,
+      groundingPersisted: observabilityDiagnostics.groundingSucceeded > 0,
     });
 
     const persistResult = await completeExecutionLog({
@@ -1112,21 +1143,10 @@ export async function runDailyScheduler(
         rejectedByConfidence,
         rejectedByGrade,
         eligibleRecommendationCount,
-        groundingConfigured: groundingMetrics.groundingConfigured,
-        groundingCalled: groundingMetrics.groundingCalled,
-        groundingSucceeded: groundingMetrics.groundingSucceeded,
-        groundingCacheHit: groundingMetrics.groundingCacheHit,
-        groundingFailureReason: groundingMetrics.groundingFailureReason,
-        groundingSearchCount: groundingMetrics.groundingSearchCount,
-        profileCacheHit: profileCacheMetrics.profileCacheHit,
-        profileCacheMiss: profileCacheMetrics.profileCacheMiss,
-        uniqueTeamsRequested: profileCacheMetrics.uniqueTeamsRequested,
-        duplicateTeamRequestsAvoided: profileCacheMetrics.duplicateTeamRequestsAvoided,
-        deferredProfileRetried: profileCacheMetrics.deferredProfileRetried,
-        deferredProfileCompleted: profileCacheMetrics.deferredProfileCompleted,
         pendingClassification: pendingClassification.byCategory,
         pendingOver24hCount: pendingClassification.pendingOver24h,
         evidenceCoverage,
+        ...observabilityDiagnosticsToExecutionContext(observabilityDiagnostics),
       }),
     });
 
@@ -1166,6 +1186,7 @@ export async function runDailyScheduler(
       summary,
       intakeWarnings,
       observabilityWarning,
+      diagnostics: observabilityDiagnostics,
       executionLogId: execution.id,
       skippedDueToLock: false,
       batchProgress: pipeline.batchProgress,
@@ -1177,6 +1198,13 @@ export async function runDailyScheduler(
       0,
       getApiFootballQuotaSnapshot().dailyCount - apiQuotaStart
     );
+    const failureBaseline = {
+      ...buildProductionBaselineWeightConfig(new Date(now())),
+      loadedAt: new Date(now()).toISOString(),
+    };
+    const failureDiagnostics = buildDailyAnalysisObservabilityDiagnostics({
+      weightConfig: buildWeightConfigSnapshotMetadata(failureBaseline),
+    });
     const persistResult = await completeExecutionLog({
       id: execution.id,
       success: false,
@@ -1186,6 +1214,7 @@ export async function runDailyScheduler(
         status: "failed",
         apiFootballRequestCount,
         executionDurationMs: now() - executionStartedAt,
+        ...observabilityDiagnosticsToExecutionContext(failureDiagnostics),
       }),
     });
     logAdminError({

@@ -1,6 +1,7 @@
 const DAILY_LIMIT = 100;
 const MINUTE_LIMIT = 10;
 const DEFAULT_RESULT_UPDATE_RESERVED_DAILY = 15;
+const DEFAULT_PROFILE_MINUTE_BUDGET = 8;
 
 export type ApiFootballQuotaPurpose = "general" | "result_update";
 
@@ -38,6 +39,37 @@ export function getResultUpdateReservedDailyQuota(): number {
     return DEFAULT_RESULT_UPDATE_RESERVED_DAILY;
   }
   return Math.min(Math.floor(parsed), DAILY_LIMIT - 1);
+}
+
+export function getProfileApiMinuteBudget(): number {
+  const raw = process.env.API_FOOTBALL_PROFILE_MINUTE_BUDGET?.trim();
+  const parsed = raw ? Number(raw) : DEFAULT_PROFILE_MINUTE_BUDGET;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_PROFILE_MINUTE_BUDGET;
+  }
+  return Math.min(Math.floor(parsed), MINUTE_LIMIT);
+}
+
+export function canMakeProfileApiFootballRequest(now = Date.now()): boolean {
+  if (!canMakeApiFootballRequestForPurpose("general", now)) {
+    return false;
+  }
+  refreshWindow(now);
+  return quotaState.minuteCount < getProfileApiMinuteBudget();
+}
+
+export function getProfileApiMinuteBlockReason(
+  now = Date.now()
+): "minute_limit" | "daily_limit" | null {
+  const dailyBlock = getApiFootballQuotaBlockReason(now, "general");
+  if (dailyBlock === "daily_limit") {
+    return "daily_limit";
+  }
+  refreshWindow(now);
+  if (quotaState.minuteCount >= getProfileApiMinuteBudget()) {
+    return "minute_limit";
+  }
+  return null;
 }
 
 export function getGeneralDailyQuotaLimit(): number {

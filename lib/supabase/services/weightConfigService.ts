@@ -1,9 +1,9 @@
 import {
   assertMarketBlendWeight,
   assertProviderWeightsSumToOne,
-  buildFallbackWeightConfig,
   buildRuntimeWeightConfigFromActive,
 } from "@/lib/recommendation/weightConfigRuntime";
+import { buildProductionBaselineWeightConfig } from "@/lib/recommendation/productionWeightConfig";
 import type {
   CreateWeightConfigDraftInput,
   RuntimeWeightConfig,
@@ -121,7 +121,7 @@ export async function getActiveWeightConfig(): Promise<RuntimeWeightConfig> {
   throwIfSupabaseError(result.error, result.status ?? null);
   const data = result.data as WeightConfigVersionRow | null;
   if (!data) {
-    return buildFallbackWeightConfig();
+    return buildProductionBaselineWeightConfig();
   }
 
   const activeVersion = weightConfigRowToDomain(data);

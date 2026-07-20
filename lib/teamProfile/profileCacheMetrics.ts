@@ -3,6 +3,7 @@ export interface ProfileCacheMetricsSnapshot {
   profileCacheMiss: number;
   uniqueTeamsRequested: number;
   duplicateTeamRequestsAvoided: number;
+  profileRequestsAvoidedByQuota: number;
   deferredProfileRetried: number;
   deferredProfileCompleted: number;
 }
@@ -12,6 +13,7 @@ const metrics: ProfileCacheMetricsSnapshot = {
   profileCacheMiss: 0,
   uniqueTeamsRequested: 0,
   duplicateTeamRequestsAvoided: 0,
+  profileRequestsAvoidedByQuota: 0,
   deferredProfileRetried: 0,
   deferredProfileCompleted: 0,
 };
@@ -24,6 +26,7 @@ export function resetProfileCacheMetricsForTests(): void {
   metrics.profileCacheMiss = 0;
   metrics.uniqueTeamsRequested = 0;
   metrics.duplicateTeamRequestsAvoided = 0;
+  metrics.profileRequestsAvoidedByQuota = 0;
   metrics.deferredProfileRetried = 0;
   metrics.deferredProfileCompleted = 0;
   requestedTeamsThisBatch.clear();
@@ -31,6 +34,13 @@ export function resetProfileCacheMetricsForTests(): void {
 }
 
 export function beginProfileCacheMetricsBatch(): void {
+  metrics.profileCacheHit = 0;
+  metrics.profileCacheMiss = 0;
+  metrics.uniqueTeamsRequested = 0;
+  metrics.duplicateTeamRequestsAvoided = 0;
+  metrics.profileRequestsAvoidedByQuota = 0;
+  metrics.deferredProfileRetried = 0;
+  metrics.deferredProfileCompleted = 0;
   requestedTeamsThisBatch.clear();
   batchDedupeKeys.clear();
 }
@@ -67,6 +77,10 @@ export function recordProfileCacheHit(): void {
 
 export function recordProfileCacheMiss(): void {
   metrics.profileCacheMiss += 1;
+}
+
+export function recordProfileRequestsAvoidedByQuota(count = 1): void {
+  metrics.profileRequestsAvoidedByQuota += count;
 }
 
 export function recordDeferredProfileRetried(count = 1): void {

@@ -24,7 +24,7 @@ export function buildProductionBaselineWeightConfig(now = new Date()): RuntimeWe
 
   return {
     ...fallback,
-    source: "fallback",
+    source: "production_baseline",
     activeVersion,
   };
 }
