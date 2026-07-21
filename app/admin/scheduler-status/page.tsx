@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { buildSchedulerStatusSnapshot } from "@/lib/admin/schedulerStatusService";
+import { loadRoiPerformanceResponse } from "@/lib/admin/roiPerformanceLoader";
+import { parseRoiPerformanceSearchParams } from "@/lib/admin/roiPerformanceService";
 import { SchedulerStatusDashboard } from "@/components/admin/SchedulerStatusDashboard";
+import { RoiPerformanceSection } from "@/components/admin/RoiPerformanceSection";
 
 export const dynamic = "force-dynamic";
 
-export default async function SchedulerStatusPage() {
+export default async function SchedulerStatusPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
   const snapshot = await buildSchedulerStatusSnapshot();
+  const roiFilters = parseRoiPerformanceSearchParams(params);
+  const roi = await loadRoiPerformanceResponse(roiFilters);
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-8 text-zinc-900 dark:bg-black dark:text-zinc-100">
@@ -36,6 +46,7 @@ export default async function SchedulerStatusPage() {
         </header>
 
         <SchedulerStatusDashboard snapshot={snapshot} />
+        <RoiPerformanceSection data={roi} />
       </div>
     </main>
   );

@@ -22,6 +22,26 @@ export async function listMatchRecordsFromSupabase() {
   };
 }
 
+export async function listMatchRecordsFromSupabaseByDateRange(input: {
+  fromDate: string;
+  toDate: string;
+}) {
+  const supabase = getSupabaseAdmin();
+  const result = await supabase
+    .from("match_records")
+    .select("*")
+    .gte("match_date", input.fromDate)
+    .lte("match_date", input.toDate)
+    .order("match_date", { ascending: false });
+
+  const data = assertSupabaseData(result);
+  const records = (data ?? []).map(matchRecordRowToDomain);
+  return {
+    records,
+    stats: buildMatchHistoryStats(records),
+  };
+}
+
 export async function getMatchRecordFromSupabase(id: string) {
   const supabase = getSupabaseAdmin();
   const result = await supabase
