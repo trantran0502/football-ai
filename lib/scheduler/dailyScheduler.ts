@@ -23,9 +23,7 @@ import {
   loadProductionLeagueStrengthMatchRecords,
   prefetchProductionLeagueStrength,
 } from "@/lib/providers/leagueStrength/productionLeagueStrengthProvider";
-import { prefetchProductionCombinedGrounding } from "@/lib/providers/googleSearch/combinedGroundingProvider";
-import { beginGroundingRequestBudgetBatch } from "@/lib/providers/googleSearch/groundingRequestBudget";
-import { shouldSkipGroundingDeferredRetry } from "@/lib/providers/googleSearch/groundingDeferredPolicy";
+import { prefetchProductionProvidersFromMatchRecords } from "@/lib/providers/googleSearch/combinedGroundingProvider";
 import {
   fetchFixturesByDate,
   buildFixtureFilterStats,
@@ -99,7 +97,6 @@ import {
 } from "@/lib/scheduler/deferredAnalysisPolicy";
 import { hasCompleteAnalysisRecord } from "@/lib/supabase/services/matchRecordCompletenessGuard";
 import { summarizePendingRecordClassifications } from "@/lib/supabase/services/pendingRecordClassification";
-import { getGoogleSearchProvider } from "@/lib/providers/googleSearch/googleSearchProvider";
 import { beginPlanCapabilityMetricsBatch } from "@/lib/teamProfile/planCapabilityCache";
 import {
   beginProfileCacheMetricsBatch,
@@ -491,24 +488,6 @@ async function runBatchedDailyPipeline(
       }
 
       const isDeferredFixtureRetry = updatedQueue.deferredFixtureIds.includes(fixture.fixtureId);
-      if (isDeferredFixtureRetry) {
-        if (
-          shouldSkipGroundingDeferredRetry({
-            kickoffTime: fixture.kickoffTime,
-            now: new Date(dependencies.now()),
-          })
-        ) {
-          items.push({
-            fixture,
-            status: "incomplete_rejected",
-            error: "grounding_deferred_kickoff_elapsed",
-          });
-          updatedQueue.deferredFixtureIds = updatedQueue.deferredFixtureIds.filter(
-            (fixtureId) => fixtureId !== fixture.fixtureId
-          );
-          continue;
-        }
-      }
 
       const matchRecordsForH2H = await loadProductionH2HMatchRecords();
       await prefetchProductionH2H({
@@ -524,7 +503,7 @@ async function runBatchedDailyPipeline(
         matchDate: fixture.matchDate,
         matchRecords: matchRecordsForH2H,
       });
-      const combinedGroundingPrefetch = await prefetchProductionCombinedGrounding({
+      const providerPrefetch = await prefetchProductionProvidersFromMatchRecords({
         fixtureId: fixture.fixtureId,
         homeTeam: fixture.homeTeam,
         awayTeam: fixture.awayTeam,
@@ -532,13 +511,8 @@ async function runBatchedDailyPipeline(
         kickoffTime: fixture.kickoffTime,
         matchRecords: matchRecordsForH2H,
       });
-      if (combinedGroundingPrefetch.groundingDeferred) {
-        if (!updatedQueue.deferredFixtureIds.includes(fixture.fixtureId)) {
-          updatedQueue.deferredFixtureIds.push(fixture.fixtureId);
-        }
-      }
       fixtureGroundingDiagnostics.push(
-        buildFixtureGroundingDiagnostic(fixture.fixtureId, combinedGroundingPrefetch)
+        buildFixtureGroundingDiagnostic(fixture.fixtureId, providerPrefetch)
       );
 
       const pipelineResult = await withRetry(
@@ -959,8 +933,7 @@ export async function runDailyScheduler(
   }
 
   const apiQuotaStart = getApiFootballQuotaSnapshot().dailyCount;
-  beginGroundingRuntimeMetricsBatch(getGoogleSearchProvider().isConfigured());
-  beginGroundingRequestBudgetBatch();
+  beginGroundingRuntimeMetricsBatch(false);
 
   const execution = startExecutionLog({
     jobName: "daily_analysis",

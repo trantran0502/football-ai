@@ -21,7 +21,7 @@ import {
   type ProductionSquadAvailabilityResolution,
 } from "@/lib/providers/squadAvailability/squadAvailabilityTypes";
 import type { ProviderDataByKey } from "@/lib/providers/registry/types";
-import { isProductionRecommendationMode } from "@/lib/providers/teamProfile/providerMode";
+import { isProductionRecommendationMode, isGoogleGroundingEnabled } from "@/lib/providers/teamProfile/providerMode";
 
 export function usesProductionSquadAvailabilityOnlyPath(): boolean {
   return isProductionRecommendationMode();
@@ -84,7 +84,7 @@ export function fetchProductionSquadAvailabilitySourceData(
   }
 
   const context = getActiveProductionSquadAvailabilityContext();
-  if (!expectedSource || expectedSource === "googleSearch") {
+  if (isGoogleGroundingEnabled() && (!expectedSource || expectedSource === "googleSearch")) {
     const fromGoogle = resolveSquadAvailabilityFromGoogleSearch({
       request,
       referenceDate: request.matchDate,
@@ -167,14 +167,16 @@ export function getProductionSquadAvailabilityResolution(
   }
 
   const context = getActiveProductionSquadAvailabilityContext();
-  const fromGoogle = resolveSquadAvailabilityFromGoogleSearch({
-    request,
-    referenceDate: request.matchDate,
-    fixtureId: context?.fixtureId,
-    kickoffTime: context?.kickoffTime,
-  });
-  if (fromGoogle) {
-    return fromGoogle;
+  if (isGoogleGroundingEnabled()) {
+    const fromGoogle = resolveSquadAvailabilityFromGoogleSearch({
+      request,
+      referenceDate: request.matchDate,
+      fixtureId: context?.fixtureId,
+      kickoffTime: context?.kickoffTime,
+    });
+    if (fromGoogle) {
+      return fromGoogle;
+    }
   }
 
   return resolveFromContextMatchRecords(request);

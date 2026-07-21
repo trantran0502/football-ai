@@ -24,6 +24,11 @@ export function isProductionRecommendationMode(): boolean {
   return process.env.NODE_ENV === "production";
 }
 
+/** Production never invokes live Google Gemini Grounding; dev/test may still use it. */
+export function isGoogleGroundingEnabled(): boolean {
+  return !isProductionRecommendationMode();
+}
+
 export function allowMockProviderFallback(): boolean {
   if (process.env.ALLOW_MOCK_PROVIDERS === "true") {
     return true;

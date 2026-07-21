@@ -329,3 +329,204 @@ export function buildSkippedCombinedGroundingPrefetch(input: {
 export function shouldDeferGroundingBeforeRequest(): boolean {
   return isGroundingRateLimitCooldownActive();
 }
+
+function buildGoogleGroundingDisabledDiagnostic(): GroundingChannelDiagnostic {
+  return {
+    called: false,
+    cacheHit: false,
+    skippedReason: "google_grounding_disabled_in_production",
+    succeeded: false,
+    failureReason: null,
+    httpStatus: null,
+    model: null,
+    candidateCount: 0,
+    parseFailureReason: null,
+    groundingFallbackUsed: false,
+    hasResponseText: false,
+    hasGroundingMetadata: false,
+  };
+}
+
+function resolveProductionProvidersFromMatchRecords(input: {
+  context: ProductionCombinedGroundingContext;
+  combinedGroundingRequestId: string;
+  squadRequest: SquadAvailabilityProviderRequest;
+  matchContextRequest: MatchContextProviderRequest;
+  productionSquadRequest: {
+    homeTeam: string;
+    awayTeam: string;
+    matchDate?: string;
+    fixtureId?: number;
+    kickoffTime?: string;
+  };
+  productionMatchRequest: {
+    homeTeam: string;
+    awayTeam: string;
+    matchDate?: string;
+    fixtureId?: number;
+    kickoffTime?: string;
+  };
+  existingSquad: ProductionSquadAvailabilityResolution | null;
+  existingMatch: ProductionMatchContextResolution | null;
+}): {
+  squadResolution: ProductionSquadAvailabilityResolution | null;
+  matchContextResolution: ProductionMatchContextResolution | null;
+} {
+  const records = input.context.matchRecords ?? [];
+
+  let squadResolution = input.existingSquad;
+  if (!squadResolution) {
+    const fromRecords = resolveSquadAvailabilityFromMatchRecords({
+      request: input.squadRequest,
+      records,
+      referenceDate: input.context.matchDate,
+    });
+    if (fromRecords) {
+      rememberProductionSquadAvailabilityResolution(input.productionSquadRequest, fromRecords);
+      squadResolution = fromRecords;
+    }
+  }
+
+  let matchContextResolution = input.existingMatch;
+  if (!matchContextResolution) {
+    const fromRecords = resolveMatchContextFromMatchRecords({
+      request: input.matchContextRequest,
+      records,
+      referenceDate: input.context.matchDate,
+    });
+    if (fromRecords) {
+      rememberProductionMatchContextResolution(input.productionMatchRequest, fromRecords);
+      matchContextResolution = fromRecords;
+    }
+  }
+
+  return { squadResolution, matchContextResolution };
+}
+
+/**
+ * Production path: squad + match context from match_records only (no Gemini HTTP).
+ */
+export async function prefetchProductionProvidersFromMatchRecords(
+  context: ProductionCombinedGroundingContext
+): Promise<ProductionCombinedGroundingPrefetchResult> {
+  const cachedPrefetch = completedCombinedPrefetches.get(context.fixtureId);
+  if (cachedPrefetch) {
+    return cachedPrefetch;
+  }
+
+  const combinedGroundingRequestId = buildCombinedGroundingRequestId(context);
+  const squadRequest: SquadAvailabilityProviderRequest = {
+    homeTeam: context.homeTeam,
+    awayTeam: context.awayTeam,
+    matchDate: context.matchDate,
+  };
+  const matchContextRequest: MatchContextProviderRequest = {
+    homeTeam: context.homeTeam,
+    awayTeam: context.awayTeam,
+    matchDate: context.matchDate,
+  };
+  const productionSquadRequest = {
+    homeTeam: context.homeTeam,
+    awayTeam: context.awayTeam,
+    matchDate: context.matchDate,
+    fixtureId: context.fixtureId,
+    kickoffTime: context.kickoffTime,
+  };
+  const productionMatchRequest = {
+    homeTeam: context.homeTeam,
+    awayTeam: context.awayTeam,
+    matchDate: context.matchDate,
+    fixtureId: context.fixtureId,
+    kickoffTime: context.kickoffTime,
+  };
+
+  const existingSquad = readProductionSquadAvailabilityResolution(productionSquadRequest);
+  const existingMatch = readProductionMatchContextResolution(productionMatchRequest);
+  if (existingSquad && existingMatch) {
+    const cachedDiagnostic: GroundingChannelDiagnostic = {
+      called: false,
+      cacheHit: true,
+      skippedReason: "production_resolution_cache",
+      succeeded: true,
+      failureReason: null,
+      httpStatus: null,
+      model: null,
+      candidateCount: 0,
+      parseFailureReason: null,
+      groundingFallbackUsed: false,
+      hasResponseText: false,
+      hasGroundingMetadata: false,
+    };
+    const cachedResult: ProductionCombinedGroundingPrefetchResult = {
+      squadResolution: {
+        ...existingSquad,
+        diagnostics: { ...existingSquad.diagnostics, cacheHit: true },
+      },
+      matchContextResolution: {
+        ...existingMatch,
+        diagnostics: { ...existingMatch.diagnostics, cacheHit: true },
+      },
+      combinedGroundingRequestId,
+      combinedGroundingLiveRequest: false,
+      combinedGrounding: cachedDiagnostic,
+      squadGrounding: buildDerivedChannelDiagnostic(cachedDiagnostic, combinedGroundingRequestId),
+      matchContextGrounding: buildDerivedChannelDiagnostic(
+        cachedDiagnostic,
+        combinedGroundingRequestId
+      ),
+      groundingDeferred: false,
+      groundingDeferredReason: null,
+    };
+    completedCombinedPrefetches.set(context.fixtureId, cachedResult);
+    return cachedResult;
+  }
+
+  setActiveProductionSquadAvailabilityContext({
+    ...context,
+    fixtureId: context.fixtureId,
+    kickoffTime: context.kickoffTime,
+  });
+  setActiveProductionMatchContextContext({
+    ...context,
+    fixtureId: context.fixtureId,
+    kickoffTime: context.kickoffTime,
+  });
+
+  try {
+    const disabledDiagnostic = buildGoogleGroundingDisabledDiagnostic();
+    const { squadResolution, matchContextResolution } =
+      resolveProductionProvidersFromMatchRecords({
+        context,
+        combinedGroundingRequestId,
+        squadRequest,
+        matchContextRequest,
+        productionSquadRequest,
+        productionMatchRequest,
+        existingSquad,
+        existingMatch,
+      });
+
+    const result: ProductionCombinedGroundingPrefetchResult = {
+      squadResolution,
+      matchContextResolution,
+      combinedGroundingRequestId,
+      combinedGroundingLiveRequest: false,
+      combinedGrounding: disabledDiagnostic,
+      squadGrounding: buildDerivedChannelDiagnostic(
+        disabledDiagnostic,
+        combinedGroundingRequestId
+      ),
+      matchContextGrounding: buildDerivedChannelDiagnostic(
+        disabledDiagnostic,
+        combinedGroundingRequestId
+      ),
+      groundingDeferred: false,
+      groundingDeferredReason: null,
+    };
+    completedCombinedPrefetches.set(context.fixtureId, result);
+    return result;
+  } finally {
+    clearActiveProductionSquadAvailabilityContext();
+    clearActiveProductionMatchContextContext();
+  }
+}

@@ -204,16 +204,6 @@ export function assessRecommendationDataCompleteness(
     reasons.push("team_profile_deferred");
   }
 
-  if (
-    groundingUnavailable &&
-    isGroundingRequiredForRecommendation() &&
-    !trustedExternalSourceAvailable
-  ) {
-    reasons.push("grounding_supplemental_unavailable");
-  } else if (groundingUnavailable) {
-    quotaWarnings.push("Google grounding supplemental data unavailable");
-  }
-
   const eligibleForRecommendation = reasons.length === 0;
 
   return {
@@ -380,9 +370,6 @@ export function mapCompletenessToIncompleteReason(
   }
   if (assessment.profileUnavailableCount > 0) {
     return "profileUnavailable";
-  }
-  if (assessment.groundingUnavailable && !assessment.trustedExternalSourceAvailable) {
-    return "groundingUnavailable";
   }
   return "dataCompletenessInsufficient";
 }

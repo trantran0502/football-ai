@@ -4,6 +4,7 @@ import {
   buildCombinedGroundingCacheKey,
   getCachedGoogleRecordAsync,
 } from "@/lib/providers/googleSearch/googleSearchCache";
+import { isGoogleGroundingEnabled } from "@/lib/providers/teamProfile/providerMode";
 import type { ReplayRawSources } from "@/lib/replay/replayTypes";
 
 function serializeTeamProfilePayload(
@@ -112,7 +113,9 @@ export async function captureReplayRawSources(input: {
     matchDate: input.matchDate,
     kickoffTime: input.kickoffTime,
   });
-  const googleRecord = await getCachedGoogleRecordAsync(cacheKey);
+  const googleRecord = isGoogleGroundingEnabled()
+    ? await getCachedGoogleRecordAsync(cacheKey)
+    : null;
   const apiFootballRaw = buildApiFootballNormalizedPayload(input.report.teamProfiles);
   const googleGroundingNormalized = buildGoogleGroundingNormalized(googleRecord);
 

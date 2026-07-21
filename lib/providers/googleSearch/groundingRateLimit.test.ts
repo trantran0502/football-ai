@@ -446,8 +446,8 @@ function testGroundingFailureWithCompleteProfilesAllowsBasicAnalysis(): void {
   assert(assessment.groundingUnavailable === true, "grounding should be marked unavailable");
   assert(assessment.eligibleForRecommendation === true, "essential profiles should allow recommendation");
   assert(
-    assessment.quotaWarnings.some((warning) => warning.includes("Google grounding supplemental")),
-    "grounding unavailable should add warning not block"
+    !assessment.quotaWarnings.some((warning) => warning.includes("Google grounding supplemental")),
+    "grounding unavailable must not add quota warning"
   );
 }
 

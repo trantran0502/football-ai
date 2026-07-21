@@ -7,7 +7,7 @@ import { fetchApiFootballSourceData } from "@/lib/providers/registry/sources/api
 import { fetchApiFootballSourceDataAsync } from "@/lib/providers/apiFootball/apiFootballService";
 import { fetchGoogleSearchSourceData } from "@/lib/providers/registry/sources/googleSearchSource";
 import { fetchMockSourceData } from "@/lib/providers/registry/sources/mockSourceHandlers";
-import { allowMockProviderFallback } from "@/lib/providers/teamProfile/providerMode";
+import { allowMockProviderFallback, isGoogleGroundingEnabled } from "@/lib/providers/teamProfile/providerMode";
 import { fetchTeamProfileSourceData } from "@/lib/providers/teamProfile/teamProfileProviderSource";
 import {
   fetchProductionH2HSourceData,
@@ -149,6 +149,9 @@ export class FeatureProviderRegistry {
     }
 
     for (const attempt of chain) {
+      if (attempt.source === "googleSearch" && !isGoogleGroundingEnabled()) {
+        continue;
+      }
       const data = attempt.fetch();
       if (data === null) {
         continue;
@@ -312,18 +315,20 @@ export class FeatureProviderRegistry {
   private resolveProductionSquadAvailability(
     request: ProviderRequestByKey["squadAvailability"]
   ): ProviderResponse<ProviderDataByKey["squadAvailability"]> {
-    const fromGoogle = fetchProductionSquadAvailabilitySourceData(request, "googleSearch");
-    if (fromGoogle !== null) {
-      const response = this.buildResponse(fromGoogle, "googleSearch", []);
-      const resolution = getProductionSquadAvailabilityResolution(request);
-      if (resolution) {
-        response.confidence = resolution.confidence;
-        response.warnings = [
-          ...response.warnings,
-          ...resolution.diagnostics.warnings,
-        ];
+    if (isGoogleGroundingEnabled()) {
+      const fromGoogle = fetchProductionSquadAvailabilitySourceData(request, "googleSearch");
+      if (fromGoogle !== null) {
+        const response = this.buildResponse(fromGoogle, "googleSearch", []);
+        const resolution = getProductionSquadAvailabilityResolution(request);
+        if (resolution) {
+          response.confidence = resolution.confidence;
+          response.warnings = [
+            ...response.warnings,
+            ...resolution.diagnostics.warnings,
+          ];
+        }
+        return response;
       }
-      return response;
     }
 
     const fromRecords = fetchProductionSquadAvailabilitySourceData(request, "matchRecords");
@@ -349,18 +354,20 @@ export class FeatureProviderRegistry {
   private resolveProductionMatchContext(
     request: ProviderRequestByKey["matchContext"]
   ): ProviderResponse<ProviderDataByKey["matchContext"]> {
-    const fromGoogle = fetchProductionMatchContextSourceData(request, "googleSearch");
-    if (fromGoogle !== null) {
-      const response = this.buildResponse(fromGoogle, "googleSearch", []);
-      const resolution = getProductionMatchContextResolution(request);
-      if (resolution) {
-        response.confidence = resolution.confidence;
-        response.warnings = [
-          ...response.warnings,
-          ...resolution.diagnostics.warnings,
-        ];
+    if (isGoogleGroundingEnabled()) {
+      const fromGoogle = fetchProductionMatchContextSourceData(request, "googleSearch");
+      if (fromGoogle !== null) {
+        const response = this.buildResponse(fromGoogle, "googleSearch", []);
+        const resolution = getProductionMatchContextResolution(request);
+        if (resolution) {
+          response.confidence = resolution.confidence;
+          response.warnings = [
+            ...response.warnings,
+            ...resolution.diagnostics.warnings,
+          ];
+        }
+        return response;
       }
-      return response;
     }
 
     const fromRecords = fetchProductionMatchContextSourceData(request, "matchRecords");

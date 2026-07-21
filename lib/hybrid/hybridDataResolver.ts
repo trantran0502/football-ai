@@ -28,6 +28,7 @@ import {
 } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { fetchGoogleHybridPayload } from "@/lib/providers/googleSearch/googleSearchService";
 import { SupabaseProviderCache } from "@/lib/providers/registry/cache/supabaseProviderCache";
+import { isGoogleGroundingEnabled } from "@/lib/providers/teamProfile/providerMode";
 
 const supabaseHybridCache = new SupabaseProviderCache();
 
@@ -338,10 +339,10 @@ export async function resolveHybridData(
   }
 
   const context = await dedupeHybridResolve(cacheKey, async () => {
-    const [apiPayload, googlePayload] = await Promise.all([
-      fetchApiPayload(request),
-      fetchGoogleHybridPayload(request),
-    ]);
+    const apiPayload = await fetchApiPayload(request);
+    const googlePayload = isGoogleGroundingEnabled()
+      ? await fetchGoogleHybridPayload(request)
+      : null;
 
     const resolved = resolveHybridTeamContext(request, {
       apiPayload,
@@ -356,7 +357,7 @@ export async function resolveHybridData(
     context,
     cacheHit: false,
     apiUsed: true,
-    googleUsed: true,
+    googleUsed: isGoogleGroundingEnabled(),
   };
 }
 

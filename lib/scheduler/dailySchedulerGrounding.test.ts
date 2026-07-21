@@ -8,13 +8,17 @@ function assert(condition: boolean, message: string): void {
   }
 }
 
-function testDailySchedulerUsesOnlyCombinedGroundingPrefetch(): void {
+function testDailySchedulerUsesMatchRecordsProviderPrefetch(): void {
   const currentDir = dirname(fileURLToPath(import.meta.url));
   const source = readFileSync(join(currentDir, "dailyScheduler.ts"), "utf8");
 
   assert(
-    source.includes("prefetchProductionCombinedGrounding"),
-    "dailyScheduler must call prefetchProductionCombinedGrounding"
+    source.includes("prefetchProductionProvidersFromMatchRecords"),
+    "dailyScheduler must call prefetchProductionProvidersFromMatchRecords"
+  );
+  assert(
+    !source.includes("prefetchProductionCombinedGrounding"),
+    "dailyScheduler must not call prefetchProductionCombinedGrounding"
   );
   assert(
     !source.includes("prefetchProductionSquadAvailability"),
@@ -25,8 +29,16 @@ function testDailySchedulerUsesOnlyCombinedGroundingPrefetch(): void {
     "dailyScheduler must not call legacy prefetchProductionMatchContext"
   );
   assert(
+    !source.includes("shouldSkipGroundingDeferredRetry"),
+    "dailyScheduler must not defer or retry for grounding"
+  );
+  assert(
+    !source.includes("beginGroundingRequestBudgetBatch"),
+    "dailyScheduler must not initialize grounding request budget"
+  );
+  assert(
     source.includes("buildFixtureGroundingDiagnostic"),
-    "dailyScheduler must build fixture grounding diagnostics from combined prefetch"
+    "dailyScheduler must build fixture grounding diagnostics from provider prefetch"
   );
 }
 
@@ -60,7 +72,7 @@ function testLegacyPrefetchProvidersDoNotFetch(): void {
 }
 
 function runTests(): void {
-  testDailySchedulerUsesOnlyCombinedGroundingPrefetch();
+  testDailySchedulerUsesMatchRecordsProviderPrefetch();
   testLegacyPrefetchProvidersDoNotFetch();
   console.log("dailySchedulerGrounding.test.ts passed");
 }

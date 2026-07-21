@@ -18,7 +18,7 @@ import type {
   ProductionMatchContextResolution,
 } from "@/lib/providers/matchContext/matchContextTypes";
 import type { ProviderDataByKey } from "@/lib/providers/registry/types";
-import { isProductionRecommendationMode } from "@/lib/providers/teamProfile/providerMode";
+import { isProductionRecommendationMode, isGoogleGroundingEnabled } from "@/lib/providers/teamProfile/providerMode";
 
 export function usesProductionMatchContextOnlyPath(): boolean {
   return isProductionRecommendationMode();
@@ -81,7 +81,7 @@ export function fetchProductionMatchContextSourceData(
   }
 
   const context = getActiveProductionMatchContextContext();
-  if (!expectedSource || expectedSource === "googleSearch") {
+  if (isGoogleGroundingEnabled() && (!expectedSource || expectedSource === "googleSearch")) {
     const fromGoogle = resolveMatchContextFromGoogleSearch({
       request,
       referenceDate: request.matchDate,
@@ -164,14 +164,16 @@ export function getProductionMatchContextResolution(
   }
 
   const context = getActiveProductionMatchContextContext();
-  const fromGoogle = resolveMatchContextFromGoogleSearch({
-    request,
-    referenceDate: request.matchDate,
-    fixtureId: context?.fixtureId,
-    kickoffTime: context?.kickoffTime,
-  });
-  if (fromGoogle) {
-    return fromGoogle;
+  if (isGoogleGroundingEnabled()) {
+    const fromGoogle = resolveMatchContextFromGoogleSearch({
+      request,
+      referenceDate: request.matchDate,
+      fixtureId: context?.fixtureId,
+      kickoffTime: context?.kickoffTime,
+    });
+    if (fromGoogle) {
+      return fromGoogle;
+    }
   }
 
   return resolveFromContextMatchRecords(request);

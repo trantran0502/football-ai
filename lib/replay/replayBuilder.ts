@@ -10,6 +10,7 @@ import {
   getCachedGoogleRecord,
 } from "@/lib/providers/googleSearch/googleSearchCache";
 import { TEAM_CONTEXT_QUERY } from "@/lib/providers/googleSearch/googleSearchService";
+import { isGoogleGroundingEnabled } from "@/lib/providers/teamProfile/providerMode";
 import {
   annotateFeatureProviderSources,
   auditProviderResolution,
@@ -88,7 +89,7 @@ function captureRawSources(input: {
     matchDate: input.matchDate,
     query: TEAM_CONTEXT_QUERY,
   });
-  const googleRecord = getCachedGoogleRecord(cacheKey);
+  const googleRecord = isGoogleGroundingEnabled() ? getCachedGoogleRecord(cacheKey) : null;
 
   return {
     apiFootballRaw: input.teamProfiles
