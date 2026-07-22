@@ -33,6 +33,7 @@ import {
   isFriendlyLeague,
   isTeamProfileStale,
   listMemoryTeamProfilesForTests,
+  markProfileRefreshFailure,
   normalizeApiFootballFixtures,
   refreshTeamProfile,
   resetTeamProfileFixtureFetchState,
@@ -351,6 +352,65 @@ async function testUpsertAndStale(): Promise<void> {
   assert(listMemoryTeamProfilesForTests().length === 1, "upsert should not duplicate profile");
   assert(updated.persisted, "upsert update should succeed in memory store");
   assert(isTeamProfileStale(profile), "profile older than TTL should be stale");
+}
+
+async function testSkipOverwriteExistingCompleteWithIncomplete(): Promise<void> {
+  enableTeamProfileMemoryStoreForTests();
+  resetTeamProfileMemoryStoreForTests();
+
+  const complete = calculateTeamProfile({
+    identity: IDENTITY,
+    matches: buildRecent10(),
+    source: "api-football",
+  });
+  assert(complete.sampleSize > 0, "fixture complete profile should have sample>0");
+
+  const savedComplete = await upsertTeamProfile(complete);
+  assert(savedComplete.persisted, "complete profile should persist");
+  assert(savedComplete.profile.sampleSize > 0, "stored complete sample should be >0");
+
+  const incompleteAttempt = await upsertTeamProfile({
+    ...complete,
+    sampleSize: 0,
+    source: "incomplete",
+    dataCompleteness: 0,
+    formScore: null,
+    recent10Wins: null,
+  });
+
+  assert(incompleteAttempt.skippedOverwrite === true, "incomplete must skip overwrite");
+  assert(incompleteAttempt.persisted, "skip should still report persisted kept row");
+  assert(
+    incompleteAttempt.profile.sampleSize === complete.sampleSize,
+    "existing complete sample must be preserved"
+  );
+  assert(
+    incompleteAttempt.profile.source === "api-football",
+    "existing complete source must be preserved"
+  );
+
+  const listed = listMemoryTeamProfilesForTests();
+  assert(listed.length === 1, "still one profile row");
+  assert(listed[0].sampleSize === complete.sampleSize, "memory store sample unchanged");
+  assert(listed[0].source === "api-football", "memory store source unchanged");
+
+  const refreshFailed = await markProfileRefreshFailure(IDENTITY, "quota interrupted");
+  assert(refreshFailed.skippedOverwrite === true, "refresh_failed must not wipe complete");
+  assert(refreshFailed.profile.source === "api-football", "complete source kept after failure mark");
+  assert(refreshFailed.profile.sampleSize === complete.sampleSize, "complete sample kept after failure mark");
+
+  // No existing row: incomplete insert still allowed
+  resetTeamProfileMemoryStoreForTests();
+  const firstIncomplete = await upsertTeamProfile({
+    ...complete,
+    sampleSize: 0,
+    source: "incomplete",
+    dataCompleteness: 0,
+  });
+  assert(firstIncomplete.persisted, "first incomplete insert allowed");
+  assert(firstIncomplete.skippedOverwrite !== true, "no skip when no existing");
+  assert(firstIncomplete.profile.source === "incomplete", "incomplete may be created when absent");
+  assert(firstIncomplete.profile.sampleSize === 0, "incomplete sample 0 stored when absent");
 }
 
 async function testSameDayDedupe(): Promise<void> {
@@ -1775,6 +1835,7 @@ async function runTests(): Promise<void> {
     testInsufficientSampleAndMissingXg();
     testRateClampAndFormMomentum();
     await testUpsertAndStale();
+    await testSkipOverwriteExistingCompleteWithIncomplete();
     await testSameDayDedupe();
     await testQuotaFallback();
     await testQuotaSkipDiagnostics();

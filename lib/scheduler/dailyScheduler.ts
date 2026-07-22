@@ -95,7 +95,10 @@ import {
   registerDeferredFixtureAttempt,
   resolvePrimaryDeferredReason,
 } from "@/lib/scheduler/deferredAnalysisPolicy";
-import { hasCompleteAnalysisRecord } from "@/lib/supabase/services/matchRecordCompletenessGuard";
+import {
+  hasCompleteAnalysisRecord,
+  isAnalysisSnapshotPresent,
+} from "@/lib/supabase/services/matchRecordCompletenessGuard";
 import { summarizePendingRecordClassifications } from "@/lib/supabase/services/pendingRecordClassification";
 import { beginPlanCapabilityMetricsBatch } from "@/lib/teamProfile/planCapabilityCache";
 import {
@@ -208,6 +211,17 @@ function buildProductionFixturesForQueue(
   );
 }
 
+/**
+ * Cap deferred retries so they cannot fill the whole batch and stall the cursor.
+ * batch=3 → at most 1 deferred + 2 new; batch=1 → new only.
+ */
+export function maxDeferredRetriesForBatch(maxPerRun: number): number {
+  if (maxPerRun <= 1) {
+    return 0;
+  }
+  return 1;
+}
+
 export function selectFixtureBatch(
   fixtures: ProductionFixture[],
   queue: DailyAnalysisQueueState,
@@ -216,6 +230,8 @@ export function selectFixtureBatch(
   batch: ProductionFixture[];
   cursorBefore: number;
   cursorAfter: number;
+  newFixturesSelected: number;
+  retryFixturesSelected: number;
 } {
   const byId = new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture]));
   const batch: ProductionFixture[] = [];
@@ -223,45 +239,82 @@ export function selectFixtureBatch(
   let cursor = queue.cursor;
   const cursorBefore = cursor;
   const terminalDeferred = new Set(queue.terminalDeferredFixtureIds ?? []);
+  const deferredSet = new Set(queue.deferredFixtureIds);
+  const completed = new Set(queue.completedFixtureIds);
+  const failed = new Set(queue.failedFixtureIds);
+  const maxDeferredSlots = maxDeferredRetriesForBatch(maxPerRun);
+  const maxNewTarget = Math.max(0, maxPerRun - maxDeferredSlots);
+  let newFixturesSelected = 0;
+  let retryFixturesSelected = 0;
 
+  const canTake = (fixtureId: number): boolean =>
+    !picked.has(fixtureId) &&
+    !terminalDeferred.has(fixtureId) &&
+    !completed.has(fixtureId) &&
+    !failed.has(fixtureId);
+
+  // Phase 1: prefer NEW fixtures and always advance cursor past scanned ids
+  // (including deferred positions) so retries cannot freeze the cursor.
+  while (newFixturesSelected < maxNewTarget && cursor < queue.fixtureIds.length) {
+    const fixtureId = queue.fixtureIds[cursor];
+    cursor += 1;
+
+    if (!canTake(fixtureId)) {
+      continue;
+    }
+    // Leave deferred ids for the limited retry phase; still advanced cursor above.
+    if (deferredSet.has(fixtureId)) {
+      continue;
+    }
+
+    const fixture = byId.get(fixtureId);
+    if (fixture) {
+      batch.push(fixture);
+      picked.add(fixtureId);
+      newFixturesSelected += 1;
+    }
+  }
+
+  // Phase 2: at most one deferred retry (does not move cursor)
   for (const fixtureId of queue.deferredFixtureIds) {
-    if (batch.length >= maxPerRun) {
+    if (retryFixturesSelected >= maxDeferredSlots || batch.length >= maxPerRun) {
       break;
     }
-    if (
-      terminalDeferred.has(fixtureId) ||
-      queue.completedFixtureIds.includes(fixtureId) ||
-      queue.failedFixtureIds.includes(fixtureId)
-    ) {
+    if (!canTake(fixtureId)) {
       continue;
     }
     const fixture = byId.get(fixtureId);
     if (fixture) {
       batch.push(fixture);
       picked.add(fixtureId);
+      retryFixturesSelected += 1;
     }
   }
 
+  // Phase 3: if deferred slots unused, fill remaining capacity with more NEW
   while (batch.length < maxPerRun && cursor < queue.fixtureIds.length) {
     const fixtureId = queue.fixtureIds[cursor];
     cursor += 1;
 
-    if (
-      picked.has(fixtureId) ||
-      terminalDeferred.has(fixtureId) ||
-      queue.completedFixtureIds.includes(fixtureId) ||
-      queue.failedFixtureIds.includes(fixtureId)
-    ) {
+    if (!canTake(fixtureId) || deferredSet.has(fixtureId)) {
       continue;
     }
 
     const fixture = byId.get(fixtureId);
     if (fixture) {
       batch.push(fixture);
+      picked.add(fixtureId);
+      newFixturesSelected += 1;
     }
   }
 
-  return { batch, cursorBefore, cursorAfter: cursor };
+  return {
+    batch,
+    cursorBefore,
+    cursorAfter: cursor,
+    newFixturesSelected,
+    retryFixturesSelected,
+  };
 }
 
 function createEmptyFixtureIntakeResult(): FixtureIntakeResult {
@@ -445,11 +498,13 @@ async function runBatchedDailyPipeline(
   beginProfileCacheMetricsBatch();
   beginPlanCapabilityMetricsBatch();
 
-  const { batch, cursorBefore, cursorAfter } = selectFixtureBatch(
-    fixtures,
-    queue,
-    dependencies.maxFixturesPerRun
-  );
+  const {
+    batch,
+    cursorBefore,
+    cursorAfter,
+    newFixturesSelected,
+    retryFixturesSelected,
+  } = selectFixtureBatch(fixtures, queue, dependencies.maxFixturesPerRun);
 
   const updatedQueue: DailyAnalysisQueueState = {
     ...queue,
@@ -462,7 +517,17 @@ async function runBatchedDailyPipeline(
   const runtimeWeightConfig = await dependencies.loadRuntimeWeightConfig();
   const batchWeightConfig = buildWeightConfigSnapshotMetadata(runtimeWeightConfig);
 
+  let newFixturesProcessed = 0;
+  let retryFixturesProcessed = 0;
+  const deferredAtBatchStart = new Set(queue.deferredFixtureIds);
+
   for (const fixture of batch) {
+    if (deferredAtBatchStart.has(fixture.fixtureId)) {
+      retryFixturesProcessed += 1;
+    } else {
+      newFixturesProcessed += 1;
+    }
+
     if (dependencies.now() >= dependencies.timeBudgetDeadline) {
       timeBudgetReached = true;
       if (
@@ -814,6 +879,23 @@ async function runBatchedDailyPipeline(
     executionDurationMs,
   };
 
+  logAdminError({
+    category: "scheduler",
+    message: "scheduler_cursor_progress",
+    context: {
+      runDate,
+      cursor_before: cursorBefore,
+      cursor_after: updatedQueue.cursor,
+      processed: items.length,
+      completed: updatedQueue.completedFixtureIds.length,
+      deferred: updatedQueue.deferredFixtureIds.length,
+      newFixturesProcessed,
+      retryFixturesProcessed,
+      newFixturesSelected,
+      retryFixturesSelected,
+    },
+  });
+
   return {
     runDate,
     processed: items.length,
@@ -843,12 +925,26 @@ function syncQueueWithExistingRecords(
   const recordsByKey = new Map(
     records.map((record) => [`${record.matchDate}:${record.homeTeam}:${record.awayTeam}`, record])
   );
+  const recordsByFixtureId = new Map<number, HistoricalMatchRecord>();
+  for (const record of records) {
+    if (record.fixtureId != null) {
+      recordsByFixtureId.set(record.fixtureId, record);
+    }
+  }
   const completed = new Set(queue.completedFixtureIds);
 
   for (const fixture of fixtures) {
     const key = `${fixture.matchDate}:${fixture.homeTeam}:${fixture.awayTeam}`;
-    const record = recordsByKey.get(key);
-    if (record && hasCompleteAnalysisRecord(record)) {
+    const record =
+      recordsByFixtureId.get(fixture.fixtureId) ?? recordsByKey.get(key) ?? null;
+    if (!record) {
+      continue;
+    }
+    // Snapshot already present → treat as already analyzed; do not re-defer.
+    if (
+      isAnalysisSnapshotPresent(record.analysisSnapshot) ||
+      hasCompleteAnalysisRecord(record)
+    ) {
       completed.add(fixture.fixtureId);
     }
   }
@@ -856,6 +952,9 @@ function syncQueueWithExistingRecords(
   return {
     ...queue,
     completedFixtureIds: [...completed],
+    deferredFixtureIds: queue.deferredFixtureIds.filter(
+      (fixtureId) => !completed.has(fixtureId)
+    ),
   };
 }
 

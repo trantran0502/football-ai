@@ -262,7 +262,12 @@ export async function refreshTeamProfile(
 
     const warnings = [...fetched.warnings];
     let skippedReason: string | undefined;
-    if (!saved.persisted) {
+    if (saved.skippedOverwrite) {
+      skippedReason = "skip_profile_overwrite_existing_complete";
+      warnings.push(
+        `Skipped incomplete team profile overwrite for team ${input.teamId}; kept existing complete profile.`
+      );
+    } else if (!saved.persisted) {
       skippedReason = "persist_failed";
       warnings.push(
         saved.error ?? `Team profile upsert failed for team ${input.teamId}.`

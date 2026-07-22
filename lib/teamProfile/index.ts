@@ -59,10 +59,13 @@ export {
   enableTeamProfileMemoryStoreForTests,
   getProfilesForMatch,
   getTeamProfile,
+  isCompleteTeamProfile,
+  isIncomingTeamProfileAllowedToOverwrite,
   listMemoryTeamProfilesForTests,
   listStaleTeamProfiles,
   markProfileRefreshFailure,
   resetTeamProfileMemoryStoreForTests,
+  resolveTeamProfileOverwriteSkipReason,
   TEAM_PROFILE_UPSERT_CONFLICT_KEY,
   upsertTeamProfile,
 } from "@/lib/teamProfile/teamProfileRepository";

@@ -93,7 +93,40 @@ function testDeferredFixturePriorityAndTerminal(): void {
   };
   const fixtures = [buildFixture(101), buildFixture(102), buildFixture(103)];
   const batch = selectFixtureBatch(fixtures, queue, 2);
-  assert(batch.batch[0]?.fixtureId === 103, "deferred fixture should be prioritized");
+  // New fixtures first; deferred gets at most 1 retry slot and cannot freeze cursor.
+  assert(batch.batch[0]?.fixtureId === 101, "new fixture should be preferred first");
+  assert(
+    batch.batch.some((fixture) => fixture.fixtureId === 103),
+    "deferred fixture may still occupy one retry slot"
+  );
+  assert(batch.cursorAfter > batch.cursorBefore, "cursor must advance past new scans");
+  assert(batch.newFixturesSelected >= 1, "at least one new fixture should be selected");
+  assert(batch.retryFixturesSelected <= 1, "deferred retries must be capped at 1");
+
+  const monopolizeQueue: DailyAnalysisQueueState = {
+    ...queue,
+    fixtureIds: [201, 202, 203, 204, 205, 206],
+    cursor: 0,
+    deferredFixtureIds: [201, 202, 203],
+  };
+  const monopolizeFixtures = [
+    buildFixture(201),
+    buildFixture(202),
+    buildFixture(203),
+    buildFixture(204),
+    buildFixture(205),
+    buildFixture(206),
+  ];
+  const capped = selectFixtureBatch(monopolizeFixtures, monopolizeQueue, 3);
+  assert(capped.retryFixturesSelected === 1, "batch=3 must allow at most 1 deferred retry");
+  assert(capped.newFixturesSelected === 2, "batch=3 should prefer 2 new fixtures");
+  assert(capped.cursorAfter > 0, "cursor must advance even when deferred exist");
+  assert(
+    capped.batch.filter((fixture) =>
+      monopolizeQueue.deferredFixtureIds.includes(fixture.fixtureId)
+    ).length === 1,
+    "deferred must not monopolize the batch"
+  );
 
   const state = createDeferredFixtureAttemptState();
   for (let index = 0; index < 5; index += 1) {

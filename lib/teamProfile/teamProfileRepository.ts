@@ -28,6 +28,78 @@ export interface UpsertTeamProfileResult {
   profile: TeamProfile;
   persisted: boolean;
   error?: string;
+  skippedOverwrite?: boolean;
+}
+
+/** Sources treated as a complete / usable persisted profile (not incomplete stubs). */
+const COMPLETE_PROFILE_SOURCES = new Set<TeamProfile["source"]>([
+  "api-football",
+  "match-records",
+  "provider-cache",
+]);
+
+export function isCompleteTeamProfile(profile: TeamProfile): boolean {
+  return (
+    COMPLETE_PROFILE_SOURCES.has(profile.source) && profile.sampleSize > 0
+  );
+}
+
+/**
+ * Incoming profiles that may replace an existing complete row.
+ * Incomplete / sample=0 / refresh_failed / otherwise unusable must not overwrite.
+ */
+export function isIncomingTeamProfileAllowedToOverwrite(
+  profile: TeamProfile
+): boolean {
+  if (!COMPLETE_PROFILE_SOURCES.has(profile.source)) {
+    return false;
+  }
+  if (profile.sampleSize <= 0) {
+    return false;
+  }
+  return true;
+}
+
+export function resolveTeamProfileOverwriteSkipReason(
+  incoming: TeamProfile
+): string {
+  if (incoming.source === "incomplete") {
+    return "source_incomplete";
+  }
+  if (incoming.source === "refresh_failed") {
+    return "source_refresh_failed";
+  }
+  if (incoming.sampleSize <= 0) {
+    return "sample_size_zero";
+  }
+  if (!COMPLETE_PROFILE_SOURCES.has(incoming.source)) {
+    return "profile_unusable_source";
+  }
+  return "profile_unusable";
+}
+
+function logSkipProfileOverwriteExistingComplete(input: {
+  teamId: number;
+  season: number | null;
+  existingSource: TeamProfile["source"];
+  newSource: TeamProfile["source"];
+  existingSample: number;
+  newSample: number;
+  reason: string;
+}): void {
+  logAdminError({
+    category: "scheduler",
+    message: "skip_profile_overwrite_existing_complete",
+    context: {
+      team_id: input.teamId,
+      season: input.season,
+      existing_source: input.existingSource,
+      new_source: input.newSource,
+      existing_sample: input.existingSample,
+      new_sample: input.newSample,
+      reason: input.reason,
+    },
+  });
 }
 
 export interface TeamProfilePersistencePlan {
@@ -313,6 +385,22 @@ async function removeSeasonKeyConflicts(
   await query;
 }
 
+function shouldSkipOverwriteOfExistingComplete(
+  existing: TeamProfile,
+  incoming: TeamProfile
+): { skip: boolean; reason?: string } {
+  if (!isCompleteTeamProfile(existing)) {
+    return { skip: false };
+  }
+  if (isIncomingTeamProfileAllowedToOverwrite(incoming)) {
+    return { skip: false };
+  }
+  return {
+    skip: true,
+    reason: resolveTeamProfileOverwriteSkipReason(incoming),
+  };
+}
+
 export async function upsertTeamProfile(
   profile: TeamProfile
 ): Promise<UpsertTeamProfileResult> {
@@ -320,16 +408,42 @@ export async function upsertTeamProfile(
   const now = new Date().toISOString();
 
   if (useMemoryStoreForTests) {
+    const key = profileKey(
+      normalized.teamId,
+      normalized.leagueId,
+      normalized.requestedSeason
+    );
+    const existingMemory = memoryProfiles.get(key) ?? null;
+    if (existingMemory) {
+      const decision = shouldSkipOverwriteOfExistingComplete(
+        existingMemory,
+        normalized
+      );
+      if (decision.skip) {
+        logSkipProfileOverwriteExistingComplete({
+          teamId: normalized.teamId,
+          season: normalized.season,
+          existingSource: existingMemory.source,
+          newSource: normalized.source,
+          existingSample: existingMemory.sampleSize,
+          newSample: normalized.sampleSize,
+          reason: decision.reason ?? "profile_unusable",
+        });
+        return {
+          profile: structuredClone(existingMemory),
+          persisted: true,
+          skippedOverwrite: true,
+        };
+      }
+    }
+
     const stored: TeamProfile = {
       ...normalized,
-      id: normalized.id ?? crypto.randomUUID(),
-      createdAt: normalized.createdAt ?? now,
+      id: normalized.id ?? existingMemory?.id ?? crypto.randomUUID(),
+      createdAt: normalized.createdAt ?? existingMemory?.createdAt ?? now,
       updatedAt: now,
     };
-    memoryProfiles.set(
-      profileKey(normalized.teamId, normalized.leagueId, normalized.requestedSeason),
-      structuredClone(stored)
-    );
+    memoryProfiles.set(key, structuredClone(stored));
     return { profile: stored, persisted: true };
   }
 
@@ -345,13 +459,37 @@ export async function upsertTeamProfile(
     const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
     const supabase = getSupabaseAdmin() as SupabaseClient<unknown>;
     const rows = await listTeamLeagueProfileRows(supabase, normalized);
-    const existing = pickCanonicalProfileRow(rows, normalized);
+    const existingRow = pickCanonicalProfileRow(rows, normalized);
+    const existing = existingRow
+      ? mapRowToProfile(existingRow)
+      : null;
     const plan = buildTeamProfilePersistencePlan(normalized, {
       existingId: existing?.id ? String(existing.id) : undefined,
       now,
     });
 
     if (existing?.id) {
+      const decision = shouldSkipOverwriteOfExistingComplete(
+        existing,
+        normalized
+      );
+      if (decision.skip) {
+        logSkipProfileOverwriteExistingComplete({
+          teamId: normalized.teamId,
+          season: normalized.season,
+          existingSource: existing.source,
+          newSource: normalized.source,
+          existingSample: existing.sampleSize,
+          newSample: normalized.sampleSize,
+          reason: decision.reason ?? "profile_unusable",
+        });
+        return {
+          profile: existing,
+          persisted: true,
+          skippedOverwrite: true,
+        };
+      }
+
       const keepId = String(existing.id);
       await removeDuplicateProfileRows(supabase, rows, keepId);
       await removeSeasonKeyConflicts(supabase, normalized, keepId);
