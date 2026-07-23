@@ -36,6 +36,10 @@ import {
   parsePlanSeasonRestrictionFromText,
   type ApiFootballPlanSeasonRange,
 } from "@/lib/providers/apiFootball/apiFootballPlanErrors";
+import {
+  isApiFootballAccountSuspendedError,
+  throwIfApiFootballAccountSuspended,
+} from "@/lib/providers/apiFootball/apiFootballAccountErrors";
 
 const DEFAULT_BASE_URL = "https://v3.football.api-sports.io";
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -468,6 +472,7 @@ export class ApiFootballClient {
         }
 
         const payload = (await response.json()) as ApiFootballOddsRawEnvelope<T>;
+        throwIfApiFootballAccountSuspended(payload.errors);
         if (payload.errors) {
           const serialized = Array.isArray(payload.errors)
             ? payload.errors.join(", ")
@@ -483,6 +488,9 @@ export class ApiFootballClient {
         };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
+        if (isApiFootballAccountSuspendedError(lastError)) {
+          throw lastError;
+        }
         if (attempt < this.maxRetries - 1) {
           await sleep(250 * (attempt + 1));
         }
@@ -533,6 +541,7 @@ export class ApiFootballClient {
         }
 
         const payload = (await response.json()) as ApiFootballRawEnvelope<T>;
+        throwIfApiFootballAccountSuspended(payload.errors);
         const planRestriction = resolvePlanSeasonRestriction(payload.errors);
         if (planRestriction) {
           return {
@@ -575,6 +584,9 @@ export class ApiFootballClient {
         };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
+        if (isApiFootballAccountSuspendedError(lastError)) {
+          throw lastError;
+        }
         const lastRestriction = parsePlanLastParameterRestrictionFromText(lastError.message);
         if (lastRestriction) {
           return {

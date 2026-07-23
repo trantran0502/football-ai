@@ -33,6 +33,7 @@ import {
 import { filterPreMatchEligibleFixtures } from "@/lib/scheduler/preMatchFixtureEligibility";
 import type { FixtureIntakeResult } from "@/lib/scheduler/fixtureMapping";
 import { isApiFootballQuotaExceededError } from "@/lib/scheduler/resultUpdateFixtureFetch";
+import { isApiFootballAccountSuspendedError } from "@/lib/providers/apiFootball/apiFootballAccountErrors";
 import { canMakeApiFootballRequest, canMakeProfileApiFootballRequest } from "@/lib/providers/apiFootball/apiFootballQuota";
 import { resolveSchedulerFixturesToProduction } from "@/lib/scheduler/schedulerOddsIntegration";
 import type { SchedulerOddsStats } from "@/lib/scheduler/schedulerOddsIntegration";
@@ -351,8 +352,28 @@ async function fetchDailyAnalysisFixturesSafely(
     return await withRetry(() => resolvedFetchFixtures(runDate), {
       maxRetries: options.maxRetries,
       delayMs: options.retryDelayMs,
+      shouldRetry: (error) =>
+        !isApiFootballAccountSuspendedError(error) &&
+        !isApiFootballQuotaExceededError(error),
     });
   } catch (error) {
+    if (isApiFootballAccountSuspendedError(error)) {
+      logAdminError({
+        category: "scheduler",
+        message:
+          "Daily analysis aborted: API-Football account suspended. No further API calls this run.",
+        context: {
+          runDate,
+          reason: "account_suspended",
+          error: error instanceof Error ? error.message : String(error),
+          action:
+            "Restore or replace the API-Football subscription/key, then update Vercel Production API_FOOTBALL_KEY.",
+        },
+      });
+      throw new Error(
+        "Daily analysis failed: API-Football account suspended. Restore the account or update API_FOOTBALL_KEY on Vercel Production."
+      );
+    }
     if (isApiFootballQuotaExceededError(error)) {
       logAdminError({
         category: "scheduler",

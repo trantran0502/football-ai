@@ -4,6 +4,8 @@ export async function withRetry<T>(
     maxRetries: number;
     delayMs: number;
     onRetry?: (attempt: number, error: unknown) => void;
+    /** When false, stop immediately without further attempts. Default: always retry. */
+    shouldRetry?: (error: unknown) => boolean;
   }
 ): Promise<T> {
   let lastError: unknown;
@@ -13,6 +15,9 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error;
       if (attempt >= options.maxRetries) {
+        break;
+      }
+      if (options.shouldRetry && !options.shouldRetry(error)) {
         break;
       }
       options.onRetry?.(attempt + 1, error);
